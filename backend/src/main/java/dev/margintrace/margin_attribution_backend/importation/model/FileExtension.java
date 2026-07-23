@@ -1,4 +1,4 @@
-package dev.margintrace.margin_attribution_backend.importer.model;
+package dev.margintrace.margin_attribution_backend.importation.model;
 
 import lombok.Getter;
 

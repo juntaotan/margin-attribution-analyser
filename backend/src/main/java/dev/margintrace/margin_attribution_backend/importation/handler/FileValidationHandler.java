@@ -1,7 +1,7 @@
-package dev.margintrace.margin_attribution_backend.importer.handler;
+package dev.margintrace.margin_attribution_backend.importation.handler;
 
-import dev.margintrace.margin_attribution_backend.importer.context.ImportContext;
-import dev.margintrace.margin_attribution_backend.importer.model.FileExtension;
+import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
+import dev.margintrace.margin_attribution_backend.importation.model.FileExtension;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 

@@ -1,6 +1,6 @@
-package dev.margintrace.margin_attribution_backend.importer.handler;
+package dev.margintrace.margin_attribution_backend.importation.handler;
 
-import dev.margintrace.margin_attribution_backend.importer.context.ImportContext;
+import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 
 public abstract class AbstractImportHandler implements ImportHandler {
 
