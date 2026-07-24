@@ -62,6 +62,6 @@ public class ImportWorkflow {
             return;
         }
 
-        stateService.transition(jobId,VALIDATING,VALIDATED);
+        stateService.completeValidation(jobId, context.getExtension());
     }
 }

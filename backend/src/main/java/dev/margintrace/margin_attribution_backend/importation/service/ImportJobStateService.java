@@ -1,5 +1,6 @@
 package dev.margintrace.margin_attribution_backend.importation.service;
 
+import dev.margintrace.margin_attribution_backend.importation.model.FileExtension;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportJob;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportStatus;
 import dev.margintrace.margin_attribution_backend.importation.repository.ImportJobRepository;
@@ -41,6 +42,12 @@ public class ImportJobStateService {
     public void transition(Long jobId, ImportStatus expected, ImportStatus next) {
         ImportJob job = getJobWithExpectedStatus(jobId, expected);
         job.transitionTo(next);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void completeValidation(Long jobId, FileExtension fileExtension) {
+        ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.VALIDATING);
+        job.completeValidation(fileExtension);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

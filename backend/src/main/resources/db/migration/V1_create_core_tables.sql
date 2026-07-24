@@ -37,21 +37,6 @@ CREATE TABLE import_job
 CREATE INDEX idx_import_job_status
     ON import_job (status);
 
-CREATE TABLE import_status_history
-(
-    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    import_job_id  BIGINT NOT NULL,
-    from_status    VARCHAR(40),
-    to_status      VARCHAR(40) NOT NULL,
-    error_message  VARCHAR(1000),
-    changed_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_import_status_history_job
-        FOREIGN KEY (import_job_id)
-            REFERENCES import_job (id)
-);
-
-
 -- =========================================================
 -- Inventory / Production foundation tables
 -- =========================================================

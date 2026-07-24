@@ -92,6 +92,15 @@ public class ImportJob {
         transitionTo(failureStatus, errorCode, errorMessage);
     }
 
+    public void completeValidation(FileExtension fileExtension) {
+        if (fileExtension == null) {
+            throw new IllegalArgumentException("File extension must not be null");
+        }
+
+        transitionTo(ImportStatus.VALIDATED);
+        this.fileExtension = fileExtension;
+    }
+
     private void transitionTo(ImportStatus next, String errorCode, String errorMessage) {
         if (next == null) {
             throw new IllegalArgumentException("Next status must not be null");
