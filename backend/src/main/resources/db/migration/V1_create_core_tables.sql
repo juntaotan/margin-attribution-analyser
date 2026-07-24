@@ -1,4 +1,58 @@
 -- =========================================================
+-- State machine for import job
+-- =========================================================
+CREATE TABLE import_job
+(
+    id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    original_filename  VARCHAR(255) NOT NULL,
+    file_extension     VARCHAR(20),
+    storage_object_key VARCHAR(500),
+    status             VARCHAR(40) NOT NULL,
+    error_code         VARCHAR(100),
+    error_message      VARCHAR(1000),
+    imported_rows      BIGINT NOT NULL DEFAULT 0,
+    rejected_rows      BIGINT NOT NULL DEFAULT 0,
+    created_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at       TIMESTAMP WITH TIME ZONE,
+    updated_at         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version            BIGINT NOT NULL DEFAULT 0,
+
+    CONSTRAINT ck_import_job_status CHECK (
+        status IN (
+            'PENDING',
+            'VALIDATING',
+            'VALIDATED',
+            'VALIDATION_FAILED',
+            'TRANSFORMING',
+            'TRANSFORMATION_FAILED',
+            'READY_TO_WRITE',
+            'WRITING_TO_DATALAKE',
+            'WRITE_SUCCESS',
+            'WRITE_FAILED',
+            'CANCELLED'
+        )
+    )
+);
+
+CREATE INDEX idx_import_job_status
+    ON import_job (status);
+
+CREATE TABLE import_status_history
+(
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    import_job_id  BIGINT NOT NULL,
+    from_status    VARCHAR(40),
+    to_status      VARCHAR(40) NOT NULL,
+    error_message  VARCHAR(1000),
+    changed_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_import_status_history_job
+        FOREIGN KEY (import_job_id)
+            REFERENCES import_job (id)
+);
+
+
+-- =========================================================
 -- Inventory / Production foundation tables
 -- =========================================================
 
