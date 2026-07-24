@@ -34,7 +34,7 @@ public class ImportJob {
     @Column(name = "file_extension", length = 20)
     private FileExtension fileExtension;
 
-    @Column(name = "storage_object_key", length = 500)
+    @Column(name = "storage_object_key", nullable = false, length = 500)
     private String storageObjectKey;
 
     @Enumerated(EnumType.STRING)
@@ -69,13 +69,17 @@ public class ImportJob {
     private long version;
 
     // Create the first transaction PENDING using Static Factory Method
-    public static ImportJob pending(String originalFilename) {
+    public static ImportJob pending(String originalFilename, String storageObjectKey) {
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new IllegalArgumentException("Original filename must not be blank");
+        }
+        if (storageObjectKey == null || storageObjectKey.isBlank()) {
+            throw new IllegalArgumentException("Storage object key must not be blank");
         }
 
         ImportJob job = new ImportJob();
         job.originalFilename = originalFilename;
+        job.storageObjectKey = storageObjectKey;
         job.status = ImportStatus.PENDING;
         job.importedRows = 0L;
         job.rejectedRows = 0L;

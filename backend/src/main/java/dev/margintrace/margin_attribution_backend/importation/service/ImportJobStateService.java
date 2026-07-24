@@ -1,5 +1,7 @@
 package dev.margintrace.margin_attribution_backend.importation.service;
 
+import java.util.UUID;
+
 import dev.margintrace.margin_attribution_backend.importation.model.FileExtension;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportJob;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportStatus;
@@ -30,12 +32,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ImportJobStateService {
+    private static final String IMPORT_OBJECT_PREFIX = "imports/";
+
     private final ImportJobRepository importJobRepository;
 
     @Transactional
     public ImportJob createPendingJob(String originalFilename) {
-        return importJobRepository.save(ImportJob.pending(originalFilename));
-    };
+        String storageObjectKey = IMPORT_OBJECT_PREFIX + UUID.randomUUID();
+        return importJobRepository.save(ImportJob.pending(originalFilename, storageObjectKey));
+    }
 
     // Each calling creates a new independent transaction that defines next status according to its jobId and current status
     @Transactional(propagation = Propagation.REQUIRES_NEW)
