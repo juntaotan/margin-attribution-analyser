@@ -13,6 +13,9 @@ public class FileValidationHandler extends AbstractImportHandler{
         // File level validation
         FileExtension extension = validateExcelExtension(file);
         context.setExtension(extension);
+        if (context.getExtension() != FileExtension.XLSX && context.getExtension() != FileExtension.XLS) {
+            throw new IllegalArgumentException("The upload file has no valid extension.");
+        }
     }
 
     private FileExtension validateExcelExtension(MultipartFile file){

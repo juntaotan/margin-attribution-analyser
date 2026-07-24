@@ -1,9 +1,12 @@
 package dev.margintrace.margin_attribution_backend.importation.service;
 
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
+import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import static dev.margintrace.margin_attribution_backend.importation.model.ImportStatus.VALIDATING;
 
 /**
  * <h1>Data Import Service</h1>
@@ -30,13 +33,18 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class ImportService {
 
+    private final FileValidationHandler fileValidationHandler;
+
     public ImportContext importer(MultipartFile file) {
+
         // Context to collect and transfer information in whole import service chain
         ImportContext context = new ImportContext();
+        context.setFile(file);
+        context.setStatus(VALIDATING);
 
         // Validate the selected file, including its format and size
+        fileValidationHandler.doImport(context);
         
-
         return context;
     }
 }
