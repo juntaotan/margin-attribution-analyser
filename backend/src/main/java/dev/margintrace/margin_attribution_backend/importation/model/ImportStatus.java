@@ -5,6 +5,9 @@ public enum ImportStatus {
     VALIDATING,
     VALIDATED,
     VALIDATING_FAILED,
+    STORING,
+    STORED,
+    STORING_FAILED,
     TRANSFORMING,
     TRANSFORMED,
     TRANSFORMING_FAILED,
@@ -29,6 +32,13 @@ public enum ImportStatus {
                 next == VALIDATING_FAILED ||
                 next == CANCELLED;
             case VALIDATED ->
+                next == STORING ||
+                next == CANCELLED;
+            case STORING ->
+                next == STORED ||
+                next == STORING_FAILED ||
+                next == CANCELLED;
+            case STORED ->
                 next == TRANSFORMING ||
                 next == CANCELLED;
             case TRANSFORMING ->
@@ -43,6 +53,7 @@ public enum ImportStatus {
                 next == WRITE_FAILED ||
                 next == CANCELLED;
             case VALIDATING_FAILED,
+                 STORING_FAILED,
                  TRANSFORMING_FAILED,
                  CANCELLED,
                  WRITE_SUCCESS -> false;
