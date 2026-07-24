@@ -6,8 +6,8 @@ services:
 
     environment:
       POSTGRES_DB: margin_attribution
-      POSTGRES_USER: ${DB_Username}
-      POSTGRES_PASSWORD: ${DB_Password}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
 
     ports:
       - "5432:5432"
@@ -21,6 +21,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: margin-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+    volumes:
+      - margin_minio_data:/data
 
 volumes:
   margin_postgres_data:
+  margin_minio_data:
