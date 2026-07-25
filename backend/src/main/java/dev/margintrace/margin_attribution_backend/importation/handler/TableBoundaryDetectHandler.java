@@ -8,9 +8,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -30,12 +28,15 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
                 Workbook workbook = WorkbookFactory.create(inputStream);
         ){
             int indexNum = workbook.getNumberOfSheets();
+
+            List<TableStructure> tableList = new ArrayList<>();
             for (int i = 0; i < indexNum; i++) {
                 TableStructure tableStructure = detectBoundary(workbook.getSheetAt(i));
+                tableList.add(tableStructure);
             }
 
         } catch (Exception e) {
-
+            throw new RuntimeException("Excel table boundary detection failed for object: " + objectKey, e);
         }
     }
 
