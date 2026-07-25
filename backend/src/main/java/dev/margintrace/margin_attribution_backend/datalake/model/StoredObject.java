@@ -1,4 +1,4 @@
-package dev.margintrace.margin_attribution_backend.importation.port;
+package dev.margintrace.margin_attribution_backend.datalake.model;
 
 public record StoredObject(
         String bucket,

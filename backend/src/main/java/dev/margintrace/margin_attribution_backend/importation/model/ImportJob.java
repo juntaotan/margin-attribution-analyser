@@ -105,6 +105,18 @@ public class ImportJob {
         this.fileExtension = fileExtension;
     }
 
+    public void completeRawStorage(String storageObjectKey) {
+        if (storageObjectKey == null || storageObjectKey.isBlank()) {
+            throw new IllegalArgumentException("Storage object key must not be blank");
+        }
+        if (storageObjectKey.length() > 500) {
+            throw new IllegalArgumentException("Storage object key must not exceed 500 characters");
+        }
+
+        transitionTo(ImportStatus.STORED);
+        this.storageObjectKey = storageObjectKey;
+    }
+
     private void transitionTo(ImportStatus next, String errorCode, String errorMessage) {
         if (next == null) {
             throw new IllegalArgumentException("Next status must not be null");

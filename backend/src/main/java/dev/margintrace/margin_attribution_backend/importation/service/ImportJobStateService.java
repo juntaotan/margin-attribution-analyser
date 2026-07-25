@@ -42,7 +42,7 @@ public class ImportJobStateService {
         return importJobRepository.save(ImportJob.pending(originalFilename, storageObjectKey));
     }
 
-    // Each calling creates a new independent transaction that defines next status according to its jobId and current status
+    // Performs a pure state transition when no additional stage result needs to be persisted that is used when an import stage begins
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void transition(Long jobId, ImportStatus expected, ImportStatus next) {
         ImportJob job = getJobWithExpectedStatus(jobId, expected);
@@ -53,6 +53,12 @@ public class ImportJobStateService {
     public void completeValidation(Long jobId, FileExtension fileExtension) {
         ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.VALIDATING);
         job.completeValidation(fileExtension);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void completeRawStorage(Long jobId, String storageObjectKey) {
+        ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.STORING);
+        job.completeRawStorage(storageObjectKey);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
