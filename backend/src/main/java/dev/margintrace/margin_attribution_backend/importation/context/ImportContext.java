@@ -11,4 +11,5 @@ public class ImportContext {
     MultipartFile file;
     Exception error;
     FileExtension extension;
+    String objectKey;
 }

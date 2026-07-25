@@ -1,6 +1,5 @@
 package dev.margintrace.margin_attribution_backend.datalake.storage;
 
-import dev.margintrace.margin_attribution_backend.datalake.model.RawObjectMetadata;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.errors.MinioException;
@@ -20,9 +19,12 @@ public class MinioRawFileReader implements RawFileReader{
     private String bucket;
 
     /**
+     * Reads a raw file from the configured MinIO bucket.
      *
-     * @param objectKey Key of the object to read from the storage.
-     * @return
+     * @param objectKey the unique object key used to locate the file in MinIO
+     * @return an input stream containing the object's data; the caller is responsible for closing the stream after use
+     *
+     * @throws MinioException if MinIO fails to process the object retrieval request
      */
     @Override
     public InputStream readFile(String objectKey) throws MinioException {

@@ -79,9 +79,13 @@ public class ImportWorkflow {
             // Call store method in the datalake module to create a stored object in the data lake
             StoredObject storedObject = rawFileStorage.store(context.getFile(), objectKey);
             stateService.completeRawStorage(jobId, storedObject.objectKey());
+
+            context.setObjectKey(storedObject.objectKey());
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(jobId, STORING, STORING_FAILED, "RAW_FILE_STORAGE_FAILED", e.getMessage());
         }
+
+
     }
 }
