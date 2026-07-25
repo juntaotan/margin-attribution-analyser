@@ -1,4 +1,4 @@
-package dev.margintrace.margin_attribution_backend.datalake.storage;
+package dev.margintrace.margin_attribution_backend.datalake.key;
 
 import dev.margintrace.margin_attribution_backend.importation.model.FileExtension;
 import org.springframework.stereotype.Component;

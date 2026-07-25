@@ -2,7 +2,7 @@ package dev.margintrace.margin_attribution_backend.importation.service;
 
 import dev.margintrace.margin_attribution_backend.datalake.model.StoredObject;
 import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileStorage;
-import dev.margintrace.margin_attribution_backend.datalake.storage.RawObjectKeyFactory;
+import dev.margintrace.margin_attribution_backend.datalake.key.RawObjectKeyFactory;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
 import org.springframework.stereotype.Service;
