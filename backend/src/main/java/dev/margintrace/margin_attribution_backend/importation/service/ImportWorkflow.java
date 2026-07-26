@@ -4,10 +4,9 @@ import dev.margintrace.margin_attribution_backend.datalake.model.StoredObject;
 import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileStorage;
 import dev.margintrace.margin_attribution_backend.datalake.key.RawObjectKeyFactory;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
+import dev.margintrace.margin_attribution_backend.importation.handler.ColumnTypeInferHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.TableBoundaryDetectHandler;
-import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
-import jakarta.persistence.Table;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,6 +44,7 @@ public class ImportWorkflow {
 
     private final FileValidationHandler fileValidationHandler;
     private final TableBoundaryDetectHandler tableBoundaryDetectHandler;
+    private final ColumnTypeInferHandler columnTypeInferHandler;
     private final ImportJobStateService stateService;
     private final RawFileStorage rawFileStorage;
     private final RawObjectKeyFactory objectKeyFactory;
@@ -88,6 +88,9 @@ public class ImportWorkflow {
 
             // Detect the table boundaries (left, right, top and bottom)
             tableBoundaryDetectHandler.doImport(context);
+
+            // Infer the data type of every column inside the detected table.
+            columnTypeInferHandler.doImport(context);
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(jobId, STORING, STORING_FAILED, "RAW_FILE_STORAGE_FAILED", e.getMessage());

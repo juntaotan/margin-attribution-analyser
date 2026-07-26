@@ -35,9 +35,14 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
                 tableList.add(tableStructure);
             }
 
+            tableList.stream()
+                    .max(Comparator.comparingDouble(TableStructure::confidence))
+                    .ifPresent(context::setTableStructure);
         } catch (Exception e) {
             throw new RuntimeException("Excel table boundary detection failed for object: " + objectKey, e);
         }
+
+        handleNext(context);
     }
 
     private TableStructure detectBoundary(Sheet sheet) {
