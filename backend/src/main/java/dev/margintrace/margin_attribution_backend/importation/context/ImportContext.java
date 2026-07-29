@@ -17,5 +17,5 @@ public class ImportContext {
     FileExtension extension;
     String objectKey;
     TableStructure tableStructure;
-    Map<Integer, DataType> columnTypes;
+    Map<String, DataType> columnTypes;
 }

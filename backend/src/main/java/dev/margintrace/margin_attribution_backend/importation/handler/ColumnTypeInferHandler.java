@@ -7,6 +7,7 @@ import dev.margintrace.margin_attribution_backend.importation.model.TableStructu
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -82,19 +83,38 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
      *
      * @param sheet  the worksheet containing the table to be imported
      * @param tableStructure  the detected table structure containing the column boundaries and row boundaries
-     * @return  a mapping from zero-based Excel column indexes to their inferred data types
+     * @return  a mapping from column header names to their inferred data types
      */
-    private Map<Integer, DataType> inferColumnTypes(Sheet sheet, TableStructure tableStructure) {
+    private Map<String, DataType> inferColumnTypes(Sheet sheet, TableStructure tableStructure) {
 
-        // Collect the columtype with the format: index + data type
-        Map<Integer, DataType> columnTypes = new LinkedHashMap<>();
+        // Preserve the source column order while mapping each header name to its inferred type.
+        Map<String, DataType> columnTypes = new LinkedHashMap<>();
+        Row headerRow = sheet.getRow(tableStructure.headerRowIndex());
+        if (headerRow == null) {
+            throw new IllegalArgumentException(
+                    "Header row does not exist at index " + tableStructure.headerRowIndex()
+            );
+        }
+        DataFormatter dataFormatter = new DataFormatter();
 
         // Iterates from the leftmost column to the rightmost column
         int leftColumnIndex = tableStructure.leftColumnIndex();
         int rightColumnIndex = tableStructure.rightColumnIndex();
 
         for (int columnIndex = leftColumnIndex; columnIndex <= rightColumnIndex; columnIndex++) {
-            columnTypes.put(columnIndex, identifyColumnType(sheet, tableStructure, columnIndex));
+            Cell headerCell = headerRow.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+            String headerName = headerCell == null
+                    ? ""
+                    : dataFormatter.formatCellValue(headerCell).trim();
+
+            if (headerName.isEmpty()) {
+                throw new IllegalArgumentException("Column header is blank at index " + columnIndex);
+            }
+            if (columnTypes.containsKey(headerName)) {
+                throw new IllegalArgumentException("Duplicate column header: " + headerName);
+            }
+
+            columnTypes.put(headerName, identifyColumnType(sheet, tableStructure, columnIndex));
         }
 
         return columnTypes;
@@ -114,9 +134,9 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
     private DataType identifyColumnType(Sheet sheet, TableStructure tableStructure, int columnIndex) {
         Map<DataType, Integer> frequencies = new EnumMap<>(DataType.class);
 
-        int headerRowIndex = tableStructure.headerRowIndex();
+        int firstDataRowIndex = tableStructure.headerRowIndex() + 1;
         int lastRowIndex = tableStructure.lastRowIndex();
-        for (int rowIndex = headerRowIndex; rowIndex <= lastRowIndex; rowIndex++) {
+        for (int rowIndex = firstDataRowIndex; rowIndex <= lastRowIndex; rowIndex++) {
             Row row = sheet.getRow(rowIndex);
             Cell cell = row == null ? null : row.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
             DataType dataType = identifyCellType(cell);
