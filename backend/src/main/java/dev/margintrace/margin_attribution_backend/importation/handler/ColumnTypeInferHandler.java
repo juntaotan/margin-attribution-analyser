@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Infer the logical data type of each column within a previously detected Excel table.
@@ -78,8 +77,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
     /**
      * Infers the logical data type of each column within the detected table boundaries.
      *
-     * The method iterates from the leftmost column to the rightmost column defined by {@link TableStructure}. Each
-     * column is analysed independently by {@link #identifyColumnType(Sheet, TableStructure, int)}.
+     * <p> The method iterates from the leftmost column to the rightmost column defined by {@link TableStructure}. Each
+     * column is analysed independently by {@link #identifyColumnType(Sheet, TableStructure, int)}. </p>
      *
      * @param sheet  the worksheet containing the table to be imported
      * @param tableStructure  the detected table structure containing the column boundaries and row boundaries
@@ -123,8 +122,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
     /**
      * Infer column types for selected column according to top 100 rows
      *
-     * The method iterates from the first column in the selected column that is sent by
-     * {@Link #inferColumnTypes(sheet, TableStructure tableStructure)}
+     * <p>The method iterates from the first column in the selected column that is sent by
+     * {@Link #inferColumnTypes(sheet, TableStructure tableStructure)} </p>
      *
      * @param sheet  the worksheet containing the table to be imported
      * @param tableStructure  the detected table structure containing the column boundaries and row boundaries
