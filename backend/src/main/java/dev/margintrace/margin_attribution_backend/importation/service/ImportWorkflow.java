@@ -5,6 +5,7 @@ import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileStorag
 import dev.margintrace.margin_attribution_backend.datalake.key.RawObjectKeyFactory;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.handler.ColumnTypeInferHandler;
+import dev.margintrace.margin_attribution_backend.importation.handler.DatabaseWriterHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.TableBoundaryDetectHandler;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,12 @@ import static dev.margintrace.margin_attribution_backend.importation.model.Impor
  *     <li> {@code VALIDATED -> STORING} when raw file storage begins.</li>
  *     <li> {@code STORING -> STORED} when raw file storage succeeds, or {@code STORING -> STORING_FAILED} when raw file
  *     storage fails. </li>
+ *     <li> {@code STORED -> TRANSFORMING} when spreadsheet analysis begins.</li>
+ *     <li> {@code TRANSFORMING -> TRANSFORMED} when spreadsheet analysis succeeds, or
+ *     {@code TRANSFORMING -> TRANSFORMING_FAILED} when it fails.</li>
+ *     <li> {@code TRANSFORMED -> WRITING_TO_DATALAKE} when database writing begins.</li>
+ *     <li> {@code WRITING_TO_DATALAKE -> WRITE_SUCCESS} when database writing succeeds, or
+ *     {@code WRITING_TO_DATALAKE -> WRITE_FAILED} when it fails.</li>
  * </ol>
  */
 @Service
@@ -45,6 +52,7 @@ public class ImportWorkflow {
     private final FileValidationHandler fileValidationHandler;
     private final TableBoundaryDetectHandler tableBoundaryDetectHandler;
     private final ColumnTypeInferHandler columnTypeInferHandler;
+    private final DatabaseWriterHandler databaseWriterHandler;
     private final ImportJobStateService stateService;
     private final RawFileStorage rawFileStorage;
     private final RawObjectKeyFactory objectKeyFactory;
@@ -56,6 +64,8 @@ public class ImportWorkflow {
      * <ol>
      *    <li> File validation: uses the doImport method in {@link FileValidationHandler} </li>
      *    <li> Raw file storage: uses the store method in {@link RawFileStorage} </li>
+     *    <li> Spreadsheet analysis: detects table boundaries and infers column types </li>
+     *    <li> Database writing: uses the doImport method in {@link DatabaseWriterHandler} </li>
      * </ol>
      * 
      * @param jobId the ID of the import job getting from the {@link ImportService#importer(MultipartFile)} method
@@ -85,7 +95,15 @@ public class ImportWorkflow {
             stateService.completeRawStorage(jobId, storedObject.objectKey());
 
             context.setObjectKey(storedObject.objectKey());
+        } catch (Exception e) {
+            context.setError(e);
+            stateService.fail(jobId, STORING, STORING_FAILED, "RAW_FILE_STORAGE_FAILED", e.getMessage());
+            return;
+        }
 
+        stateService.transition(jobId, STORED, TRANSFORMING);
+
+        try {
             // Detect the table boundaries (left, right, top and bottom)
             tableBoundaryDetectHandler.doImport(context);
 
@@ -93,9 +111,33 @@ public class ImportWorkflow {
             columnTypeInferHandler.doImport(context);
         } catch (Exception e) {
             context.setError(e);
-            stateService.fail(jobId, STORING, STORING_FAILED, "RAW_FILE_STORAGE_FAILED", e.getMessage());
+            stateService.fail(
+                    jobId,
+                    TRANSFORMING,
+                    TRANSFORMING_FAILED,
+                    "SPREADSHEET_TRANSFORMATION_FAILED",
+                    e.getMessage()
+            );
+            return;
         }
 
+        stateService.transition(jobId, TRANSFORMING, TRANSFORMED);
+        stateService.transition(jobId, TRANSFORMED, WRITING_TO_DATALAKE);
 
+        try {
+            databaseWriterHandler.doImport(context);
+        } catch (Exception e) {
+            context.setError(e);
+            stateService.fail(
+                    jobId,
+                    WRITING_TO_DATALAKE,
+                    WRITE_FAILED,
+                    "DATABASE_WRITE_FAILED",
+                    e.getMessage()
+            );
+            return;
+        }
+
+        stateService.transition(jobId, WRITING_TO_DATALAKE, WRITE_SUCCESS);
     }
 }
