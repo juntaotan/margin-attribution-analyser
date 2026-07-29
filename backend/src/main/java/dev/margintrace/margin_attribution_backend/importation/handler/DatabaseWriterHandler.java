@@ -2,17 +2,71 @@ package dev.margintrace.margin_attribution_backend.importation.handler;
 
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * Handles the database-writing stage of the import process
+ *
+ * <p> This handler reads the detected table structure and column data types from the {@link ImportContext}, generates a
+ * PostgreSQL {@code CREATE TABLE} statement, and executes the statement through {@link JdbcTemplate}.</p>
+ */
+@Component
 public class DatabaseWriterHandler extends AbstractImportHandler {
-    @Override
-    public void doImport(ImportContext context) {
+    private final JdbcTemplate jdbcTemplate;
 
+    public DatabaseWriterHandler(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    private String buildCreateTableSql(String tableName, String sql){
-        return "CREATE TABLE " + tableName + "(" + sql + ")";
+    /**
+     * Creates a destination database table based on the structure detected during the import process
+     *
+     * <p>This method performs the following operations: reading the source sheet name as the destination table name,
+     * building SQL column definitions from the detected column names and data types, generating a complete PostgreSQL
+     * {@code CREATE TABLE} statement and executing the generated SQL statement using {@link JdbcTemplate}.</p>
+     *
+     * @param context  the import context containing the detected table structure and column data types
+     */
+    @Override
+    public void doImport(ImportContext context) {
+        // Get SQL statement's parameters
+        // TODO: change the table name with automatic generation to avoid the risk of injection
+        String tableName = context
+                .getTableStructure()
+                .sheetName()
+                .trim()
+                .toLowerCase()
+                .replaceAll("\\s+", "_")
+                .replaceAll("[^a-z0-9_]", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_+|_+$", "");
+        String columnDefinition = buildColumnStatement(context.getColumnTypes());
+
+        // Generate SQL statement
+        String sql = buildCreateTableSql(tableName, columnDefinition);
+
+        // Execute SQL statement and import data into database
+        jdbcTemplate.execute(sql);
+    }
+
+    /**
+     * Builds a complete SQL {@code CREATE TABLE} statement.、
+     *
+     * <p>The generated table contains an auto-incrementing {@code BIGINT} primary key named {@code id}, followed by the
+     * supplied column definitions.</p>
+     *
+     * @param tableName  the name of the table to be created
+     * @param definition  the SQL fragment containing the column definitions
+     * @return  a complete SQL {@code CREATE TABLE} statement
+     */
+    private String buildCreateTableSql(String tableName, String definition){
+        return "CREATE TABLE " + tableName + "("
+                + "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
+                + definition
+                + ")";
     }
 
     /**
@@ -31,7 +85,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
      * @return  an SQL fragment containing normalized column names and their corresponding PostgreSQL data types
      */
     private String buildColumnStatement(Map<String, DataType> columnTypes) {
-        StringBuilder sql = new StringBuilder();
+        StringBuilder definition = new StringBuilder();
         int errorColumnNum = 0;
         for (Map.Entry<String, DataType> entry:columnTypes.entrySet()) {
             // Identify column name and count the number of columns with error name
@@ -51,9 +105,9 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
                 case TEXT, UNKNOWN -> "TEXT";
             };
             // Generate final SQL statement
-            sql.append(normalizedColumnName).append(" ").append(columnType).append(",").append(System.lineSeparator());
+            definition.append(normalizedColumnName).append(" ").append(columnType).append(",").append(System.lineSeparator());
         }
-        return sql.toString();
+        return definition.toString();
     }
 
     /**
