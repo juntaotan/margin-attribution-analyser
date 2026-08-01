@@ -16,6 +16,7 @@ import java.io.InputStream;
 public class MinioRawFileStorage implements RawFileStorage {
 
     private final MinioClient minioClient;
+    private final MinioBucketProvisioner bucketProvisioner;
 
     @Value("${datalake.raw-bucket}")
     private String bucket;
@@ -31,6 +32,8 @@ public class MinioRawFileStorage implements RawFileStorage {
      */
     @Override
     public StoredObject store(MultipartFile file, String objectKey) throws Exception {
+        bucketProvisioner.ensureRawBucketExists();
+
         try (InputStream input = file.getInputStream()) {
             // Create a upload request to MinIO with the specified bucket, object (key), input content, file size, and content type
             ObjectWriteResponse response = minioClient.putObject(

@@ -53,6 +53,9 @@ buildNumber.properties
 # macos files
 .DS_Store
 
+# Markdown documentation
+*.md
+
 # environment variables
 .env
 
