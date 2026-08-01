@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.StringJoiner;
 
 /**
  * Handles the database-writing stage of the import process
@@ -62,7 +63,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
      * @param definition  the SQL fragment containing the column definitions
      * @return  a complete SQL {@code CREATE TABLE} statement
      */
-    private String buildCreateTableSql(String tableName, String definition){
+    String buildCreateTableSql(String tableName, String definition){
         return "CREATE TABLE " + tableName + "("
                 + "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
                 + definition
@@ -84,8 +85,8 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
      * @param columnTypes  a map containing original column names and their detected data types
      * @return  an SQL fragment containing normalized column names and their corresponding PostgreSQL data types
      */
-    private String buildColumnStatement(Map<String, DataType> columnTypes) {
-        StringBuilder definition = new StringBuilder();
+    String buildColumnStatement(Map<String, DataType> columnTypes) {
+        StringJoiner definition = new StringJoiner("," + System.lineSeparator());
         int errorColumnNum = 0;
         for (Map.Entry<String, DataType> entry:columnTypes.entrySet()) {
             // Identify column name and count the number of columns with error name
@@ -105,7 +106,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
                 case TEXT, UNKNOWN -> "TEXT";
             };
             // Generate final SQL statement
-            definition.append(normalizedColumnName).append(" ").append(columnType).append(",").append(System.lineSeparator());
+            definition.add(normalizedColumnName + " " + columnType);
         }
         return definition.toString();
     }
