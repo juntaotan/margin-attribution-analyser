@@ -1,37 +1,60 @@
 package dev.margintrace.margin_attribution_backend.importation.handler;
 
+import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
+import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
 /**
  * Handles the database-writing stage of the import process
  *
- * <p> This handler reads the detected table structure and column data types from the {@link ImportContext}, generates a
- * PostgreSQL {@code CREATE TABLE} statement, and executes the statement through {@link JdbcTemplate}.</p>
+ * <p> This handler reads the detected table structure and column data types from the {@link ImportContext}, creates the
+ * destination PostgreSQL table, reads the source worksheet, and batch-inserts its data rows through
+ * {@link JdbcTemplate}.</p>
  */
 @Component
 public class DatabaseWriterHandler extends AbstractImportHandler {
     private final JdbcTemplate jdbcTemplate;
+    private final RawFileReader rawFileReader;
 
-    public DatabaseWriterHandler(JdbcTemplate jdbcTemplate) {
+    public DatabaseWriterHandler(JdbcTemplate jdbcTemplate, RawFileReader rawFileReader) {
         this.jdbcTemplate = jdbcTemplate;
+        this.rawFileReader = rawFileReader;
     }
 
     /**
-     * Creates a destination database table based on the structure detected during the import process
+     * Creates a destination table and imports the detected Excel data rows.
      *
      * <p>This method performs the following operations: reading the source sheet name as the destination table name,
-     * building SQL column definitions from the detected column names and data types, generating a complete PostgreSQL
-     * {@code CREATE TABLE} statement and executing the generated SQL statement using {@link JdbcTemplate}.</p>
+     * building SQL column definitions from the detected column names and data types, creating the PostgreSQL table,
+     * converting cell values to the inferred types, and batch-inserting all non-empty rows.</p>
      *
      * @param context  the import context containing the detected table structure and column data types
      */
     @Override
+    @Transactional
     public void doImport(ImportContext context) {
         // Get SQL statement's parameters
         // TODO: change the table name with automatic generation to avoid the risk of injection
@@ -44,13 +67,16 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
                 .replaceAll("[^a-z0-9_]", "_")
                 .replaceAll("_+", "_")
                 .replaceAll("^_+|_+$", "");
-        String columnDefinition = buildColumnStatement(context.getColumnTypes());
+        Map<String, DataType> columnTypes = context.getColumnTypes();
+        List<String> columnNames = buildColumnNames(columnTypes);
+        String columnDefinition = buildColumnStatement(columnTypes, columnNames);
 
         // Generate SQL statement
         String sql = buildCreateTableSql(tableName, columnDefinition);
 
-        // Execute SQL statement and import data into database
+        // Create the destination table, then import all non-empty data rows from the detected Excel table.
         jdbcTemplate.execute(sql);
+        insertRows(context, tableName, columnNames);
     }
 
     /**
@@ -86,15 +112,13 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
      * @return  an SQL fragment containing normalized column names and their corresponding PostgreSQL data types
      */
     String buildColumnStatement(Map<String, DataType> columnTypes) {
-        StringJoiner definition = new StringJoiner("," + System.lineSeparator());
-        int errorColumnNum = 0;
-        for (Map.Entry<String, DataType> entry:columnTypes.entrySet()) {
-            // Identify column name and count the number of columns with error name
-            String normalizedColumnName = normalizeColumnName(entry.getKey(),errorColumnNum);
-            if (normalizedColumnName.contains("unnamed column")) {
-                errorColumnNum += 1;
-            }
+        return buildColumnStatement(columnTypes, buildColumnNames(columnTypes));
+    }
 
+    private String buildColumnStatement(Map<String, DataType> columnTypes, List<String> columnNames) {
+        StringJoiner definition = new StringJoiner("," + System.lineSeparator());
+        int columnIndex = 0;
+        for (Map.Entry<String, DataType> entry:columnTypes.entrySet()) {
             // Identify column type according to columnTypes
             DataType type = entry.getValue();
             String columnType = switch (type) {
@@ -106,9 +130,113 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
                 case TEXT, UNKNOWN -> "TEXT";
             };
             // Generate final SQL statement
-            definition.add(normalizedColumnName + " " + columnType);
+            definition.add(columnNames.get(columnIndex++) + " " + columnType);
         }
         return definition.toString();
+    }
+
+    private List<String> buildColumnNames(Map<String, DataType> columnTypes) {
+        List<String> columnNames = new ArrayList<>(columnTypes.size());
+        int errorColumnNum = 0;
+        for (String originalName : columnTypes.keySet()) {
+            String normalizedColumnName = normalizeColumnName(originalName, errorColumnNum);
+            if (normalizedColumnName.contains("unnamed column")) {
+                errorColumnNum += 1;
+            }
+            columnNames.add(normalizedColumnName);
+        }
+        return columnNames;
+    }
+
+    private void insertRows(ImportContext context, String tableName, List<String> columnNames) {
+        TableStructure tableStructure = context.getTableStructure();
+
+        try (
+                InputStream inputStream = rawFileReader.readFile(context.getObjectKey());
+                Workbook workbook = WorkbookFactory.create(inputStream)
+        ) {
+            Sheet sheet = workbook.getSheet(tableStructure.sheetName());
+            if (sheet == null) {
+                throw new IllegalArgumentException("Worksheet does not exist: " + tableStructure.sheetName());
+            }
+
+            List<Object[]> rows = readRows(sheet, tableStructure, context.getColumnTypes());
+            if (!rows.isEmpty()) {
+                jdbcTemplate.batchUpdate(buildInsertSql(tableName, columnNames), rows);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Excel data insertion failed for object: " + context.getObjectKey(), e);
+        }
+    }
+
+    private List<Object[]> readRows(
+            Sheet sheet,
+            TableStructure tableStructure,
+            Map<String, DataType> columnTypes
+    ) {
+        List<Object[]> rows = new ArrayList<>();
+        List<DataType> types = new ArrayList<>(columnTypes.values());
+        DataFormatter formatter = new DataFormatter();
+        FormulaEvaluator evaluator = sheet.getWorkbook().getCreationHelper().createFormulaEvaluator();
+
+        for (int rowIndex = tableStructure.headerRowIndex() + 1;
+             rowIndex <= tableStructure.lastRowIndex();
+             rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            Object[] values = new Object[types.size()];
+            boolean hasValue = false;
+
+            for (int offset = 0; offset < types.size(); offset++) {
+                int columnIndex = tableStructure.leftColumnIndex() + offset;
+                Cell cell = row == null
+                        ? null
+                        : row.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                values[offset] = convertCellValue(cell, types.get(offset), formatter, evaluator);
+                hasValue |= values[offset] != null;
+            }
+
+            if (hasValue) {
+                rows.add(values);
+            }
+        }
+        return rows;
+    }
+
+    private Object convertCellValue(
+            Cell cell,
+            DataType targetType,
+            DataFormatter formatter,
+            FormulaEvaluator evaluator
+    ) {
+        if (cell == null || cell.getCellType() == CellType.BLANK) {
+            return null;
+        }
+
+        return switch (targetType) {
+            case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
+            case BOOLEAN -> cell.getBooleanCellValue();
+            case DATE -> excelDateTime(cell).toLocalDate();
+            case TIME -> excelDateTime(cell).toLocalTime();
+            case TIMESTAMP -> excelDateTime(cell);
+            case TEXT, UNKNOWN -> formatter.formatCellValue(cell, evaluator);
+        };
+    }
+
+    private LocalDateTime excelDateTime(Cell cell) {
+        if (!DateUtil.isCellDateFormatted(cell)) {
+            throw new IllegalArgumentException("Cell " + cell.getAddress() + " is not formatted as a date or time");
+        }
+        return DateUtil.getLocalDateTime(cell.getNumericCellValue());
+    }
+
+    private String buildInsertSql(String tableName, List<String> columnNames) {
+        StringJoiner columns = new StringJoiner(",");
+        StringJoiner placeholders = new StringJoiner(",");
+        columnNames.forEach(columnName -> {
+            columns.add(columnName);
+            placeholders.add("?");
+        });
+        return "INSERT INTO " + tableName + "(" + columns + ") VALUES (" + placeholders + ")";
     }
 
     /**
