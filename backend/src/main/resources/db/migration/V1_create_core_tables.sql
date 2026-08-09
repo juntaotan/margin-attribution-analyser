@@ -263,3 +263,32 @@ ALTER TABLE material_consumption
 
 CREATE INDEX idx_material_consumption_material_no
     ON material_consumption (material_no);
+
+
+-- A purchase line represents one material on one purchase order. The existing
+-- product columns retain their physical names for compatibility with the core schema.
+ALTER TABLE purchases
+    ADD CONSTRAINT ck_purchase_material_quantity
+        CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID,
+    ADD CONSTRAINT ck_purchase_material_total_cost
+        CHECK (product_total_price IS NOT NULL AND product_total_price >= 0) NOT VALID;
+
+CREATE INDEX idx_purchases_material_no
+    ON purchases (product_no);
+
+
+-- An accounts-payable line represents one purchased material from one purchase
+-- order on one payable document. Product columns retain their core-schema names.
+ALTER TABLE account_payables
+    ADD CONSTRAINT uk_account_payable_purchase_material
+        UNIQUE (account_payable_no, purchase_order_no, product_no),
+    ADD CONSTRAINT ck_account_payable_material_quantity
+        CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID,
+    ADD CONSTRAINT ck_account_payable_material_total_cost
+        CHECK (product_total_price IS NOT NULL AND product_total_price >= 0) NOT VALID;
+
+CREATE INDEX idx_account_payables_material_no
+    ON account_payables (product_no);
+
+CREATE INDEX idx_account_payables_purchase_order_no
+    ON account_payables (purchase_order_no);
