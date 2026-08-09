@@ -83,6 +83,29 @@ services:
       - -ec
       - pgbackrest stanza-create && pgbackrest check
 
+  pgbackrest-scheduler:
+    image: margin-postgres:17-pgbackrest
+    restart: unless-stopped
+
+    environment:
+      <<: *pgbackrest-environment
+      BACKUP_SCHEDULE_TIME_ZONE: ${BACKUP_SCHEDULE_TIME_ZONE:-Pacific/Auckland}
+      BACKUP_FULL_DAY_OF_WEEK: ${BACKUP_FULL_DAY_OF_WEEK:-7}
+      BACKUP_FULL_TIME: ${BACKUP_FULL_TIME:-02:00}
+      BACKUP_DIFF_TIME: ${BACKUP_DIFF_TIME:-02:00}
+
+    depends_on:
+      pgbackrest-init:
+        condition: service_completed_successfully
+
+    volumes:
+      - margin_postgres_data:/var/lib/postgresql/data
+      - margin_postgres_socket:/var/run/postgresql
+      - margin_pgbackrest_schedule:/var/lib/pgbackrest-scheduler
+
+    command:
+      - pgbackrest-scheduler
+
   minio:
     image: quay.io/minio/minio:latest
     container_name: margin-minio
@@ -103,4 +126,5 @@ services:
 volumes:
   margin_postgres_data:
   margin_postgres_socket:
+  margin_pgbackrest_schedule:
   margin_minio_data:
