@@ -59,67 +59,60 @@ public class SchemaMappingPresetCatalog {
 
     private static DataSetDefinition sales() {
         return dataSet(DataSetType.SALES, "sales", Set.of("销售", "销售明细", "销售订单"),
-                requiredText("saleOrderNo", "sale_order_no", "sale order no", "sales order no", "order no",
-                        "销售单号", "销售订单号", "订单号"),
-                requiredText("productNo", "product_no", "product no", "item no", "sku",
-                        "产品编号", "商品编号", "物料编号"),
-                numeric("productNum", "product_num", "product quantity", "quantity", "qty",
-                        "产品数量", "商品数量", "销售数量"),
-                numeric("productUnitPrice", "product_unit_price", "unit price", "sales unit price",
-                        "销售单价", "产品单价", "商品单价"),
-                numeric("productTotalPrice", "product_total_price", "total price", "sales amount", "amount",
-                        "销售总价", "销售金额", "总价", "金额"),
-                text("movementNo", "movement_no", "movement no", "inventory movement no",
-                        "库存移动号", "库存流水号", "出库单号"));
+                requiredText("salesOrderNo", "sale_order_no", "saleOrderNo", "sale order no", "sales order no", "order no",
+                        "sales order number", "so no", "销售单号", "销售订单号", "销售订单编号", "订单号"),
+                requiredText("productNo", "product_no", "product no", "product number", "item no", "item code",
+                        "sku", "产品编号", "产品编码", "商品编号", "商品编码", "物料编号"),
+                requiredNumeric("productQuantity", "product_num", "productNum", "product quantity", "quantity",
+                        "qty", "sales quantity", "units sold", "产品数量", "商品数量", "销售数量"),
+                requiredNumeric("lineTotalSalesAmount", "product_total_price", "productTotalPrice",
+                        "line total sales amount", "line sales amount", "total price", "sales amount", "amount",
+                        "行销售金额", "销售总价", "销售金额", "含税金额", "总价", "金额"));
     }
 
     private static DataSetDefinition accountReceivables() {
         return dataSet(DataSetType.ACCOUNT_RECEIVABLE, "account_receivables",
                 Set.of("应收", "应收账款", "应收明细"),
                 requiredText("accountReceivableNo", "account_receivable_no", "account receivable no", "ar no",
-                        "应收单号", "应收账款编号"),
-                requiredText("productNo", "product_no", "product no", "item no", "sku",
-                        "产品编号", "商品编号", "物料编号"),
-                numeric("productNum", "product_num", "product quantity", "quantity", "qty",
-                        "产品数量", "商品数量"),
-                numeric("productUnitPrice", "product_unit_price", "unit price", "sales unit price",
-                        "产品单价", "商品单价", "销售单价"),
-                numeric("productTotalPrice", "product_total_price", "total price", "receivable amount", "amount",
-                        "应收金额", "销售金额", "总价", "金额"),
-                requiredText("saleOrderNo", "sale_order_no", "sale order no", "sales order no",
-                        "销售单号", "销售订单号"));
+                        "account receivable number", "receivable no", "invoice no", "应收单号", "应收账款编号", "应收编号"),
+                requiredText("productNo", "product_no", "product no", "product number", "item no", "item code",
+                        "sku", "产品编号", "产品编码", "商品编号", "商品编码"),
+                requiredNumeric("productQuantity", "product_num", "productNum", "product quantity", "quantity",
+                        "qty", "billed quantity", "产品数量", "商品数量", "开票数量"),
+                requiredNumeric("lineTotalSalesAmount", "product_total_price", "productTotalPrice",
+                        "line total sales amount", "line sales amount", "total price", "receivable amount",
+                        "invoice amount", "amount", "行销售金额", "应收金额", "销售金额", "开票金额", "总价", "金额"),
+                requiredText("salesOrderNo", "sale_order_no", "saleOrderNo", "sale order no", "sales order no",
+                        "sales order number", "so no", "销售单号", "销售订单号", "销售订单编号"));
     }
 
     private static DataSetDefinition purchases() {
         return dataSet(DataSetType.PURCHASE, "purchases", Set.of("采购", "采购明细", "采购订单"),
                 requiredText("purchaseOrderNo", "purchase_order_no", "purchase order no", "po no", "order no",
-                        "采购单号", "采购订单号", "订单号"),
-                requiredText("productNo", "product_no", "product no", "item no", "sku", "material no",
-                        "产品编号", "商品编号", "物料编号"),
-                numeric("productNum", "product_num", "product quantity", "quantity", "qty", "purchase quantity",
-                        "产品数量", "采购数量"),
-                numeric("productUnitPrice", "product_unit_price", "unit price", "purchase unit price",
-                        "采购单价", "产品单价"),
-                numeric("productTotalPrice", "product_total_price", "total price", "purchase amount", "amount",
-                        "采购总价", "采购金额", "总价", "金额"),
-                text("movementNo", "movement_no", "movement no", "inventory movement no",
-                        "库存移动号", "库存流水号", "入库单号"));
+                        "purchase order number", "采购单号", "采购订单号", "采购订单编号", "订单号"),
+                requiredText("materialNo", "product_no", "productNo", "material no", "material number",
+                        "material code", "product no", "item no", "item code", "sku", "物料编号", "物料编码", "材料编号", "产品编号"),
+                requiredNumeric("materialQuantity", "product_num", "productNum", "material quantity",
+                        "product quantity", "purchase quantity", "quantity", "qty", "物料数量", "材料数量", "采购数量"),
+                requiredNumeric("lineTotalCost", "product_total_price", "productTotalPrice", "line total cost",
+                        "total cost", "total price", "purchase amount", "amount", "行总成本", "采购总成本", "采购总价", "采购金额", "总价", "金额"));
     }
 
     private static DataSetDefinition accountPayables() {
         return dataSet(DataSetType.ACCOUNT_PAYABLE, "account_payables", Set.of("应付", "应付账款", "应付明细"),
                 requiredText("accountPayableNo", "account_payable_no", "account payable no", "ap no",
-                        "应付单号", "应付账款编号"),
-                requiredText("productNo", "product_no", "product no", "item no", "sku", "material no",
-                        "产品编号", "商品编号", "物料编号"),
-                numeric("productNum", "product_num", "product quantity", "quantity", "qty",
-                        "产品数量", "采购数量"),
-                numeric("productUnitPrice", "product_unit_price", "unit price", "purchase unit price",
-                        "采购单价", "产品单价"),
-                numeric("productTotalPrice", "product_total_price", "total price", "payable amount", "amount",
-                        "应付金额", "采购金额", "总价", "金额"),
+                        "account payable number", "payable no", "vendor invoice no", "invoice no",
+                        "应付单号", "应付账款编号", "应付编号", "供应商发票号", "发票号"),
+                requiredText("materialNo", "product_no", "productNo", "material no", "material number",
+                        "material code", "product no", "item no", "item code", "sku", "物料编号", "物料编码", "材料编号", "产品编号", "商品编号"),
+                requiredNumeric("materialQuantity", "product_num", "productNum", "material quantity",
+                        "product quantity", "billed quantity", "purchase quantity", "quantity", "qty",
+                        "物料数量", "材料数量", "产品数量", "采购数量", "开票数量"),
+                requiredNumeric("lineTotalCost", "product_total_price", "productTotalPrice", "line total cost",
+                        "total cost", "total price", "payable amount", "invoice amount", "amount",
+                        "行总成本", "应付金额", "采购金额", "开票金额", "总价", "金额"),
                 requiredText("purchaseOrderNo", "purchase_order_no", "purchase order no", "po no",
-                        "采购单号", "采购订单号"));
+                        "purchase order number", "采购单号", "采购订单号", "采购订单编号"));
     }
 
     private static DataSetDefinition inventoryMovement() {
@@ -142,48 +135,43 @@ public class SchemaMappingPresetCatalog {
     private static DataSetDefinition production() {
         return dataSet(DataSetType.PRODUCTION, "production", Set.of("生产", "生产明细", "生产订单"),
                 requiredText("productionOrderNo", "production_order_no", "production order no", "work order no",
-                        "生产单号", "生产订单号", "工单号"),
-                requiredText("productNo", "product_no", "product no", "item no", "sku",
-                        "产品编号", "成品编号"),
-                numeric("productNum", "product_num", "product quantity", "quantity", "qty", "production quantity",
-                        "产品数量", "生产数量"),
-                numeric("productUnitCost", "product_unit_cost", "unit cost", "product unit cost",
-                        "产品单位成本", "单位成本"),
-                numeric("productTotalCost", "product_total_cost", "total cost", "product total cost",
-                        "产品总成本", "总成本"),
-                requiredText("productDepartment", "product_department", "production department", "department",
-                        "生产部门", "部门"));
+                        "production order number", "manufacturing order no", "mo no", "生产单号", "生产订单号", "生产订单编号", "工单号"),
+                requiredText("productNo", "product_no", "product no", "product number", "item no", "item code",
+                        "sku", "finished product no", "finished goods no", "产品编号", "产品编码", "成品编号", "成品编码"),
+                requiredNumeric("completedQuantity", "product_num", "productNum", "completed quantity",
+                        "output quantity", "production quantity", "product quantity", "quantity", "qty",
+                        "完工数量", "产出数量", "生产数量", "产品数量"),
+                requiredText("department", "product_department", "productDepartment", "production department",
+                        "manufacturing department", "department", "department name", "生产部门", "制造部门", "部门", "部门名称"),
+                requiredText("bomNo", "bom_no", "bom no", "bom number", "bill of material no",
+                        "bill of materials no", "recipe no", "bom编号", "BOM编号", "物料清单编号", "配方编号"));
     }
 
     private static DataSetDefinition billOfMaterial() {
         return dataSet(DataSetType.BOM, "bill_of_material", Set.of("bom", "物料清单", "产品配方"),
-                requiredText("bomNo", "bom_no", "bom no", "bill of material no",
-                        "bom编号", "物料清单编号", "配方编号"),
-                requiredText("productNo", "product_no", "product no", "finished product no",
-                        "产品编号", "成品编号"),
-                requiredText("materialNo", "material_no", "material no", "component no", "ingredient no",
-                        "物料编号", "材料编号", "组件编号"),
-                requiredNumeric("materialUsage", "material_usage", "material usage", "usage", "quantity per",
-                        "物料用量", "材料用量", "单位用量"));
+                requiredText("bomNo", "bom_no", "bom no", "bom number", "bill of material no",
+                        "bill of materials no", "recipe no", "bom编号", "BOM编号", "物料清单编号", "配方编号"),
+                requiredText("productNo", "product_no", "product no", "product number", "finished product no",
+                        "finished goods no", "parent item no", "产品编号", "产品编码", "成品编号", "成品编码", "父项编号"),
+                requiredText("materialNo", "material_no", "material no", "material number", "material code",
+                        "component no", "component code", "ingredient no", "child item no", "物料编号", "物料编码", "材料编号", "组件编号", "子项编号"),
+                requiredNumeric("materialUsage", "material_usage", "material usage", "component usage",
+                        "usage", "quantity per", "quantity per unit", "usage quantity", "物料用量", "材料用量", "组件用量", "单位用量", "单耗"));
     }
 
     private static DataSetDefinition materialConsumption() {
         return dataSet(DataSetType.MATERIAL_CONSUMPTION, "material_consumption",
                 Set.of("物料消耗", "材料消耗", "生产领料"),
-                requiredText("productionOrderNo", "production_order_no", "production order no", "work order no",
-                        "生产单号", "生产订单号", "工单号"),
-                requiredText("productNo", "product_no", "product no", "finished product no",
-                        "产品编号", "成品编号"),
-                requiredText("materialNo", "material_no", "material no", "component no",
-                        "物料编号", "材料编号"),
-                numeric("materialNum", "material_num", "material quantity", "consumption quantity", "quantity",
-                        "物料数量", "材料数量", "消耗数量"),
-                numeric("materialUnitCost", "material_unit_cost", "material unit cost", "unit cost",
-                        "物料单位成本", "材料单位成本", "单位成本"),
-                numeric("materialTotalCost", "material_total_cost", "material total cost", "total cost",
-                        "物料总成本", "材料总成本", "总成本"),
-                requiredText("movementNo", "movement_no", "movement no", "inventory movement no",
-                        "库存移动号", "库存流水号", "领料单号"));
+                requiredText("materialConsumptionNo", "material_consumption_no", "material consumption no",
+                        "material issue no", "issue no", "picking no", "物料消耗单号", "材料消耗单号", "领料单号", "出库单号"),
+                requiredText("materialNo", "material_no", "material no", "material number", "material code",
+                        "component no", "component code", "item no", "物料编号", "物料编码", "材料编号", "组件编号"),
+                requiredNumeric("issuedQuantity", "material_num", "materialNum", "issued quantity",
+                        "issue quantity", "material quantity", "consumption quantity", "quantity", "qty",
+                        "发料数量", "领料数量", "物料数量", "材料数量", "消耗数量"),
+                requiredNumeric("issuedTotalCost", "material_total_cost", "materialTotalCost",
+                        "issued total cost", "issue total cost", "material total cost", "consumption cost",
+                        "total cost", "发料总成本", "领料总成本", "物料总成本", "材料总成本", "消耗成本", "总成本"));
     }
 
     private static DataSetDefinition dataSet(
