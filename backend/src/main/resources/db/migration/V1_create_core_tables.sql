@@ -292,3 +292,32 @@ CREATE INDEX idx_account_payables_material_no
 
 CREATE INDEX idx_account_payables_purchase_order_no
     ON account_payables (purchase_order_no);
+
+
+-- A sales line represents one product on one sales order. The total price is
+-- the sales amount for this product line, rather than the whole order.
+ALTER TABLE sales
+    ADD CONSTRAINT ck_sales_product_quantity
+        CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID,
+    ADD CONSTRAINT ck_sales_product_total_amount
+        CHECK (product_total_price IS NOT NULL AND product_total_price >= 0) NOT VALID;
+
+CREATE INDEX idx_sales_product_no
+    ON sales (product_no);
+
+
+-- An accounts-receivable line represents one sold product from one sales order
+-- on one receivable document. Its total price is the sales amount for this line.
+ALTER TABLE account_receivables
+    ADD CONSTRAINT uk_account_receivable_sale_product
+        UNIQUE (account_receivable_no, sale_order_no, product_no),
+    ADD CONSTRAINT ck_account_receivable_product_quantity
+        CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID,
+    ADD CONSTRAINT ck_account_receivable_product_total_amount
+        CHECK (product_total_price IS NOT NULL AND product_total_price >= 0) NOT VALID;
+
+CREATE INDEX idx_account_receivables_product_no
+    ON account_receivables (product_no);
+
+CREATE INDEX idx_account_receivables_sale_order_no
+    ON account_receivables (sale_order_no);
