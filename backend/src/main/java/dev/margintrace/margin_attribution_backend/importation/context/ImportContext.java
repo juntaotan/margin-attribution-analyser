@@ -3,6 +3,8 @@ package dev.margintrace.margin_attribution_backend.importation.context;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.FileExtension;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
+import dev.margintrace.margin_attribution_backend.importation.mapping.model.DataSetDefinition;
+import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,4 +20,6 @@ public class ImportContext {
     String objectKey;
     TableStructure tableStructure;
     Map<String, DataType> columnTypes;
+    DataSetDefinition dataSetDefinition;
+    Map<String, TargetFieldDefinition> columnMappings;
 }

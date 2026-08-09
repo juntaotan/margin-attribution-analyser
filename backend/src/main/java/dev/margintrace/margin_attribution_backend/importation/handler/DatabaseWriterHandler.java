@@ -2,6 +2,7 @@ package dev.margintrace.margin_attribution_backend.importation.handler;
 
 import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
+import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
 import org.apache.poi.ss.usermodel.Cell;
@@ -24,15 +25,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.StringJoiner;
 
 /**
  * Handles the database-writing stage of the import process
  *
- * <p> This handler reads the detected table structure and column data types from the {@link ImportContext}, creates the
- * destination PostgreSQL table, reads the source worksheet, and batch-inserts its data rows through
- * {@link JdbcTemplate}.</p>
+ * <p>This handler reads the schema mapping produced for the imported worksheet and batch-inserts mapped values into
+ * an existing canonical warehouse table through {@link JdbcTemplate}. Unmapped source columns are ignored.</p>
  */
 @Component
 public class DatabaseWriterHandler extends AbstractImportHandler {
@@ -45,110 +44,39 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
     }
 
     /**
-     * Creates a destination table and imports the detected Excel data rows.
-     *
-     * <p>This method performs the following operations: reading the source sheet name as the destination table name,
-     * building SQL column definitions from the detected column names and data types, creating the PostgreSQL table,
-     * converting cell values to the inferred types, and batch-inserting all non-empty rows.</p>
+     * Imports the detected Excel rows into the existing mapped warehouse table.
      *
      * @param context  the import context containing the detected table structure and column data types
      */
     @Override
     @Transactional
     public void doImport(ImportContext context) {
-        // Get SQL statement's parameters
-        // TODO: change the table name with automatic generation to avoid the risk of injection
-        String tableName = context
-                .getTableStructure()
-                .sheetName()
-                .trim()
-                .toLowerCase()
-                .replaceAll("\\s+", "_")
-                .replaceAll("[^a-z0-9_]", "_")
-                .replaceAll("_+", "_")
-                .replaceAll("^_+|_+$", "");
-        Map<String, DataType> columnTypes = context.getColumnTypes();
-        List<String> columnNames = buildColumnNames(columnTypes);
-        String columnDefinition = buildColumnStatement(columnTypes, columnNames);
-
-        // Generate SQL statement
-        String sql = buildCreateTableSql(tableName, columnDefinition);
-
-        // Create the destination table, then import all non-empty data rows from the detected Excel table.
-        jdbcTemplate.execute(sql);
-        insertRows(context, tableName, columnNames);
-    }
-
-    /**
-     * Builds a complete SQL {@code CREATE TABLE} statement.、
-     *
-     * <p>The generated table contains an auto-incrementing {@code BIGINT} primary key named {@code id}, followed by the
-     * supplied column definitions.</p>
-     *
-     * @param tableName  the name of the table to be created
-     * @param definition  the SQL fragment containing the column definitions
-     * @return  a complete SQL {@code CREATE TABLE} statement
-     */
-    String buildCreateTableSql(String tableName, String definition){
-        return "CREATE TABLE " + tableName + "("
-                + "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
-                + definition
-                + ")";
-    }
-
-    /**
-     * Builds the SQL column-definition fragment from the detected column names and data types.
-     *
-     * <p> Each map entry represents one database column: </p>
-     * <ul>
-     *     <li>The key is the original column name.</li>
-     *     <li>The value is the detected {@link DataType}.</li>
-     * </ul>
-     *
-     * <p> Column names should be normalized before being added to the SQL statement. Invalid or empty column names are
-     * replaced with generated names. Each {@link DataType} is converted to its corresponding PostgreSQL data type.</p>
-     *
-     * @param columnTypes  a map containing original column names and their detected data types
-     * @return  an SQL fragment containing normalized column names and their corresponding PostgreSQL data types
-     */
-    String buildColumnStatement(Map<String, DataType> columnTypes) {
-        return buildColumnStatement(columnTypes, buildColumnNames(columnTypes));
-    }
-
-    private String buildColumnStatement(Map<String, DataType> columnTypes, List<String> columnNames) {
-        StringJoiner definition = new StringJoiner("," + System.lineSeparator());
-        int columnIndex = 0;
-        for (Map.Entry<String, DataType> entry:columnTypes.entrySet()) {
-            // Identify column type according to columnTypes
-            DataType type = entry.getValue();
-            String columnType = switch (type) {
-                case NUMERIC -> "NUMERIC(20,5)";
-                case BOOLEAN -> "BOOLEAN";
-                case DATE -> "DATE";
-                case TIME -> "TIME";
-                case TIMESTAMP -> "TIMESTAMP";
-                case TEXT, UNKNOWN -> "TEXT";
-            };
-            // Generate final SQL statement
-            definition.add(columnNames.get(columnIndex++) + " " + columnType);
+        if (context == null || context.getDataSetDefinition() == null) {
+            throw new IllegalArgumentException("Warehouse data-set mapping is required before database writing");
         }
-        return definition.toString();
+        if (context.getColumnMappings() == null || context.getColumnMappings().isEmpty()) {
+            throw new IllegalArgumentException("Warehouse column mappings are required before database writing");
+        }
+
+        String tableName = context.getDataSetDefinition().tableName();
+        List<MappedColumn> mappedColumns = buildMappedColumns(context);
+        insertRows(context, tableName, mappedColumns);
     }
 
-    private List<String> buildColumnNames(Map<String, DataType> columnTypes) {
-        List<String> columnNames = new ArrayList<>(columnTypes.size());
-        int errorColumnNum = 0;
-        for (String originalName : columnTypes.keySet()) {
-            String normalizedColumnName = normalizeColumnName(originalName, errorColumnNum);
-            if (normalizedColumnName.contains("unnamed column")) {
-                errorColumnNum += 1;
+    private List<MappedColumn> buildMappedColumns(ImportContext context) {
+        List<MappedColumn> mappedColumns = new ArrayList<>();
+        int sourceOffset = 0;
+        for (String sourceColumn : context.getColumnTypes().keySet()) {
+            TargetFieldDefinition targetField = context.getColumnMappings().get(sourceColumn);
+            if (targetField != null) {
+                mappedColumns.add(new MappedColumn(sourceOffset, targetField));
             }
-            columnNames.add(normalizedColumnName);
+            sourceOffset++;
         }
-        return columnNames;
+        return mappedColumns;
     }
 
-    private void insertRows(ImportContext context, String tableName, List<String> columnNames) {
+    private void insertRows(ImportContext context, String tableName, List<MappedColumn> mappedColumns) {
         TableStructure tableStructure = context.getTableStructure();
 
         try (
@@ -160,9 +88,12 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
                 throw new IllegalArgumentException("Worksheet does not exist: " + tableStructure.sheetName());
             }
 
-            List<Object[]> rows = readRows(sheet, tableStructure, context.getColumnTypes());
+            List<Object[]> rows = readRows(sheet, tableStructure, mappedColumns);
             if (!rows.isEmpty()) {
-                jdbcTemplate.batchUpdate(buildInsertSql(tableName, columnNames), rows);
+                List<String> targetColumns = mappedColumns.stream()
+                        .map(mappedColumn -> mappedColumn.targetField().columnName())
+                        .toList();
+                jdbcTemplate.batchUpdate(buildInsertSql(tableName, targetColumns), rows);
             }
         } catch (Exception e) {
             throw new RuntimeException("Excel data insertion failed for object: " + context.getObjectKey(), e);
@@ -172,10 +103,9 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
     private List<Object[]> readRows(
             Sheet sheet,
             TableStructure tableStructure,
-            Map<String, DataType> columnTypes
+            List<MappedColumn> mappedColumns
     ) {
         List<Object[]> rows = new ArrayList<>();
-        List<DataType> types = new ArrayList<>(columnTypes.values());
         DataFormatter formatter = new DataFormatter();
         FormulaEvaluator evaluator = sheet.getWorkbook().getCreationHelper().createFormulaEvaluator();
 
@@ -183,19 +113,36 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
              rowIndex <= tableStructure.lastRowIndex();
              rowIndex++) {
             Row row = sheet.getRow(rowIndex);
-            Object[] values = new Object[types.size()];
+            Object[] values = new Object[mappedColumns.size()];
             boolean hasValue = false;
+            List<String> missingRequiredFields = new ArrayList<>();
 
-            for (int offset = 0; offset < types.size(); offset++) {
-                int columnIndex = tableStructure.leftColumnIndex() + offset;
+            for (int targetIndex = 0; targetIndex < mappedColumns.size(); targetIndex++) {
+                MappedColumn mappedColumn = mappedColumns.get(targetIndex);
+                int columnIndex = tableStructure.leftColumnIndex() + mappedColumn.sourceOffset();
                 Cell cell = row == null
                         ? null
                         : row.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-                values[offset] = convertCellValue(cell, types.get(offset), formatter, evaluator);
-                hasValue |= values[offset] != null;
+                Object value = convertCellValue(
+                        cell,
+                        mappedColumn.targetField().dataType(),
+                        formatter,
+                        evaluator
+                );
+                if (value == null && mappedColumn.targetField().required()) {
+                    missingRequiredFields.add(mappedColumn.targetField().fieldKey());
+                }
+                values[targetIndex] = value;
+                hasValue |= value != null;
             }
 
             if (hasValue) {
+                if (!missingRequiredFields.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Required values are blank at worksheet row " + (rowIndex + 1) + ": "
+                                    + String.join(", ", missingRequiredFields)
+                    );
+                }
                 rows.add(values);
             }
         }
@@ -213,8 +160,8 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
         }
 
         return switch (targetType) {
-            case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
-            case BOOLEAN -> cell.getBooleanCellValue();
+            case NUMERIC -> numericValue(cell, formatter, evaluator);
+            case BOOLEAN -> booleanValue(cell, formatter, evaluator);
             case DATE -> excelDateTime(cell).toLocalDate();
             case TIME -> excelDateTime(cell).toLocalTime();
             case TIMESTAMP -> excelDateTime(cell);
@@ -229,6 +176,37 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
         return DateUtil.getLocalDateTime(cell.getNumericCellValue());
     }
 
+    private BigDecimal numericValue(Cell cell, DataFormatter formatter, FormulaEvaluator evaluator) {
+        if (cell.getCellType() == CellType.NUMERIC) {
+            return BigDecimal.valueOf(cell.getNumericCellValue());
+        }
+        String value = formatter.formatCellValue(cell, evaluator).trim().replace(",", "");
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "Cell " + cell.getAddress() + " cannot be converted to a numeric value: " + value,
+                    exception
+            );
+        }
+    }
+
+    private Boolean booleanValue(Cell cell, DataFormatter formatter, FormulaEvaluator evaluator) {
+        if (cell.getCellType() == CellType.BOOLEAN) {
+            return cell.getBooleanCellValue();
+        }
+        String value = formatter.formatCellValue(cell, evaluator).trim();
+        if (value.equalsIgnoreCase("true") || value.equals("1") || value.equals("是")) {
+            return true;
+        }
+        if (value.equalsIgnoreCase("false") || value.equals("0") || value.equals("否")) {
+            return false;
+        }
+        throw new IllegalArgumentException(
+                "Cell " + cell.getAddress() + " cannot be converted to a boolean value: " + value
+        );
+    }
+
     private String buildInsertSql(String tableName, List<String> columnNames) {
         StringJoiner columns = new StringJoiner(",");
         StringJoiner placeholders = new StringJoiner(",");
@@ -239,43 +217,6 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
         return "INSERT INTO " + tableName + "(" + columns + ") VALUES (" + placeholders + ")";
     }
 
-    /**
-     * Normalizes an original column name so that it can be used as a database column identifier
-     *
-     * <p>The normalization process includes: removing leading and trailing whitespace, converting all letters to
-     * lowercase, replacing whitespace characters and unsupported characters with underscores and removing leading and
-     * trailing underscores.</p>
-     *
-     * <p> Specially, adding the prefix {@code col_} when the name starts with a digit.</p>
-     *
-     * @param originalName  the original column name read from the source file
-     * @param errorColumnNum  the sequence number used to distinguish invalid or unnamed columns
-     * @return  the normalized database column name
-     */
-    private String normalizeColumnName(String originalName, int errorColumnNum) {
-        StringBuilder normalizedName = new StringBuilder();
-        if (originalName == null || originalName.isBlank()) {
-            return "unnamed column";
-        }
-        String normalized = originalName
-                .trim()
-                .toLowerCase()
-                .replaceAll("\\s+", "_")
-                .replaceAll("[^a-z0-9_]", "_")
-                .replaceAll("_+", "_")
-                .replaceAll("^_+|_+$", "");
-
-        // If normalised name has empty that all contents are special characteristics, return error column name
-        if (normalized.isBlank()) {
-            normalized = "unnamed_column";
-        }
-
-        if (Character.isDigit(normalized.charAt(0))) {
-            normalized = "col_" + normalized;
-        }
-
-        normalizedName.append(normalized).append("_").append(errorColumnNum);
-
-        return normalizedName.toString();
+    private record MappedColumn(int sourceOffset, TargetFieldDefinition targetField) {
     }
 }

@@ -48,6 +48,29 @@ public class SchemaMappingPresetCatalog {
         return definition;
     }
 
+    public DataSetDefinition getRequiredByTableName(String tableName) {
+        if (tableName == null || tableName.isBlank()) {
+            throw new IllegalArgumentException("Table name must not be blank");
+        }
+
+        String normalizedTableName = normalizeTableName(tableName);
+        return definitions.values().stream()
+                .filter(definition -> definition.tableName().equals(normalizedTableName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No schema-mapping preset is defined for table: " + tableName
+                ));
+    }
+
+    private static String normalizeTableName(String tableName) {
+        return tableName.trim()
+                .toLowerCase()
+                .replaceAll("\\s+", "_")
+                .replaceAll("[^a-z0-9_]", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_+|_+$", "");
+    }
+
     private static void register(
             Map<DataSetType, DataSetDefinition> definitions,
             DataSetDefinition definition

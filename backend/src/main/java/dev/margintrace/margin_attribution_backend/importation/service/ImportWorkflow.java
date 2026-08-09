@@ -7,6 +7,7 @@ import dev.margintrace.margin_attribution_backend.importation.context.ImportCont
 import dev.margintrace.margin_attribution_backend.importation.handler.ColumnTypeInferHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.DatabaseWriterHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
+import dev.margintrace.margin_attribution_backend.importation.handler.SchemaMappingHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.TableBoundaryDetectHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,6 +53,7 @@ public class ImportWorkflow {
     private final FileValidationHandler fileValidationHandler;
     private final TableBoundaryDetectHandler tableBoundaryDetectHandler;
     private final ColumnTypeInferHandler columnTypeInferHandler;
+    private final SchemaMappingHandler schemaMappingHandler;
     private final DatabaseWriterHandler databaseWriterHandler;
     private final ImportJobStateService stateService;
     private final RawFileStorage rawFileStorage;
@@ -109,6 +111,9 @@ public class ImportWorkflow {
 
             // Infer the data type of every column inside the detected table.
             columnTypeInferHandler.doImport(context);
+
+            // Resolve source headers to the canonical warehouse table columns.
+            schemaMappingHandler.doImport(context);
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(
