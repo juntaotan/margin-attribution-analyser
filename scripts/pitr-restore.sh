@@ -21,7 +21,8 @@ PITR_TARGET_TIME=$target_time docker compose --profile pitr run --rm pgbackrest-
 docker compose --profile pitr up --detach --no-deps postgres-pitr
 
 attempt=0
-until docker compose exec --no-TTY --user postgres postgres-pitr pg_isready -U postgres -d postgres >/dev/null 2>&1; do
+until docker compose exec --no-TTY --user postgres postgres-pitr \
+    sh -ec 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"' >/dev/null 2>&1; do
     attempt=$((attempt + 1))
 
     if [ "$attempt" -ge 30 ]; then
@@ -34,8 +35,8 @@ until docker compose exec --no-TTY --user postgres postgres-pitr pg_isready -U p
 done
 
 docker compose exec --no-TTY --user postgres postgres-pitr \
-    psql -U postgres -d postgres -c \
-    "select pg_is_in_recovery() as in_recovery, pg_last_xact_replay_timestamp() as last_replayed_transaction;"
+    sh -ec 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+        "select pg_is_in_recovery() as in_recovery, pg_last_xact_replay_timestamp() as last_replayed_transaction;"'
 
 echo "PITR validation instance is available on 127.0.0.1:${PITR_PORT:-5433}"
 

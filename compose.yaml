@@ -1,6 +1,7 @@
 x-pgbackrest-environment: &pgbackrest-environment
   PGBACKREST_STANZA: ${BACKUP_STANZA:-margin-prod}
   PGBACKREST_PG1_PATH: /var/lib/postgresql/data
+  PGBACKREST_PG1_USER: ${DB_USERNAME}
   PGBACKREST_REPO1_TYPE: s3
   PGBACKREST_REPO1_PATH: ${BACKUP_S3_REPOSITORY_PATH:-/production/margin-attribution}
   PGBACKREST_REPO1_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
@@ -133,6 +134,8 @@ services:
 
     environment:
       <<: *pgbackrest-environment
+      POSTGRES_DB: margin_attribution
+      POSTGRES_USER: ${DB_USERNAME}
       PGDATA: /var/lib/postgresql/restore
       PGBACKREST_PG1_PATH: /var/lib/postgresql/restore
 
@@ -144,7 +147,7 @@ services:
 
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+        ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 2s
       timeout: 5s
       retries: 30
