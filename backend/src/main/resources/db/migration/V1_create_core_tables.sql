@@ -219,3 +219,47 @@ CREATE TABLE material_consumption
                                    product_no
                 )
 );
+
+
+-- =========================================================
+-- Warehouse extensions
+-- =========================================================
+
+-- A production result must identify the BOM version used to make the product.
+-- NOT VALID preserves any legacy rows loaded before BOM attribution was available,
+-- while PostgreSQL still enforces the checks for all new or updated rows.
+ALTER TABLE production
+    ADD COLUMN bom_no VARCHAR(100),
+    DROP COLUMN product_total_cost;
+
+ALTER TABLE production
+    ADD CONSTRAINT ck_production_bom_no_required
+        CHECK (bom_no IS NOT NULL) NOT VALID,
+    ADD CONSTRAINT ck_production_product_num
+        CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID;
+
+CREATE INDEX idx_production_bom_no
+    ON production (bom_no);
+
+
+-- Introduce the warehouse business key for a production material issue.
+-- Legacy relationship columns remain available but become optional so that the
+-- four-field warehouse record can be loaded independently.
+ALTER TABLE material_consumption
+    ADD COLUMN material_consumption_no VARCHAR(100),
+    ALTER COLUMN production_order_no DROP NOT NULL,
+    ALTER COLUMN product_no DROP NOT NULL,
+    ALTER COLUMN movement_no DROP NOT NULL;
+
+ALTER TABLE material_consumption
+    ADD CONSTRAINT uk_material_consumption_line
+        UNIQUE (material_consumption_no, material_no),
+    ADD CONSTRAINT ck_material_consumption_no_required
+        CHECK (material_consumption_no IS NOT NULL) NOT VALID,
+    ADD CONSTRAINT ck_material_consumption_quantity
+        CHECK (material_num IS NOT NULL AND material_num > 0) NOT VALID,
+    ADD CONSTRAINT ck_material_consumption_total_cost
+        CHECK (material_total_cost IS NOT NULL AND material_total_cost >= 0) NOT VALID;
+
+CREATE INDEX idx_material_consumption_material_no
+    ON material_consumption (material_no);
