@@ -8,3 +8,4 @@ RUN apt-get update \
         /var/spool/pgbackrest
 
 COPY --chmod=0755 backup-scheduler.sh /usr/local/bin/pgbackrest-scheduler
+COPY --chmod=0755 pitr-restore.sh /usr/local/bin/pgbackrest-pitr-restore
