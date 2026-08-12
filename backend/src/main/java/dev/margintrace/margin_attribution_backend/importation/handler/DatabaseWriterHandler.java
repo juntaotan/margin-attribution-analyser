@@ -21,8 +21,11 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 /**
@@ -33,6 +36,8 @@ import java.util.StringJoiner;
  */
 @Component
 public class DatabaseWriterHandler extends AbstractImportHandler {
+    private static final String RAW_SCHEMA = "raw";
+
     private final JdbcTemplate jdbcTemplate;
     private final RawFileReader rawFileReader;
 
@@ -56,7 +61,25 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
     @Override
     @Transactional
     public void doImport(ImportContext context) {
-        String tableName = context
+        String tableName = buildRawTableName(context);
+        Map<String, DataType> columnTypes = context.getColumnTypes();
+        List<String> columnNames = buildColumnNames(columnTypes);
+        String columnDefinition = buildColumnStatement(columnTypes, columnNames);
+
+        jdbcTemplate.execute(buildCreateTableSql(tableName, columnDefinition));
+        insertRows(context, tableName, columnNames);
+
+        Map<String, String> rawColumnNames = new LinkedHashMap<>();
+        int columnIndex = 0;
+        for (String sourceColumn : columnTypes.keySet()) {
+            rawColumnNames.put(sourceColumn, columnNames.get(columnIndex++));
+        }
+        context.setRawTableName(tableName);
+        context.setRawColumnNames(Map.copyOf(rawColumnNames));
+    }
+
+    private String buildRawTableName(ImportContext context) {
+        String normalizedSheetName = context
                 .getTableStructure()
                 .sheetName()
                 .trim()
@@ -65,12 +88,12 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
                 .replaceAll("[^a-z0-9_]", "_")
                 .replaceAll("_+", "_")
                 .replaceAll("^_+|_+$", "");
-        Map<String, DataType> columnTypes = context.getColumnTypes();
-        List<String> columnNames = buildColumnNames(columnTypes);
-        String columnDefinition = buildColumnStatement(columnTypes, columnNames);
-
-        jdbcTemplate.execute(buildCreateTableSql(tableName, columnDefinition));
-        insertRows(context, tableName, columnNames);
+        if (normalizedSheetName.isBlank()) {
+            normalizedSheetName = "import";
+        }
+        String shortenedSheetName = normalizedSheetName.substring(0, Math.min(normalizedSheetName.length(), 40));
+        String importSuffix = Integer.toUnsignedString(context.getObjectKey().hashCode(), 36);
+        return RAW_SCHEMA + "." + shortenedSheetName + "_" + importSuffix;
     }
 
     /**
@@ -169,11 +192,12 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
 
     private List<String> buildColumnNames(Map<String, DataType> columnTypes) {
         List<String> columnNames = new ArrayList<>(columnTypes.size());
-        int errorColumnNum = 0;
+        Set<String> usedColumnNames = new HashSet<>();
         for (String originalName : columnTypes.keySet()) {
-            String normalizedColumnName = normalizeColumnName(originalName, errorColumnNum);
-            if (normalizedColumnName.contains("unnamed column")) {
-                errorColumnNum++;
+            int duplicateIndex = 0;
+            String normalizedColumnName = normalizeColumnName(originalName, duplicateIndex);
+            while (!usedColumnNames.add(normalizedColumnName)) {
+                normalizedColumnName = normalizeColumnName(originalName, ++duplicateIndex);
             }
             columnNames.add(normalizedColumnName);
         }
@@ -252,7 +276,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
 
     private String normalizeColumnName(String originalName, int errorColumnNum) {
         if (originalName == null || originalName.isBlank()) {
-            return "unnamed column";
+            return "unnamed_column_" + errorColumnNum;
         }
         String normalized = originalName
                 .trim()

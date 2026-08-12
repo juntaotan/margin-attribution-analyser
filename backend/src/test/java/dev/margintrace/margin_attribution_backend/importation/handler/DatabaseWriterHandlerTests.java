@@ -64,6 +64,7 @@ class DatabaseWriterHandlerTests {
         JdbcDataSource dataSource = new JdbcDataSource();
         dataSource.setURL("jdbc:h2:mem:database-writer-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1");
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.execute("CREATE SCHEMA raw");
         RawFileReader rawFileReader = objectKey -> new ByteArrayInputStream(workbookBytes);
         DatabaseWriterHandler handler = new DatabaseWriterHandler(jdbcTemplate, rawFileReader);
 
@@ -77,9 +78,12 @@ class DatabaseWriterHandlerTests {
 
         handler.doImport(context);
 
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sales_data", Integer.class)).isEqualTo(2);
+        assertThat(context.getRawTableName()).startsWith("raw.sales_data_");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM " + context.getRawTableName(), Integer.class
+        )).isEqualTo(2);
         assertThat(jdbcTemplate.queryForMap(
-                "SELECT order_no_0, total_price_0 FROM sales_data WHERE id = 1"
+                "SELECT order_no_0, total_price_0 FROM " + context.getRawTableName() + " WHERE id = 1"
         ))
                 .containsEntry("ORDER_NO_0", "SO-001")
                 .containsEntry("TOTAL_PRICE_0", new BigDecimal("12.50000"));

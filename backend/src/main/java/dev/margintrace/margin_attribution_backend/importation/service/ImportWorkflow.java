@@ -6,7 +6,9 @@ import dev.margintrace.margin_attribution_backend.datalake.key.RawObjectKeyFacto
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.handler.ColumnTypeInferHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.DatabaseWriterHandler;
+import dev.margintrace.margin_attribution_backend.importation.handler.DataWarehouseWriterHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
+import dev.margintrace.margin_attribution_backend.importation.handler.SchemaMappingHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.TableBoundaryDetectHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,7 +54,9 @@ public class ImportWorkflow {
     private final FileValidationHandler fileValidationHandler;
     private final TableBoundaryDetectHandler tableBoundaryDetectHandler;
     private final ColumnTypeInferHandler columnTypeInferHandler;
+    private final SchemaMappingHandler schemaMappingHandler;
     private final DatabaseWriterHandler databaseWriterHandler;
+    private final DataWarehouseWriterHandler dataWarehouseWriterHandler;
     private final ImportJobStateService stateService;
     private final RawFileStorage rawFileStorage;
     private final RawObjectKeyFactory objectKeyFactory;
@@ -65,7 +69,8 @@ public class ImportWorkflow {
      *    <li> File validation: uses the doImport method in {@link FileValidationHandler} </li>
      *    <li> Raw file storage: uses the store method in {@link RawFileStorage} </li>
      *    <li> Spreadsheet analysis: detects table boundaries and infers column types </li>
-     *    <li> Database writing: uses the doImport method in {@link DatabaseWriterHandler} </li>
+     *    <li> Raw database writing: uses {@link DatabaseWriterHandler}. </li>
+     *    <li> Warehouse writing: copies schema-mapped raw columns through {@link DataWarehouseWriterHandler}. </li>
      * </ol>
      * 
      * @param jobId the ID of the import job getting from the {@link ImportService#importer(MultipartFile)} method
@@ -110,6 +115,9 @@ public class ImportWorkflow {
             // Infer the data type of every column inside the detected table.
             columnTypeInferHandler.doImport(context);
 
+            // Resolve source columns to fields in the target warehouse schema.
+            schemaMappingHandler.doImport(context);
+
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(
@@ -127,13 +135,14 @@ public class ImportWorkflow {
 
         try {
             databaseWriterHandler.doImport(context);
+            dataWarehouseWriterHandler.doImport(context);
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(
                     jobId,
                     WRITING_TO_DATALAKE,
                     WRITE_FAILED,
-                    "DATABASE_WRITE_FAILED",
+                    "DATABASE_OR_WAREHOUSE_WRITE_FAILED",
                     e.getMessage()
             );
             return;

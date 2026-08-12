@@ -20,6 +20,9 @@ public class ImportContext {
     String objectKey;
     TableStructure tableStructure;
     Map<String, DataType> columnTypes;
+    String rawTableName;
+    Map<String, String> rawColumnNames;
     DataSetDefinition dataSetDefinition;
     Map<String, TargetFieldDefinition> columnMappings;
+    int warehouseImportedRows;
 }

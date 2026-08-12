@@ -55,7 +55,9 @@ public class SchemaMappingPresetCatalog {
 
         String normalizedTableName = normalizeTableName(tableName);
         return definitions.values().stream()
-                .filter(definition -> definition.tableName().equals(normalizedTableName))
+                .filter(definition -> definition.aliases().stream()
+                        .map(SchemaMappingPresetCatalog::normalizeTableName)
+                        .anyMatch(normalizedTableName::equals))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No schema-mapping preset is defined for table: " + tableName
@@ -63,12 +65,11 @@ public class SchemaMappingPresetCatalog {
     }
 
     private static String normalizeTableName(String tableName) {
-        return tableName.trim()
-                .toLowerCase()
-                .replaceAll("\\s+", "_")
-                .replaceAll("[^a-z0-9_]", "_")
-                .replaceAll("_+", "_")
-                .replaceAll("^_+|_+$", "");
+        StringBuilder normalized = new StringBuilder();
+        tableName.trim().toLowerCase().codePoints()
+                .filter(Character::isLetterOrDigit)
+                .forEach(normalized::appendCodePoint);
+        return normalized.toString();
     }
 
     private static void register(
