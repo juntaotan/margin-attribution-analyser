@@ -44,34 +44,45 @@ CREATE INDEX idx_import_job_status
 -- Inventory / Production foundation tables
 -- =========================================================
 
-CREATE TABLE inventory_movement
-(
-    id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    movement_no        VARCHAR(100) NOT NULL,
-    product_no         VARCHAR(100) NOT NULL,
-    product_num        NUMERIC(18, 6),
-    product_unit_cost  NUMERIC(18, 6),
-    product_total_cost NUMERIC(18, 6),
-    order_no           VARCHAR(100) NOT NULL,
-
-    CONSTRAINT uk_inventory_movement_product
-        UNIQUE (movement_no, order_no, product_no)
-);
-
-
-CREATE TABLE production
+CREATE TABLE production_order
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    year                INT NOT NULL,
+    month              INT NOT NULL,
+    date               DATE NOT NULL,
     production_order_no VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
     product_num         NUMERIC(18, 6),
-    product_unit_cost   NUMERIC(18, 6),
     product_total_cost  NUMERIC(18, 6),
     product_department  VARCHAR(50)  NOT NULL,
 
     CONSTRAINT uk_production_product
-        UNIQUE (production_order_no, product_no)
-);
+        UNIQUE (production_order_no, product_no),
+    CONSTRAINT chk_production_order_month
+        CHECK (month BETWEEN 1 AND 12)
+    );
+
+CREATE TABLE inventory_usage
+(
+    id                 BIGINT GENERATED ALWAYS AS IDENTITY,
+    year               INT NOT NULL,
+    month              INT NOT NULL,
+    date               DATE NOT NULL,
+    movement_no        VARCHAR(100) NOT NULL,
+    product_no         VARCHAR(100) NOT NULL,
+    product_num        NUMERIC(18, 6),
+    product_total_cost NUMERIC(18, 6),
+    order_no           VARCHAR(100) NOT NULL,
+
+    CONSTRAINT pk_inventory_movement
+        PRIMARY KEY (id, year, month),
+    CONSTRAINT fk_inventory_usage_production
+        FOREIGN KEY (order_no, product_no)
+        REFERENCES production_order(production_order_no, product_no),
+    CONSTRAINT chk_inventory_movement_month
+        CHECK (month BETWEEN 1 and 12)
+)
+PARTITION BY RANGE (year, month);
 
 
 CREATE TABLE bill_of_material
@@ -82,9 +93,6 @@ CREATE TABLE bill_of_material
     material_no    VARCHAR(100)   NOT NULL,
     material_usage NUMERIC(18, 6) NOT NULL,
 
-    CONSTRAINT uk_bom_product_material
-        UNIQUE (bom_no, product_no, material_no),
-
     CONSTRAINT ck_bom_material_usage
         CHECK (material_usage > 0)
 );
@@ -94,32 +102,31 @@ CREATE TABLE bill_of_material
 -- Sales module
 -- =========================================================
 
-CREATE TABLE sales
+CREATE TABLE sales_order
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    year                INT NOT NULL,
+    month               INT NOT NULL,
+    date                DATE NOT NULL,
+    movement_no         VARCHAR(100) NOT NULL,
     sale_order_no       VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
     product_num         NUMERIC(18, 6),
-    product_unit_price  NUMERIC(18, 6),
     product_total_price NUMERIC(18, 6),
-    movement_no         VARCHAR(100),
 
     CONSTRAINT uk_sale_order_product
         UNIQUE (sale_order_no, product_no),
 
-    CONSTRAINT fk_sales_inventory_movement
-        FOREIGN KEY (movement_no, sale_order_no, product_no)
-            REFERENCES inventory_movement (
-                                           movement_no,
-                                           order_no,
-                                           product_no
-                )
+    CONSTRAINT chk_sales_order_month
+        CHECK (month BETWEEN 1 AND 12)
 );
-
 
 CREATE TABLE account_receivables
 (
-    id                    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                    BIGINT GENERATED ALWAYS AS IDENTITY,
+    year                  INT NOT NULL,
+    month                 INT NOT NULL,
+    date                  DATE NOT NULL,
     account_receivable_no VARCHAR(100) NOT NULL,
     product_no            VARCHAR(100) NOT NULL,
     product_num           NUMERIC(18, 6),
@@ -127,14 +134,16 @@ CREATE TABLE account_receivables
     product_total_price   NUMERIC(18, 6),
     sale_order_no         VARCHAR(100) NOT NULL,
 
-    CONSTRAINT fk_account_receivables_sales
-        FOREIGN KEY (sale_order_no, product_no)
-            REFERENCES sales (
-                              sale_order_no,
-                              product_no
-                )
-);
+    CONSTRAINT pk_account_receivables
+        PRIMARY KEY (id, year, month),
 
+    CONSTRAINT fk_account_receivables_sales_order
+        FOREIGN KEY (sale_order_no, product_no)
+        REFERENCES sales_order (sale_order_no, product_no),
+    CONSTRAINT chk_account_receivables_month
+        CHECK (month BETWEEN 1 AND 12)
+)
+PARTITION BY RANGE (year, month);
 
 -- =========================================================
 -- Purchase module
@@ -143,29 +152,28 @@ CREATE TABLE account_receivables
 CREATE TABLE purchases
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    year                INT NOT NULL,
+    month               INT NOT NULL,
+    date                DATE NOT NULL,
     purchase_order_no   VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
     product_num         NUMERIC(18, 6),
     product_unit_price  NUMERIC(18, 6),
     product_total_price NUMERIC(18, 6),
-    movement_no         VARCHAR(100),
 
     CONSTRAINT uk_purchase_order_product
         UNIQUE (purchase_order_no, product_no),
 
-    CONSTRAINT fk_purchases_inventory_movement
-        FOREIGN KEY (movement_no, purchase_order_no, product_no)
-            REFERENCES inventory_movement (
-                                           movement_no,
-                                           order_no,
-                                           product_no
-                )
+    CONSTRAINT chk_purchases_month
+        CHECK (month BETWEEN 1 AND 12)
 );
-
 
 CREATE TABLE account_payables
 (
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY,
+    year                INT NOT NULL,
+    month               INT NOT NULL,
+    date                DATE NOT NULL,
     account_payable_no  VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
     product_num         NUMERIC(18, 6),
@@ -173,53 +181,17 @@ CREATE TABLE account_payables
     product_total_price NUMERIC(18, 6),
     purchase_order_no   VARCHAR(100) NOT NULL,
 
+    CONSTRAINT pk_account_payables
+        PRIMARY KEY (id, year, month),
+
     CONSTRAINT fk_account_payables_purchases
         FOREIGN KEY (purchase_order_no, product_no)
-            REFERENCES purchases (
-                                  purchase_order_no,
-                                  product_no
-                )
-);
+        REFERENCES purchases (purchase_order_no, product_no),
 
-
--- =========================================================
--- Material consumption
--- =========================================================
-
-CREATE TABLE material_consumption
-(
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    production_order_no VARCHAR(100) NOT NULL,
-    product_no          VARCHAR(100) NOT NULL,
-    material_no         VARCHAR(100) NOT NULL,
-    material_num        NUMERIC(18, 6),
-    material_unit_cost  NUMERIC(18, 6),
-    material_total_cost NUMERIC(18, 6),
-    movement_no         VARCHAR(100) NOT NULL,
-
-    CONSTRAINT fk_material_consumption_inventory_movement
-        FOREIGN KEY (
-                     movement_no,
-                     production_order_no,
-                     product_no
-            )
-            REFERENCES inventory_movement (
-                                           movement_no,
-                                           order_no,
-                                           product_no
-                ),
-
-    CONSTRAINT fk_material_consumption_production
-        FOREIGN KEY (
-                     production_order_no,
-                     product_no
-            )
-            REFERENCES production (
-                                   production_order_no,
-                                   product_no
-                )
-);
-
+    CONSTRAINT chk_account_payables_month
+        CHECK (month BETWEEN 1 AND 12)
+)
+PARTITION BY RANGE (year, month);
 
 -- =========================================================
 -- Warehouse extensions
