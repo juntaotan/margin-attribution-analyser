@@ -47,8 +47,6 @@ CREATE INDEX idx_import_job_status
 CREATE TABLE production_order
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    year                INT NOT NULL,
-    month              INT NOT NULL,
     date               DATE NOT NULL,
     production_order_no VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
@@ -57,16 +55,12 @@ CREATE TABLE production_order
     product_department  VARCHAR(50)  NOT NULL,
 
     CONSTRAINT uk_production_product
-        UNIQUE (production_order_no, product_no),
-    CONSTRAINT chk_production_order_month
-        CHECK (month BETWEEN 1 AND 12)
+        UNIQUE (production_order_no, product_no)
     );
 
 CREATE TABLE inventory_usage
 (
     id                 BIGINT GENERATED ALWAYS AS IDENTITY,
-    year               INT NOT NULL,
-    month              INT NOT NULL,
     date               DATE NOT NULL,
     movement_no        VARCHAR(100) NOT NULL,
     product_no         VARCHAR(100) NOT NULL,
@@ -75,14 +69,12 @@ CREATE TABLE inventory_usage
     order_no           VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_inventory_movement
-        PRIMARY KEY (id, year, month),
+        PRIMARY KEY (id, product_no),
     CONSTRAINT fk_inventory_usage_production
         FOREIGN KEY (order_no, product_no)
-        REFERENCES production_order(production_order_no, product_no),
-    CONSTRAINT chk_inventory_movement_month
-        CHECK (month BETWEEN 1 and 12)
+        REFERENCES production_order(production_order_no, product_no)
 )
-PARTITION BY RANGE (year, month);
+PARTITION BY HASH (product_no);
 
 
 CREATE TABLE bill_of_material
@@ -105,8 +97,6 @@ CREATE TABLE bill_of_material
 CREATE TABLE sales_order
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    year                INT NOT NULL,
-    month               INT NOT NULL,
     date                DATE NOT NULL,
     movement_no         VARCHAR(100) NOT NULL,
     sale_order_no       VARCHAR(100) NOT NULL,
@@ -115,17 +105,12 @@ CREATE TABLE sales_order
     product_total_price NUMERIC(18, 6),
 
     CONSTRAINT uk_sale_order_product
-        UNIQUE (sale_order_no, product_no),
-
-    CONSTRAINT chk_sales_order_month
-        CHECK (month BETWEEN 1 AND 12)
+        UNIQUE (sale_order_no, product_no)
 );
 
 CREATE TABLE account_receivables
 (
     id                    BIGINT GENERATED ALWAYS AS IDENTITY,
-    year                  INT NOT NULL,
-    month                 INT NOT NULL,
     date                  DATE NOT NULL,
     account_receivable_no VARCHAR(100) NOT NULL,
     product_no            VARCHAR(100) NOT NULL,
@@ -135,15 +120,13 @@ CREATE TABLE account_receivables
     sale_order_no         VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_account_receivables
-        PRIMARY KEY (id, year, month),
+        PRIMARY KEY (id, product_no),
 
     CONSTRAINT fk_account_receivables_sales_order
         FOREIGN KEY (sale_order_no, product_no)
-        REFERENCES sales_order (sale_order_no, product_no),
-    CONSTRAINT chk_account_receivables_month
-        CHECK (month BETWEEN 1 AND 12)
+        REFERENCES sales_order (sale_order_no, product_no)
 )
-PARTITION BY RANGE (year, month);
+PARTITION BY HASH (product_no);
 
 -- =========================================================
 -- Purchase module
@@ -152,8 +135,6 @@ PARTITION BY RANGE (year, month);
 CREATE TABLE purchases
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    year                INT NOT NULL,
-    month               INT NOT NULL,
     date                DATE NOT NULL,
     purchase_order_no   VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
@@ -162,17 +143,12 @@ CREATE TABLE purchases
     product_total_price NUMERIC(18, 6),
 
     CONSTRAINT uk_purchase_order_product
-        UNIQUE (purchase_order_no, product_no),
-
-    CONSTRAINT chk_purchases_month
-        CHECK (month BETWEEN 1 AND 12)
+        UNIQUE (purchase_order_no, product_no)
 );
 
 CREATE TABLE account_payables
 (
     id                  BIGINT GENERATED ALWAYS AS IDENTITY,
-    year                INT NOT NULL,
-    month               INT NOT NULL,
     date                DATE NOT NULL,
     account_payable_no  VARCHAR(100) NOT NULL,
     product_no          VARCHAR(100) NOT NULL,
@@ -182,16 +158,41 @@ CREATE TABLE account_payables
     purchase_order_no   VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_account_payables
-        PRIMARY KEY (id, year, month),
+        PRIMARY KEY (id, product_no),
 
     CONSTRAINT fk_account_payables_purchases
         FOREIGN KEY (purchase_order_no, product_no)
-        REFERENCES purchases (purchase_order_no, product_no),
-
-    CONSTRAINT chk_account_payables_month
-        CHECK (month BETWEEN 1 AND 12)
+        REFERENCES purchases (purchase_order_no, product_no)
 )
-PARTITION BY RANGE (year, month);
+PARTITION BY HASH (product_no);
+
+-- Create a complete set of hash partitions for every high-volume parent table.
+DO $$
+DECLARE
+    parent_table TEXT;
+    i INTEGER;
+    partition_count CONSTANT INTEGER := 8;
+BEGIN
+    FOREACH parent_table IN ARRAY ARRAY[
+        'inventory_usage',
+        'account_receivables',
+        'account_payables'
+    ]
+    LOOP
+        FOR i IN 0..(partition_count - 1) LOOP
+            EXECUTE format(
+                'CREATE TABLE %I
+                 PARTITION OF %I
+                 FOR VALUES WITH (MODULUS %s, REMAINDER %s)',
+                parent_table || '_h' || i,
+                parent_table,
+                partition_count,
+                i
+            );
+        END LOOP;
+    END LOOP;
+END
+$$;
 
 -- =========================================================
 -- Warehouse extensions
