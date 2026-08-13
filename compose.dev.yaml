@@ -1,0 +1,64 @@
+name: margin-attribution-dev
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: margin_attribution
+      POSTGRES_USER: ${DB_USERNAME:?Set DB_USERNAME in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports:
+      - "${DEV_POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - margin_dev_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  minio:
+    image: quay.io/minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
+    ports:
+      - "${DEV_MINIO_API_PORT:-19000}:9000"
+      - "${DEV_MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - margin_dev_minio_data:/data
+
+  backend:
+    image: maven:3.9.16-eclipse-temurin-21
+    init: true
+    working_dir: /workspace
+    command: mvn spring-boot:run
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/margin_attribution
+      DB_USERNAME: ${DB_USERNAME:?Set DB_USERNAME in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
+      MINIO_RAW_BUCKET: ${MINIO_RAW_BUCKET:-margin-raw}
+    ports:
+      - "${DEV_BACKEND_PORT:-18080}:8080"
+    volumes:
+      - ./backend:/workspace
+      - margin_dev_maven_cache:/root/.m2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+volumes:
+  margin_dev_postgres_data:
+  margin_dev_minio_data:
+  margin_dev_maven_cache:
