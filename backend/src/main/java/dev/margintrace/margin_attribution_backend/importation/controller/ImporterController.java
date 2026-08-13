@@ -17,16 +17,14 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class ImporterController {
     private final ImportService importService;
-    private final ImportWorkflow importWorkflow;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> importFile(@RequestParam("file") MultipartFile file) {
         // Initialise import job's context
         ImportContext context = new ImportContext();
         context.setFile(file);
-        // Initialise import job id
-        long jobId = importService.importer(file);
-        importWorkflow.execute(jobId, context);
+
+        importService.importer(file);
 
         return ResponseEntity.ok().build();
     }
