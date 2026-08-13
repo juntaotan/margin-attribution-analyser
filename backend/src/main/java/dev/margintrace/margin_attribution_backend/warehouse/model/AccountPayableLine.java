@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -12,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * A purchased material line recorded on an accounts-payable document.
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
  * <p>The grain is one material from one purchase order per payable document.</p>
  */
 @Entity
+@IdClass(AccountPayableLineId.class)
 @Table(
         name = "account_payables",
         uniqueConstraints = @UniqueConstraint(
@@ -38,7 +41,11 @@ public class AccountPayableLine {
     @Column(name = "account_payable_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String accountPayableNo;
 
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
     /** The purchased material code stored in the core schema's product column. */
+    @Id
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String materialNo;
 
@@ -54,6 +61,7 @@ public class AccountPayableLine {
 
     public static AccountPayableLine of(
             String accountPayableNo,
+            LocalDate date,
             String materialNo,
             BigDecimal materialQuantity,
             BigDecimal lineTotalCost,
@@ -61,6 +69,7 @@ public class AccountPayableLine {
     ) {
         AccountPayableLine line = new AccountPayableLine();
         line.accountPayableNo = requireBusinessKey(accountPayableNo, "Account payable number");
+        line.date = requireDate(date);
         line.materialNo = requireBusinessKey(materialNo, "Material number");
         line.purchaseOrderNo = requireBusinessKey(purchaseOrderNo, "Purchase order number");
 
@@ -74,6 +83,13 @@ public class AccountPayableLine {
         line.materialQuantity = materialQuantity;
         line.lineTotalCost = lineTotalCost;
         return line;
+    }
+
+    private static LocalDate requireDate(LocalDate value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Date must not be null");
+        }
+        return value;
     }
 
     private static String requireBusinessKey(String value, String fieldName) {

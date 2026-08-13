@@ -82,7 +82,10 @@ public class SchemaMappingPresetCatalog {
     }
 
     private static DataSetDefinition sales() {
-        return dataSet(DataSetType.SALES, "sales", Set.of("销售", "销售明细", "销售订单"),
+        return dataSet(DataSetType.SALES, "sales_order", Set.of("sales", "销售", "销售明细", "销售订单"),
+                requiredDate("date", "date", "sales date", "order date", "销售日期", "订单日期", "日期"),
+                requiredText("movementNo", "movement_no", "movement no", "inventory movement no",
+                        "库存移动号", "出入库单号"),
                 requiredText("salesOrderNo", "sale_order_no", "saleOrderNo", "sale order no", "sales order no", "order no",
                         "sales order number", "so no", "销售单号", "销售订单号", "销售订单编号", "订单号"),
                 requiredText("productNo", "product_no", "product no", "product number", "item no", "item code",
@@ -97,6 +100,7 @@ public class SchemaMappingPresetCatalog {
     private static DataSetDefinition accountReceivables() {
         return dataSet(DataSetType.ACCOUNT_RECEIVABLE, "account_receivables",
                 Set.of("应收", "应收账款", "应收明细"),
+                requiredDate("date", "date", "receivable date", "invoice date", "应收日期", "开票日期", "日期"),
                 requiredText("accountReceivableNo", "account_receivable_no", "account receivable no", "ar no",
                         "account receivable number", "receivable no", "invoice no", "应收单号", "应收账款编号", "应收编号"),
                 requiredText("productNo", "product_no", "product no", "product number", "item no", "item code",
@@ -112,6 +116,7 @@ public class SchemaMappingPresetCatalog {
 
     private static DataSetDefinition purchases() {
         return dataSet(DataSetType.PURCHASE, "purchases", Set.of("采购", "采购明细", "采购订单"),
+                requiredDate("date", "date", "purchase date", "order date", "采购日期", "订单日期", "日期"),
                 requiredText("purchaseOrderNo", "purchase_order_no", "purchase order no", "po no", "order no",
                         "purchase order number", "采购单号", "采购订单号", "采购订单编号", "订单号"),
                 requiredText("materialNo", "product_no", "productNo", "material no", "material number",
@@ -124,6 +129,7 @@ public class SchemaMappingPresetCatalog {
 
     private static DataSetDefinition accountPayables() {
         return dataSet(DataSetType.ACCOUNT_PAYABLE, "account_payables", Set.of("应付", "应付账款", "应付明细"),
+                requiredDate("date", "date", "payable date", "invoice date", "应付日期", "发票日期", "日期"),
                 requiredText("accountPayableNo", "account_payable_no", "account payable no", "ap no",
                         "account payable number", "payable no", "vendor invoice no", "invoice no",
                         "应付单号", "应付账款编号", "应付编号", "供应商发票号", "发票号"),
@@ -140,16 +146,15 @@ public class SchemaMappingPresetCatalog {
     }
 
     private static DataSetDefinition inventoryMovement() {
-        return dataSet(DataSetType.INVENTORY_MOVEMENT, "inventory_movement",
-                Set.of("库存移动", "库存流水", "出入库明细"),
+        return dataSet(DataSetType.INVENTORY_MOVEMENT, "inventory_usage",
+                Set.of("inventory_movement", "库存移动", "库存流水", "出入库明细"),
+                requiredDate("date", "date", "movement date", "inventory date", "移动日期", "出入库日期", "日期"),
                 requiredText("movementNo", "movement_no", "movement no", "inventory movement no",
                         "库存移动号", "库存流水号", "出入库单号"),
                 requiredText("productNo", "product_no", "product no", "item no", "sku", "material no",
                         "产品编号", "商品编号", "物料编号"),
                 numeric("productNum", "product_num", "product quantity", "quantity", "qty", "movement quantity",
                         "产品数量", "移动数量", "出入库数量"),
-                numeric("productUnitCost", "product_unit_cost", "unit cost", "product unit cost",
-                        "产品单位成本", "单位成本"),
                 numeric("productTotalCost", "product_total_cost", "total cost", "product total cost",
                         "产品总成本", "总成本"),
                 requiredText("orderNo", "order_no", "order no", "business order no", "source order no",
@@ -157,7 +162,8 @@ public class SchemaMappingPresetCatalog {
     }
 
     private static DataSetDefinition production() {
-        return dataSet(DataSetType.PRODUCTION, "production", Set.of("生产", "生产明细", "生产订单"),
+        return dataSet(DataSetType.PRODUCTION, "production_order", Set.of("production", "生产", "生产明细", "生产订单"),
+                requiredDate("date", "date", "production date", "completion date", "生产日期", "完工日期", "日期"),
                 requiredText("productionOrderNo", "production_order_no", "production order no", "work order no",
                         "production order number", "manufacturing order no", "mo no", "生产单号", "生产订单号", "生产订单编号", "工单号"),
                 requiredText("productNo", "product_no", "product no", "product number", "item no", "item code",
@@ -229,6 +235,14 @@ public class SchemaMappingPresetCatalog {
             String... aliases
     ) {
         return field(fieldKey, columnName, DataType.NUMERIC, true, aliases);
+    }
+
+    private static TargetFieldDefinition requiredDate(
+            String fieldKey,
+            String columnName,
+            String... aliases
+    ) {
+        return field(fieldKey, columnName, DataType.DATE, true, aliases);
     }
 
     private static TargetFieldDefinition field(

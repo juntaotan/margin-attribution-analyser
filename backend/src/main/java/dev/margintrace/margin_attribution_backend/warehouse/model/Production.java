@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * The completed output of a product on a production order.
@@ -20,7 +21,7 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(
-        name = "production",
+        name = "production_order",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_production_product",
                 columnNames = {"production_order_no", "product_no"}
@@ -39,6 +40,9 @@ public class Production {
     @Column(name = "production_order_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String productionOrderNo;
 
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String productNo;
 
@@ -53,6 +57,7 @@ public class Production {
 
     public static Production of(
             String productionOrderNo,
+            LocalDate date,
             String productNo,
             BigDecimal completedQuantity,
             String department,
@@ -64,11 +69,19 @@ public class Production {
                 "Production order number",
                 BUSINESS_KEY_MAX_LENGTH
         );
+        production.date = requireDate(date);
         production.productNo = requireText(productNo, "Product number", BUSINESS_KEY_MAX_LENGTH);
         production.completedQuantity = requirePositive(completedQuantity, "Completed quantity");
         production.department = requireText(department, "Department", DEPARTMENT_MAX_LENGTH);
         production.bomNo = requireText(bomNo, "BOM number", BUSINESS_KEY_MAX_LENGTH);
         return production;
+    }
+
+    private static LocalDate requireDate(LocalDate value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Date must not be null");
+        }
+        return value;
     }
 
     private static String requireText(String value, String fieldName, int maximumLength) {

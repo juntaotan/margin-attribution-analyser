@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,8 +27,10 @@ class DataWarehouseWriterHandlerTests {
         JdbcTemplate jdbcTemplate = createJdbcTemplate();
         jdbcTemplate.execute("CREATE SCHEMA raw");
         jdbcTemplate.execute("""
-                CREATE TABLE sales (
+                CREATE TABLE sales_order (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    date DATE NOT NULL,
+                    movement_no VARCHAR(100) NOT NULL,
                     sale_order_no VARCHAR(100) NOT NULL,
                     product_no VARCHAR(100) NOT NULL,
                     product_num NUMERIC(18,6) NOT NULL,
@@ -50,11 +53,13 @@ class DataWarehouseWriterHandlerTests {
                 "SELECT notes_0 FROM " + context.getRawTableName() + " WHERE sales_order_no_0 = 'SO-001'",
                 String.class
         )).isEqualTo("raw only");
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sales", Integer.class)).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sales_order", Integer.class)).isEqualTo(2);
         assertThat(jdbcTemplate.queryForMap("""
-                SELECT sale_order_no, product_no, product_num, product_total_price
-                FROM sales WHERE sale_order_no = 'SO-001'
+                SELECT date, movement_no, sale_order_no, product_no, product_num, product_total_price
+                FROM sales_order WHERE sale_order_no = 'SO-001'
                 """))
+                .containsEntry("DATE", java.sql.Date.valueOf("2026-08-13"))
+                .containsEntry("MOVEMENT_NO", "MOVE-001")
                 .containsEntry("SALE_ORDER_NO", "SO-001")
                 .containsEntry("PRODUCT_NO", "P-001")
                 .containsEntry("PRODUCT_NUM", new BigDecimal("2.000000"))
@@ -62,7 +67,7 @@ class DataWarehouseWriterHandlerTests {
 
         assertThat(jdbcTemplate.queryForList(
                 "SELECT column_name FROM information_schema.columns "
-                        + "WHERE table_schema = 'PUBLIC' AND table_name = 'SALES'",
+                        + "WHERE table_schema = 'PUBLIC' AND table_name = 'SALES_ORDER'",
                 String.class
         )).doesNotContain("NOTES_0");
     }
@@ -70,12 +75,14 @@ class DataWarehouseWriterHandlerTests {
     private static ImportContext salesContext() {
         ImportContext context = new ImportContext();
         context.setObjectKey("raw/test-sales.xlsx");
-        context.setTableStructure(new TableStructure("sales", 0, 0, 4, 2, 1.0));
+        context.setTableStructure(new TableStructure("sales", 0, 0, 6, 2, 1.0));
         Map<String, DataType> columnTypes = new LinkedHashMap<>();
         columnTypes.put("Sales Order No", DataType.TEXT);
         columnTypes.put("SKU", DataType.TEXT);
         columnTypes.put("Sales Quantity", DataType.NUMERIC);
         columnTypes.put("Sales Amount", DataType.NUMERIC);
+        columnTypes.put("Sales Date", DataType.DATE);
+        columnTypes.put("Movement No", DataType.TEXT);
         columnTypes.put("Notes", DataType.TEXT);
         context.setColumnTypes(columnTypes);
         return context;
@@ -90,21 +97,33 @@ class DataWarehouseWriterHandlerTests {
             header.createCell(1).setCellValue("SKU");
             header.createCell(2).setCellValue("Sales Quantity");
             header.createCell(3).setCellValue("Sales Amount");
-            header.createCell(4).setCellValue("Notes");
+            header.createCell(4).setCellValue("Sales Date");
+            header.createCell(5).setCellValue("Movement No");
+            header.createCell(6).setCellValue("Notes");
+
+            var dateStyle = workbook.createCellStyle();
+            dateStyle.setDataFormat(workbook.getCreationHelper()
+                    .createDataFormat().getFormat("yyyy-mm-dd"));
 
             var firstRow = sheet.createRow(1);
             firstRow.createCell(0).setCellValue("SO-001");
             firstRow.createCell(1).setCellValue("P-001");
             firstRow.createCell(2).setCellValue(2);
             firstRow.createCell(3).setCellValue(25);
-            firstRow.createCell(4).setCellValue("raw only");
+            firstRow.createCell(4).setCellValue(LocalDate.of(2026, 8, 13));
+            firstRow.getCell(4).setCellStyle(dateStyle);
+            firstRow.createCell(5).setCellValue("MOVE-001");
+            firstRow.createCell(6).setCellValue("raw only");
 
             var secondRow = sheet.createRow(2);
             secondRow.createCell(0).setCellValue("SO-002");
             secondRow.createCell(1).setCellValue("P-002");
             secondRow.createCell(2).setCellValue(1);
             secondRow.createCell(3).setCellValue(8.25);
-            secondRow.createCell(4).setCellValue("not mapped");
+            secondRow.createCell(4).setCellValue(LocalDate.of(2026, 8, 14));
+            secondRow.getCell(4).setCellStyle(dateStyle);
+            secondRow.createCell(5).setCellValue("MOVE-002");
+            secondRow.createCell(6).setCellValue("not mapped");
 
             workbook.write(output);
             return output.toByteArray();

@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * A material line on a purchase order.
@@ -38,6 +39,9 @@ public class PurchaseOrderLine {
     @Column(name = "purchase_order_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String purchaseOrderNo;
 
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
     /**
      * The core schema calls this column {@code product_no}; in the purchasing
      * warehouse model it represents the purchased material code.
@@ -54,12 +58,14 @@ public class PurchaseOrderLine {
 
     public static PurchaseOrderLine of(
             String purchaseOrderNo,
+            LocalDate date,
             String materialNo,
             BigDecimal materialQuantity,
             BigDecimal lineTotalCost
     ) {
         PurchaseOrderLine line = new PurchaseOrderLine();
         line.purchaseOrderNo = requireBusinessKey(purchaseOrderNo, "Purchase order number");
+        line.date = requireDate(date);
         line.materialNo = requireBusinessKey(materialNo, "Material number");
 
         if (materialQuantity == null || materialQuantity.signum() <= 0) {
@@ -72,6 +78,13 @@ public class PurchaseOrderLine {
         line.materialQuantity = materialQuantity;
         line.lineTotalCost = lineTotalCost;
         return line;
+    }
+
+    private static LocalDate requireDate(LocalDate value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Date must not be null");
+        }
+        return value;
     }
 
     private static String requireBusinessKey(String value, String fieldName) {

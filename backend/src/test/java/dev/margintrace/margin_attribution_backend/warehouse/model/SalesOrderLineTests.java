@@ -3,6 +3,7 @@ package dev.margintrace.margin_attribution_backend.warehouse.model;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -13,12 +14,16 @@ class SalesOrderLineTests {
     void createsAValidSalesOrderLineAndNormalizesKeys() {
         SalesOrderLine line = SalesOrderLine.of(
                 " SO-001 ",
+                LocalDate.of(2026, 8, 13),
+                " MOVEMENT-001 ",
                 " PRODUCT-001 ",
                 new BigDecimal("8.500000"),
                 new BigDecimal("2125.000000")
         );
 
         assertThat(line.getSalesOrderNo()).isEqualTo("SO-001");
+        assertThat(line.getDate()).isEqualTo(LocalDate.of(2026, 8, 13));
+        assertThat(line.getMovementNo()).isEqualTo("MOVEMENT-001");
         assertThat(line.getProductNo()).isEqualTo("PRODUCT-001");
         assertThat(line.getProductQuantity()).isEqualByComparingTo("8.500000");
         assertThat(line.getLineTotalSalesAmount()).isEqualByComparingTo("2125.000000");
@@ -28,6 +33,8 @@ class SalesOrderLineTests {
     void rejectsBlankSalesOrderNumber() {
         assertThatIllegalArgumentException().isThrownBy(() -> SalesOrderLine.of(
                 " ",
+                LocalDate.of(2026, 8, 13),
+                "MOVEMENT-001",
                 "PRODUCT-001",
                 BigDecimal.ONE,
                 BigDecimal.TEN
@@ -38,6 +45,8 @@ class SalesOrderLineTests {
     void rejectsNonPositiveProductQuantity() {
         assertThatIllegalArgumentException().isThrownBy(() -> SalesOrderLine.of(
                 "SO-001",
+                LocalDate.of(2026, 8, 13),
+                "MOVEMENT-001",
                 "PRODUCT-001",
                 BigDecimal.ZERO,
                 BigDecimal.TEN
@@ -48,6 +57,8 @@ class SalesOrderLineTests {
     void rejectsNegativeLineTotalSalesAmount() {
         assertThatIllegalArgumentException().isThrownBy(() -> SalesOrderLine.of(
                 "SO-001",
+                LocalDate.of(2026, 8, 13),
+                "MOVEMENT-001",
                 "PRODUCT-001",
                 BigDecimal.ONE,
                 new BigDecimal("-0.01")

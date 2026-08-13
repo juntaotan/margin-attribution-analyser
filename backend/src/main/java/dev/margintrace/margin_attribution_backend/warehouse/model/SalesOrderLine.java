@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * A product line on a sales order.
@@ -20,7 +21,7 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(
-        name = "sales",
+        name = "sales_order",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_sale_order_product",
                 columnNames = {"sale_order_no", "product_no"}
@@ -38,6 +39,12 @@ public class SalesOrderLine {
     @Column(name = "sale_order_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String salesOrderNo;
 
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    @Column(name = "movement_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
+    private String movementNo;
+
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String productNo;
 
@@ -50,12 +57,16 @@ public class SalesOrderLine {
 
     public static SalesOrderLine of(
             String salesOrderNo,
+            LocalDate date,
+            String movementNo,
             String productNo,
             BigDecimal productQuantity,
             BigDecimal lineTotalSalesAmount
     ) {
         SalesOrderLine line = new SalesOrderLine();
         line.salesOrderNo = requireBusinessKey(salesOrderNo, "Sales order number");
+        line.date = requireDate(date);
+        line.movementNo = requireBusinessKey(movementNo, "Movement number");
         line.productNo = requireBusinessKey(productNo, "Product number");
 
         if (productQuantity == null || productQuantity.signum() <= 0) {
@@ -68,6 +79,13 @@ public class SalesOrderLine {
         line.productQuantity = productQuantity;
         line.lineTotalSalesAmount = lineTotalSalesAmount;
         return line;
+    }
+
+    private static LocalDate requireDate(LocalDate value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Date must not be null");
+        }
+        return value;
     }
 
     private static String requireBusinessKey(String value, String fieldName) {

@@ -8,6 +8,7 @@ import dev.margintrace.margin_attribution_backend.warehouse.model.AccountPayable
 import dev.margintrace.margin_attribution_backend.warehouse.model.AccountReceivableLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.MaterialConsumption;
+import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.model.PurchaseOrderLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
@@ -16,6 +17,7 @@ import jakarta.persistence.Table;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -36,10 +38,12 @@ class SchemaMappingPresetCatalogTests {
     void salesPresetMatchesTheCanonicalDatabaseSchema() {
         DataSetDefinition sales = catalog.getRequired(DataSetType.SALES);
 
-        assertThat(sales.tableName()).isEqualTo("sales");
+        assertThat(sales.tableName()).isEqualTo("sales_order");
         assertThat(sales.fields())
                 .extracting(TargetFieldDefinition::columnName)
                 .containsExactly(
+                        "date",
+                        "movement_no",
                         "sale_order_no",
                         "product_no",
                         "product_num",
@@ -59,6 +63,7 @@ class SchemaMappingPresetCatalogTests {
         assertThat(accountPayables.fields())
                 .extracting(TargetFieldDefinition::fieldKey, TargetFieldDefinition::columnName)
                 .containsExactly(
+                        tuple("date", "date"),
                         tuple("accountPayableNo", "account_payable_no"),
                         tuple("materialNo", "product_no"),
                         tuple("materialQuantity", "product_num"),
@@ -80,6 +85,7 @@ class SchemaMappingPresetCatalogTests {
                 DataSetType.ACCOUNT_RECEIVABLE, AccountReceivableLine.class,
                 DataSetType.PURCHASE, PurchaseOrderLine.class,
                 DataSetType.ACCOUNT_PAYABLE, AccountPayableLine.class,
+                DataSetType.INVENTORY_MOVEMENT, InventoryUsage.class,
                 DataSetType.PRODUCTION, Production.class,
                 DataSetType.BOM, BillOfMaterial.class,
                 DataSetType.MATERIAL_CONSUMPTION, MaterialConsumption.class
@@ -104,7 +110,9 @@ class SchemaMappingPresetCatalogTests {
                                         Column column = field.getAnnotation(Column.class);
                                         DataType dataType = field.getType().equals(BigDecimal.class)
                                                 ? DataType.NUMERIC
-                                                : DataType.TEXT;
+                                                : field.getType().equals(LocalDate.class)
+                                                        ? DataType.DATE
+                                                        : DataType.TEXT;
                                         return tuple(field.getName(), column.name(), dataType, !column.nullable());
                                     })
                                     .toList()

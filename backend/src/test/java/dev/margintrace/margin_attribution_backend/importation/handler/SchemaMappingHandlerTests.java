@@ -19,6 +19,7 @@ class SchemaMappingHandlerTests {
     @Test
     void mapsSourceHeadersToCanonicalColumnsForTheSameNamedTable() {
         ImportContext context = context("Account Payables", Map.of(
+                "Invoice Date", DataType.DATE,
                 "AP No", DataType.TEXT,
                 "Material Code", DataType.TEXT,
                 "Billed Quantity", DataType.NUMERIC,
@@ -37,6 +38,7 @@ class SchemaMappingHandlerTests {
         assertThat(context.getColumnMappings().values())
                 .extracting(TargetFieldDefinition::columnName)
                 .containsExactlyInAnyOrder(
+                        "date",
                         "account_payable_no",
                         "product_no",
                         "product_num",
@@ -62,6 +64,8 @@ class SchemaMappingHandlerTests {
     void rejectsTwoSourceColumnsMappedToTheSameWarehouseColumn() {
         LinkedHashMap<String, DataType> sourceColumns = new LinkedHashMap<>();
         sourceColumns.put("Sales Order No", DataType.TEXT);
+        sourceColumns.put("Sales Date", DataType.DATE);
+        sourceColumns.put("Movement No", DataType.TEXT);
         sourceColumns.put("SKU", DataType.TEXT);
         sourceColumns.put("Product No", DataType.TEXT);
         sourceColumns.put("Quantity", DataType.NUMERIC);

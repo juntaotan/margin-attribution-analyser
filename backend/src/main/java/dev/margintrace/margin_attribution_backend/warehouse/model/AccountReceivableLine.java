@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -12,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * A sold product line recorded on an accounts-receivable document.
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
  * <p>The grain is one product from one sales order per receivable document.</p>
  */
 @Entity
+@IdClass(AccountReceivableLineId.class)
 @Table(
         name = "account_receivables",
         uniqueConstraints = @UniqueConstraint(
@@ -38,6 +41,10 @@ public class AccountReceivableLine {
     @Column(name = "account_receivable_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String accountReceivableNo;
 
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    @Id
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String productNo;
 
@@ -53,6 +60,7 @@ public class AccountReceivableLine {
 
     public static AccountReceivableLine of(
             String accountReceivableNo,
+            LocalDate date,
             String productNo,
             BigDecimal productQuantity,
             BigDecimal lineTotalSalesAmount,
@@ -63,6 +71,7 @@ public class AccountReceivableLine {
                 accountReceivableNo,
                 "Account receivable number"
         );
+        line.date = requireDate(date);
         line.productNo = requireBusinessKey(productNo, "Product number");
         line.salesOrderNo = requireBusinessKey(salesOrderNo, "Sales order number");
 
@@ -76,6 +85,13 @@ public class AccountReceivableLine {
         line.productQuantity = productQuantity;
         line.lineTotalSalesAmount = lineTotalSalesAmount;
         return line;
+    }
+
+    private static LocalDate requireDate(LocalDate value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Date must not be null");
+        }
+        return value;
     }
 
     private static String requireBusinessKey(String value, String fieldName) {
