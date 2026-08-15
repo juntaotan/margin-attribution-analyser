@@ -1,6 +1,7 @@
 package dev.margintrace.margin_attribution_backend.algorithm.attribution;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -29,5 +30,10 @@ public class AttributionPartitionReader {
         String sql = "";
 
         return actualMaterialUsage;
+    }
+
+    public void getAllProductsInPeriod (long startId, long endId) {
+        // TODO: Implement the logic to get all products in a given period
+
     }
 }
