@@ -11,10 +11,10 @@ public class TopologicalSort {
         Map<Integer, Integer> graph = new HashMap<>();
     }
     private Map<String, String> buildProductSourceIndex(){
-
+        return new HashMap<>();
     };
     
     private Map<String, String> buildMaterialTargetIndex(){
-
+        return new HashMap<>();
     };
 }
