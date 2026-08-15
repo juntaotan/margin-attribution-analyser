@@ -16,6 +16,10 @@ public class AttributionPartitionReader {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    public AttributionPartitionReader(NamedParameterJdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
     public Map<NodeId, List<NodeId>> readPartitions(
                                                     int partition, 
                                                     long startId, 
