@@ -26,7 +26,7 @@ import java.time.LocalDate;
         name = "account_receivables",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_account_receivable_sale_product",
-                columnNames = {"account_receivable_no", "sale_order_no", "product_no"}
+                columnNames = {"account_receivable_no", "sale_order_no", "product_no", "date"}
         )
 )
 @Getter
@@ -41,10 +41,10 @@ public class AccountReceivableLine {
     @Column(name = "account_receivable_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String accountReceivableNo;
 
+    @Id
     @Column(name = "date", nullable = false)
     private LocalDate date;
 
-    @Id
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String productNo;
 

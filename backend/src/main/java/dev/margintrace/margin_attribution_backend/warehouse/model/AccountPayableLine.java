@@ -26,7 +26,7 @@ import java.time.LocalDate;
         name = "account_payables",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_account_payable_purchase_material",
-                columnNames = {"account_payable_no", "purchase_order_no", "product_no"}
+                columnNames = {"account_payable_no", "purchase_order_no", "product_no", "date"}
         )
 )
 @Getter
@@ -41,11 +41,11 @@ public class AccountPayableLine {
     @Column(name = "account_payable_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String accountPayableNo;
 
+    @Id
     @Column(name = "date", nullable = false)
     private LocalDate date;
 
     /** The purchased material code stored in the core schema's product column. */
-    @Id
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String materialNo;
 

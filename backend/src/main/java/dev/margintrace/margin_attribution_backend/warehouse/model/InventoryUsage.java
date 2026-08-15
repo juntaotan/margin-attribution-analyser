@@ -27,13 +27,13 @@ public class InventoryUsage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Id
     @Column(name = "date", nullable = false)
     private LocalDate date;
 
     @Column(name = "movement_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String movementNo;
 
-    @Id
     @Column(name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String productNo;
 

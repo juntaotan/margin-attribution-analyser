@@ -69,12 +69,12 @@ CREATE TABLE inventory_usage
     order_no           VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_inventory_movement
-        PRIMARY KEY (id, product_no),
+        PRIMARY KEY (id, date),
     CONSTRAINT fk_inventory_usage_production
         FOREIGN KEY (order_no, product_no)
         REFERENCES production_order(production_order_no, product_no)
 )
-PARTITION BY HASH (product_no);
+PARTITION BY HASH (date);
 
 
 CREATE TABLE bill_of_material
@@ -120,13 +120,13 @@ CREATE TABLE account_receivables
     sale_order_no         VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_account_receivables
-        PRIMARY KEY (id, product_no),
+        PRIMARY KEY (id, date),
 
     CONSTRAINT fk_account_receivables_sales_order
         FOREIGN KEY (sale_order_no, product_no)
         REFERENCES sales_order (sale_order_no, product_no)
 )
-PARTITION BY HASH (product_no);
+PARTITION BY HASH (date);
 
 -- =========================================================
 -- Purchase module
@@ -158,13 +158,13 @@ CREATE TABLE account_payables
     purchase_order_no   VARCHAR(100) NOT NULL,
 
     CONSTRAINT pk_account_payables
-        PRIMARY KEY (id, product_no),
+        PRIMARY KEY (id, date),
 
     CONSTRAINT fk_account_payables_purchases
         FOREIGN KEY (purchase_order_no, product_no)
         REFERENCES purchases (purchase_order_no, product_no)
 )
-PARTITION BY HASH (product_no);
+PARTITION BY HASH (date);
 
 -- Create a complete set of hash partitions for every high-volume parent table.
 DO $$
@@ -254,7 +254,7 @@ CREATE INDEX idx_purchases_material_no
 -- order on one payable document. Product columns retain their core-schema names.
 ALTER TABLE account_payables
     ADD CONSTRAINT uk_account_payable_purchase_material
-        UNIQUE (account_payable_no, purchase_order_no, product_no),
+        UNIQUE (account_payable_no, purchase_order_no, product_no, date),
     ADD CONSTRAINT ck_account_payable_material_quantity
         CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID,
     ADD CONSTRAINT ck_account_payable_material_total_cost
@@ -283,7 +283,7 @@ CREATE INDEX idx_sales_product_no
 -- on one receivable document. Its total price is the sales amount for this line.
 ALTER TABLE account_receivables
     ADD CONSTRAINT uk_account_receivable_sale_product
-        UNIQUE (account_receivable_no, sale_order_no, product_no),
+        UNIQUE (account_receivable_no, sale_order_no, product_no, date),
     ADD CONSTRAINT ck_account_receivable_product_quantity
         CHECK (product_num IS NOT NULL AND product_num > 0) NOT VALID,
     ADD CONSTRAINT ck_account_receivable_product_total_amount
