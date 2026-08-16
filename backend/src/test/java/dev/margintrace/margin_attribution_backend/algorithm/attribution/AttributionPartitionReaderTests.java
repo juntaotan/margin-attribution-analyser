@@ -105,7 +105,7 @@ class AttributionPartitionReaderTests {
         insertMaterial(33L, "PRODUCT-001", "MATERIAL-SHARED", 2);
         insertMaterial(41L, "PRODUCT-002", "MATERIAL-SHARED", 2);
 
-        assertThat(reader.readPartitions(1L, 2L))
+        assertThat(reader.readMaterialUsage(1L, 2L))
                 .containsOnly(
                         entry(node("MATERIAL-001", 4), List.of(node("PRODUCT-001", 10))),
                         entry(node("MATERIAL-002", 6), List.of(node("PRODUCT-001", 10))),
@@ -120,13 +120,13 @@ class AttributionPartitionReaderTests {
 
     @Test
     void returnsAnEmptyMapWhenThePeriodHasNoProducts() {
-        assertThat(reader.readPartitions(1L, 2L)).isEmpty();
+        assertThat(reader.readMaterialUsage(1L, 2L)).isEmpty();
     }
 
     @Test
-    void readPartitionsRejectsAnInvertedIdPeriod() {
+    void readMaterialUsageRejectsAnInvertedIdPeriod() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> reader.readPartitions(2L, 1L))
+                .isThrownBy(() -> reader.readMaterialUsage(2L, 1L))
                 .withMessage("startId must not be greater than endId");
     }
 

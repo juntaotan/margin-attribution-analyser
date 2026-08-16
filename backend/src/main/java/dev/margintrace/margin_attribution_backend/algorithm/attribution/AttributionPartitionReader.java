@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class AttributionPartitionReader {
-    private static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors();;
+    private static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
     private static final int TASK_COUNT = 32;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -36,7 +36,7 @@ public class AttributionPartitionReader {
      * @return Material nodes mapped to all corresponding product nodes
      */
     public Map<Node, List<Node>> readMaterialUsage(long startId,
-                                                long endId
+                                                    long endId
     ) {
         // Read and index all products in the specified period.
         Map<String, Node> productsById = getAllProductsInPeriod(startId, endId);
@@ -64,7 +64,6 @@ public class AttributionPartitionReader {
             tasks.add(() -> readMaterialEdges(batch, productsById));
         }
 
-        
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(THREAD_COUNT, tasks.size()));
 
         try {
