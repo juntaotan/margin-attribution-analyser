@@ -38,6 +38,12 @@ public class MaterialConsumption {
     @Column(name = "material_consumption_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String materialConsumptionNo;
 
+    @Column (name = "production_order_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
+    private String productionOrderNo;
+
+    @Column (name = "product_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
+    private String productNo;
+
     @Column(name = "material_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String materialNo;
 
@@ -49,6 +55,8 @@ public class MaterialConsumption {
 
     public static MaterialConsumption of(
             String materialConsumptionNo,
+            String productionOrderNo,
+            String productNo,
             String materialNo,
             BigDecimal issuedQuantity,
             BigDecimal issuedTotalCost
@@ -58,6 +66,8 @@ public class MaterialConsumption {
                 materialConsumptionNo,
                 "Material consumption number"
         );
+        consumption.productionOrderNo = requireBusinessKey(productionOrderNo, "Production order number");
+        consumption.productNo = requireBusinessKey(productNo, "Product number");
         consumption.materialNo = requireBusinessKey(materialNo, "Material number");
 
         if (issuedQuantity == null || issuedQuantity.signum() <= 0) {

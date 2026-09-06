@@ -14,5 +14,9 @@ public interface MaterialConsumptionRepository extends JpaRepository<MaterialCon
 
     List<MaterialConsumption> findAllByMaterialConsumptionNo(String materialConsumptionNo);
 
+    List<MaterialConsumption> findAllByProductionOrderNo(String productionOrderNo);
+
+    List<MaterialConsumption> findAllByProductNo(String productNo);
+
     List<MaterialConsumption> findAllByMaterialNo(String materialNo);
 }

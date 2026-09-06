@@ -34,16 +34,23 @@ class AttributionPartitionReaderTests {
         jdbcTemplate.execute("""
                 CREATE TABLE production_order (
                     id BIGINT PRIMARY KEY,
+                    production_order_no VARCHAR(100) NOT NULL,
                     product_no VARCHAR(100) NOT NULL,
-                    product_num NUMERIC(18, 6) NOT NULL
+                    product_num NUMERIC(18, 6) NOT NULL,
+                    CONSTRAINT uk_test_production_product
+                        UNIQUE (production_order_no, product_no)
                 )
                 """);
         jdbcTemplate.execute("""
                 CREATE TABLE material_consumption (
                     id BIGINT PRIMARY KEY,
+                    production_order_no VARCHAR(100) NOT NULL,
                     product_no VARCHAR(100) NOT NULL,
                     material_no VARCHAR(100) NOT NULL,
-                    material_num NUMERIC(18, 6) NOT NULL
+                    material_num NUMERIC(18, 6) NOT NULL,
+                    CONSTRAINT fk_test_material_consumption_production
+                        FOREIGN KEY (production_order_no, product_no)
+                        REFERENCES production_order (production_order_no, product_no)
                 )
                 """);
     }
@@ -56,16 +63,16 @@ class AttributionPartitionReaderTests {
     @Test
     void returnsProductsWithinTheInclusiveIdPeriodInIdOrder() {
         jdbcTemplate.update(
-                "INSERT INTO production_order (id, product_no, product_num) VALUES (?, ?, ?)",
-                3L, "PRODUCT-003", 30
+                "INSERT INTO production_order (id, production_order_no, product_no, product_num) VALUES (?, ?, ?, ?)",
+                3L, "PRODUCTION-003", "PRODUCT-003", 30
         );
         jdbcTemplate.update(
-                "INSERT INTO production_order (id, product_no, product_num) VALUES (?, ?, ?)",
-                1L, "PRODUCT-001", 10
+                "INSERT INTO production_order (id, production_order_no, product_no, product_num) VALUES (?, ?, ?, ?)",
+                1L, "PRODUCTION-001", "PRODUCT-001", 10
         );
         jdbcTemplate.update(
-                "INSERT INTO production_order (id, product_no, product_num) VALUES (?, ?, ?)",
-                2L, "PRODUCT-002", 20
+                "INSERT INTO production_order (id, production_order_no, product_no, product_num) VALUES (?, ?, ?, ?)",
+                2L, "PRODUCTION-002", "PRODUCT-002", 20
         );
 
         assertThat(reader.getAllProductsInPeriod(1L, 2L))
@@ -85,25 +92,25 @@ class AttributionPartitionReaderTests {
     @Test
     void readsAllMaterialToProductEdgesForProductsInTheRequestedPeriod() {
         jdbcTemplate.update(
-                "INSERT INTO production_order (id, product_no, product_num) VALUES (?, ?, ?)",
-                1L, "PRODUCT-001", 10
+                "INSERT INTO production_order (id, production_order_no, product_no, product_num) VALUES (?, ?, ?, ?)",
+                1L, "PRODUCTION-001", "PRODUCT-001", 10
         );
         jdbcTemplate.update(
-                "INSERT INTO production_order (id, product_no, product_num) VALUES (?, ?, ?)",
-                2L, "PRODUCT-002", 20
+                "INSERT INTO production_order (id, production_order_no, product_no, product_num) VALUES (?, ?, ?, ?)",
+                2L, "PRODUCTION-002", "PRODUCT-002", 20
         );
         jdbcTemplate.update(
-                "INSERT INTO production_order (id, product_no, product_num) VALUES (?, ?, ?)",
-                3L, "PRODUCT-OUTSIDE-PERIOD", 30
+                "INSERT INTO production_order (id, production_order_no, product_no, product_num) VALUES (?, ?, ?, ?)",
+                3L, "PRODUCTION-003", "PRODUCT-OUTSIDE-PERIOD", 30
         );
 
-        insertMaterial(1L, "PRODUCT-001", "MATERIAL-001", 4);
-        insertMaterial(9L, "PRODUCT-001", "MATERIAL-002", 6);
-        insertMaterial(17L, "PRODUCT-002", "MATERIAL-003", 8);
-        insertMaterial(25L, "PRODUCT-OUTSIDE-PERIOD", "MATERIAL-004", 9);
-        insertMaterial(2L, "PRODUCT-001", "MATERIAL-005", 5);
-        insertMaterial(33L, "PRODUCT-001", "MATERIAL-SHARED", 2);
-        insertMaterial(41L, "PRODUCT-002", "MATERIAL-SHARED", 2);
+        insertMaterial(1L, "PRODUCTION-001", "PRODUCT-001", "MATERIAL-001", 4);
+        insertMaterial(9L, "PRODUCTION-001", "PRODUCT-001", "MATERIAL-002", 6);
+        insertMaterial(17L, "PRODUCTION-002", "PRODUCT-002", "MATERIAL-003", 8);
+        insertMaterial(25L, "PRODUCTION-003", "PRODUCT-OUTSIDE-PERIOD", "MATERIAL-004", 9);
+        insertMaterial(2L, "PRODUCTION-001", "PRODUCT-001", "MATERIAL-005", 5);
+        insertMaterial(33L, "PRODUCTION-001", "PRODUCT-001", "MATERIAL-SHARED", 2);
+        insertMaterial(41L, "PRODUCTION-002", "PRODUCT-002", "MATERIAL-SHARED", 2);
 
         assertThat(reader.readMaterialUsage(1L, 2L))
                 .containsOnly(
@@ -132,6 +139,7 @@ class AttributionPartitionReaderTests {
 
     private void insertMaterial(
             long id,
+            String productionOrderNo,
             String productNo,
             String materialNo,
             int materialQuantity
@@ -139,10 +147,10 @@ class AttributionPartitionReaderTests {
         jdbcTemplate.update(
                 """
                         INSERT INTO material_consumption
-                            (id, product_no, material_no, material_num)
-                        VALUES (?, ?, ?, ?)
+                            (id, production_order_no, product_no, material_no, material_num)
+                        VALUES (?, ?, ?, ?, ?)
                         """,
-                id, productNo, materialNo, materialQuantity
+                id, productionOrderNo, productNo, materialNo, materialQuantity
         );
     }
 
