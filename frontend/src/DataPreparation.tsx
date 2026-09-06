@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { MODULE_LABELS, recognizeFileName, type BusinessModule, type FileRecognition, type TableName } from './fileRecognition';
 import {
   Database,
   FolderOpen,
@@ -12,13 +13,14 @@ export const DataPreparation: React.FC = () => {
   type ImportRecord = {
     id: number;
     path: string;
-    partition: 'revenue' | 'cost';
+    partition: BusinessModule;
+    table: TableName;
     mode: 'internal' | 'external';
     importedAt: string;
   };
 
-  // Row 1: Partition Selection (Revenue vs Cost)
-  const [selectedPartition, setSelectedPartition] = useState<'revenue' | 'cost' | null>(null);
+  const [recognition, setRecognition] = useState<FileRecognition | null>(null);
+  const selectedPartition = recognition?.module ?? null;
 
   // Row 2: Mode Selection (Internal DB vs External DB)
   const [dbMode, setDbMode] = useState<'internal' | 'external'>('internal');
@@ -52,7 +54,7 @@ export const DataPreparation: React.FC = () => {
     setImportLog([{ time: new Date().toLocaleTimeString(), message: `Selected file: ${file.name}` }]);
     appendLog('Reading file…');
     setImportPath(file.name);
-    setSelectedPartition(null);
+    setRecognition(null);
     setFileProgress(0);
     setFileReady(false);
     setFileError('');
@@ -65,7 +67,12 @@ export const DataPreparation: React.FC = () => {
       if (fileReader.current !== reader) return;
       setFileProgress(100);
       setFileReady(true);
+      const result = recognizeFileName(file.name);
+      setRecognition(result);
       appendLog('File reading completed. Ready for review.');
+      appendLog(result
+        ? `Identified table: ${result.table}; module: ${MODULE_LABELS[result.module]}.`
+        : 'No matching table found. Use a supported table name or alias as the file name.');
     };
     reader.onerror = () => {
       if (fileReader.current !== reader) return;
@@ -77,17 +84,18 @@ export const DataPreparation: React.FC = () => {
   };
 
   const handleImport = () => {
-    if (!fileReady || !selectedPartition) return;
+    if (!fileReady || !recognition) return;
     const path = importPath;
     setImportPath(path);
     setImportRecords((records) => [...records, {
       id: records.length + 1,
       path,
-      partition: selectedPartition,
+      partition: recognition.module,
+      table: recognition.table,
       mode: dbMode,
       importedAt: new Date().toLocaleString(),
     }]);
-    appendLog(`Import record added for ${selectedPartition.toUpperCase()} / ${dbMode.toUpperCase()}.`);
+    appendLog(`Import record added for ${recognition.module.toUpperCase()} / ${dbMode.toUpperCase()}.`);
   };
 
   return (
@@ -288,73 +296,26 @@ export const DataPreparation: React.FC = () => {
             2. Recognition Results
           </label>
           <span className="text-[11px] text-slate-400 font-mono">
-            {selectedPartition ? (selectedPartition === 'revenue' ? 'Revenue Module' : 'Cost Module') : 'Not identified'}
+            {selectedPartition ? MODULE_LABELS[selectedPartition] : 'Not identified'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">
-          <span className="text-xs font-medium text-slate-500 sm:pt-3">Identified Partition</span>
-        <div className="grid grid-cols-2 gap-3 max-w-md">
-          {/* Revenue Module */}
-          <button
-            type="button"
-            onClick={() => setSelectedPartition('revenue')}
-            className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all cursor-pointer disabled:cursor-not-allowed ${
-              selectedPartition === 'revenue'
-                ? 'bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/30'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <div>
-              <span className="text-xs font-bold block">Revenue Module</span>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Sales orders and accounts receivable</span>
-            </div>
-            <span
-              className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
-                selectedPartition === 'revenue'
-                  ? 'border-blue-600 bg-blue-600'
-                  : 'border-slate-300'
-              }`}
-            >
-              {selectedPartition === 'revenue' && (
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
-              )}
-            </span>
-          </button>
-
-          {/* Cost Module */}
-          <button
-            type="button"
-            onClick={() => setSelectedPartition('cost')}
-            className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all cursor-pointer disabled:cursor-not-allowed ${
-              selectedPartition === 'cost'
-                ? 'bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/30'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <div>
-              <span className="text-xs font-bold block">Cost Module</span>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Material, labor, and machine overhead</span>
-            </div>
-            <span
-              className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
-                selectedPartition === 'cost'
-                  ? 'border-blue-600 bg-blue-600'
-                  : 'border-slate-300'
-              }`}
-            >
-              {selectedPartition === 'cost' && (
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
-              )}
-            </span>
-          </button>
-        </div>
+          <span className="text-xs font-medium text-slate-500 sm:pt-3">Identified Module</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3" role="group" aria-label="Identified module">
+            {(Object.entries(MODULE_LABELS) as [BusinessModule, string][]).map(([module, label]) => (
+              <label key={module} className={`flex items-center justify-between gap-3 p-3 rounded-lg border text-xs font-semibold ${selectedPartition === module ? 'bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/30' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                {label}
+                <input type="radio" name="identified-module" checked={selectedPartition === module} disabled aria-label={label} className="accent-blue-600" />
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-center border-t border-slate-100 pt-4">
           <span className="text-xs font-medium text-slate-500">Target Table Mapping</span>
           <div className="max-w-md rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-400">
-            Pending identification
+            {recognition?.table ?? (fileReady ? 'No matching table — rename the file to a supported table name or alias.' : 'Pending identification')}
           </div>
         </div>
       </fieldset>
@@ -372,7 +333,7 @@ export const DataPreparation: React.FC = () => {
         </button>
 
         <span className="text-xs text-slate-400">
-          Click &quot;Import&quot; to ingest records into the selected partition database.
+          Click &quot;Import&quot; to ingest records into the identified module database.
         </span>
       </div>
 
@@ -386,7 +347,7 @@ export const DataPreparation: React.FC = () => {
             </h3>
           </div>
           <span className="text-xs font-mono text-slate-400">
-            Partition: {selectedPartition?.toUpperCase() ?? '—'} | Mode: {dbMode.toUpperCase()}
+            Module: {selectedPartition?.toUpperCase() ?? '—'} | Mode: {dbMode.toUpperCase()}
           </span>
         </div>
 
@@ -411,7 +372,8 @@ export const DataPreparation: React.FC = () => {
                 <tr>
                   <th className="py-2.5 px-4">#</th>
                   <th className="py-2.5 px-4">File Path</th>
-                  <th className="py-2.5 px-4">Partition</th>
+                  <th className="py-2.5 px-4">Module</th>
+                  <th className="py-2.5 px-4">Target Table</th>
                   <th className="py-2.5 px-4">Mode</th>
                   <th className="py-2.5 px-4">Imported At</th>
                   <th className="py-2.5 px-4 text-center">Status</th>
@@ -423,6 +385,7 @@ export const DataPreparation: React.FC = () => {
                     <td className="py-2.5 px-4 font-bold text-slate-900">{record.id}</td>
                     <td className="py-2.5 px-4 text-blue-700">{record.path}</td>
                     <td className="py-2.5 px-4 uppercase">{record.partition}</td>
+                    <td className="py-2.5 px-4">{record.table}</td>
                     <td className="py-2.5 px-4 uppercase">{record.mode}</td>
                     <td className="py-2.5 px-4">{record.importedAt}</td>
                     <td className="py-2.5 px-4 text-center">
