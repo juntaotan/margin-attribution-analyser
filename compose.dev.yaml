@@ -50,7 +50,7 @@ services:
     ports:
       - "${DEV_BACKEND_PORT:-18080}:8080"
     volumes:
-      - ./backend:/workspace
+      - ./backend:/workspace:Z
       - margin_dev_maven_cache:/root/.m2
     depends_on:
       postgres:
