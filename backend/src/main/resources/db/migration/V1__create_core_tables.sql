@@ -5,6 +5,8 @@ CREATE TABLE import_job
 (
     id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     original_filename  VARCHAR(255) NOT NULL,
+    mapping_table_name VARCHAR(100) NOT NULL,
+    mapping_result     BOOLEAN NOT NULL,
     file_extension     VARCHAR(20),
     storage_object_key VARCHAR(500) NOT NULL,
     status             VARCHAR(40) NOT NULL,

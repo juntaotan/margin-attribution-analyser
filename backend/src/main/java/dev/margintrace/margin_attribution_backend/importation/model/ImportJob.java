@@ -30,6 +30,12 @@ public class ImportJob {
     @Column(name = "original_filename", nullable = false)
     private String originalFilename;
 
+    @Column(name = "mapping_table_name", nullable = false, length = 100)
+    private String mappingTableName;
+
+    @Column(name = "mapping_result", nullable = false)
+    private boolean mappingResult;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "file_extension", length = 20)
     private FileExtension fileExtension;
@@ -69,7 +75,14 @@ public class ImportJob {
     private long version;
 
     // Create the first transaction PENDING using Static Factory Method
-    public static ImportJob pending(String originalFilename, String storageObjectKey) {
+    public static ImportJob pending(String originalFilename, String storageObjectKey,
+                                    String mappingTableName, boolean mappingResult) {
+        if (mappingTableName == null || mappingTableName.isBlank() || mappingTableName.length() > 100) {
+            throw new IllegalArgumentException("A valid mapping table name is required");
+        }
+        if (!mappingResult) {
+            throw new IllegalArgumentException("Mapping must be confirmed before importing");
+        }
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new IllegalArgumentException("Original filename must not be blank");
         }
@@ -79,6 +92,8 @@ public class ImportJob {
 
         ImportJob job = new ImportJob();
         job.originalFilename = originalFilename;
+        job.mappingTableName = mappingTableName;
+        job.mappingResult = mappingResult;
         job.storageObjectKey = storageObjectKey;
         job.status = ImportStatus.PENDING;
         job.importedRows = 0L;

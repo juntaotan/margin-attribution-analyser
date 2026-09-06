@@ -17,7 +17,7 @@ class SchemaMappingHandlerTests {
     private final SchemaMappingHandler handler = new SchemaMappingHandler(new SchemaMappingPresetCatalog());
 
     @Test
-    void mapsSourceHeadersToCanonicalColumnsForTheSameNamedTable() {
+    void mapsAliasesUsingSelectedTargetRegardlessOfSheetName() {
         ImportContext context = context("Account Payables", Map.of(
                 "Invoice Date", DataType.DATE,
                 "AP No", DataType.TEXT,
@@ -88,8 +88,26 @@ class SchemaMappingHandlerTests {
 
     private static ImportContext context(String tableName, Map<String, DataType> sourceColumns) {
         ImportContext context = new ImportContext();
-        context.setTableStructure(new TableStructure(tableName, 0, 0, sourceColumns.size() - 1, 1, 1.0));
+        context.setMappingTableName(tableName);
+        context.setMappingResult(true);
+        context.setTableStructure(new TableStructure("Unrelated sheet", 0, 0, sourceColumns.size() - 1, 1, 1.0));
         context.setColumnTypes(new LinkedHashMap<>(sourceColumns));
         return context;
+    }
+
+    @Test
+    void rejectsUnconfirmedSelection() {
+        ImportContext context = context("sales", Map.of("SKU", DataType.TEXT));
+        context.setMappingResult(false);
+        assertThatIllegalArgumentException().isThrownBy(() -> handler.doImport(context))
+                .withMessageContaining("confirmed");
+    }
+
+    @Test
+    void doesNotFallBackToSheetNameWhenTargetIsMissing() {
+        ImportContext context = context(null, Map.of("SKU", DataType.TEXT));
+        context.setTableStructure(new TableStructure("sales", 0, 0, 0, 1, 1.0));
+        assertThatIllegalArgumentException().isThrownBy(() -> handler.doImport(context))
+                .withMessageContaining("Table name must not be blank");
     }
 }

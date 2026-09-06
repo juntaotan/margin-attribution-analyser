@@ -73,8 +73,8 @@ public class ImportWorkflow {
      *    <li> Warehouse writing: copies schema-mapped raw columns through {@link DataWarehouseWriterHandler}. </li>
      * </ol>
      * 
-     * @param jobId the ID of the import job getting from the {@link ImportService#importer(MultipartFile)} method
-     * @param context the import context getting from the {@link ImportService#importer(MultipartFile)} method
+     * @param jobId the persistent import job ID
+     * @param context the file and confirmed target definition supplied by ImportService
      */
     public void execute(Long jobId, ImportContext context) {
         stateService.transition(jobId, PENDING, VALIDATING);

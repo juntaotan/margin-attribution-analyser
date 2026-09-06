@@ -27,9 +27,11 @@ public class SchemaMappingHandler extends AbstractImportHandler {
             throw new IllegalArgumentException("Detected source columns are required for schema mapping");
         }
 
-        DataSetDefinition dataSet = presetCatalog.getRequiredByTableName(
-                context.getTableStructure().sheetName()
-        );
+        if (!context.isMappingResult()) {
+            throw new IllegalArgumentException("Mapping must be confirmed before importing");
+        }
+        // The confirmed frontend selection determines the target; sheet names do not.
+        DataSetDefinition dataSet = presetCatalog.getRequiredByTableName(context.getMappingTableName());
         LinkedHashMap<String, TargetFieldDefinition> mappings = new LinkedHashMap<>();
         Set<String> mappedTargetColumns = new LinkedHashSet<>();
 

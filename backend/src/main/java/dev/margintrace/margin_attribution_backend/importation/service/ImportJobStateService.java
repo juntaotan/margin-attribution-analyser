@@ -37,9 +37,10 @@ public class ImportJobStateService {
     private final ImportJobRepository importJobRepository;
 
     @Transactional
-    public ImportJob createPendingJob(String originalFilename) {
+    public ImportJob createPendingJob(String originalFilename, String mappingTableName, boolean mappingResult) {
         String storageObjectKey = IMPORT_OBJECT_PREFIX + UUID.randomUUID();
-        return importJobRepository.save(ImportJob.pending(originalFilename, storageObjectKey));
+        return importJobRepository.save(ImportJob.pending(
+                originalFilename, storageObjectKey, mappingTableName, mappingResult));
     }
 
     // Performs a pure state transition when no additional stage result needs to be persisted that is used when an import stage begins

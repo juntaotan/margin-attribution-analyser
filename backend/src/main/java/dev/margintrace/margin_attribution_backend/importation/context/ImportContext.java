@@ -15,6 +15,8 @@ import java.util.Map;
 @Setter
 public class ImportContext {
     MultipartFile file;
+    String mappingTableName;
+    boolean mappingResult;
     Exception error;
     FileExtension extension;
     String objectKey;

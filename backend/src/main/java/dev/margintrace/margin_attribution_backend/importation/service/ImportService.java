@@ -23,6 +23,7 @@ public class ImportService {
     private final ImportJobStateService stateService;
     // Executes the import workflow
     private final ImportWorkflow importWorkflow;
+    private final dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog presetCatalog;
 
     /**
      * Executes the import workflow for the provided file, creating a new import job and returning its ID to allow
@@ -31,14 +32,22 @@ public class ImportService {
      * @param file the file to import
      * @return the ID of the created import job
      */
-    public Long importer(MultipartFile file) {
+    public Long importer(MultipartFile file, String mappingTableName, boolean mappingResult) {
+        if (!mappingResult) {
+            throw new IllegalArgumentException("Mapping must be confirmed before importing");
+        }
+        var definition = presetCatalog.getRequiredByTableName(mappingTableName);
 
         // Context to collect and transfer information in whole import service chain
         ImportContext context = new ImportContext();
         context.setFile(file);
+        context.setMappingTableName(definition.tableName());
+        context.setMappingResult(mappingResult);
+        context.setDataSetDefinition(definition);
         
         // Create a PENDING transaction and write into PostgreSQL
-        ImportJob job = stateService.createPendingJob(file.getOriginalFilename());
+        ImportJob job = stateService.createPendingJob(
+                file.getOriginalFilename(), definition.tableName(), mappingResult);
         importWorkflow.execute(job.getId(), context);
 
         return job.getId();

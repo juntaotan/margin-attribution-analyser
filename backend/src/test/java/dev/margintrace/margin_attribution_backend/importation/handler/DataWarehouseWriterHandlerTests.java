@@ -41,6 +41,8 @@ class DataWarehouseWriterHandlerTests {
         ImportContext context = salesContext();
         RawFileReader reader = objectKey -> new ByteArrayInputStream(workbookBytes);
         new DatabaseWriterHandler(jdbcTemplate, reader).doImport(context);
+        context.setMappingTableName("sales_order");
+        context.setMappingResult(true);
         new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
 
         new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
