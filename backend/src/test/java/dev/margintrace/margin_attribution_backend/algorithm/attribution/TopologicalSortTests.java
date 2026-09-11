@@ -50,4 +50,21 @@ class TopologicalSortTests {
     private Node node(String inventoryId, long quantity) {
         return new Node(inventoryId, BigDecimal.valueOf(quantity));
     }
+
+    @Test
+    void preservesEdgesForSameInventoryAndQuantityWithDifferentCosts() {
+        Node unknown = new Node("M", BigDecimal.ONE);
+        Node zero = new Node("M", BigDecimal.ONE, BigDecimal.ZERO);
+        Node paid = new Node("M", BigDecimal.ONE, new BigDecimal("10.00"));
+        Node product = node("P", 1);
+        CsrGraph graph = topologicalSort.offsetDependencies(Map.of(
+                unknown, List.of(product), zero, List.of(product), paid, List.of(product)));
+
+        assertThat(graph.nodes()).containsExactly(unknown, zero, paid, product);
+        assertThat(graph.offset()).containsExactly(0, 1, 2, 3, 3);
+        assertThat(graph.successors()).containsExactly(3, 3, 3);
+        assertThat(paid).isEqualTo(new Node("M", new BigDecimal("1.0"), BigDecimal.TEN));
+        assertThat(paid.hashCode()).isEqualTo(
+                new Node("M", new BigDecimal("1.0"), BigDecimal.TEN).hashCode());
+    }
 }

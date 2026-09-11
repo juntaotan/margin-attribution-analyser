@@ -20,7 +20,12 @@ public class TopologicalSort {
         if (inventoryIdOrder != 0) {
             return inventoryIdOrder;
         }
-        return left.quantity().compareTo(right.quantity());
+        int quantityOrder = left.quantity().compareTo(right.quantity());
+        if (quantityOrder != 0) {
+            return quantityOrder;
+        }
+        return Comparator.nullsFirst(java.math.BigDecimal::compareTo)
+                .compare(left.cost(), right.cost());
     };
 
     /**

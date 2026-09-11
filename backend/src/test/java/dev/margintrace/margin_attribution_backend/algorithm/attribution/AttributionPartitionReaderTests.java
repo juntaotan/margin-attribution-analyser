@@ -48,6 +48,7 @@ class AttributionPartitionReaderTests {
                     product_no VARCHAR(100) NOT NULL,
                     material_no VARCHAR(100) NOT NULL,
                     material_num NUMERIC(18, 6) NOT NULL,
+                    material_total_cost NUMERIC(18, 6),
                     CONSTRAINT fk_test_material_consumption_production
                         FOREIGN KEY (production_order_no, product_no)
                         REFERENCES production_order (production_order_no, product_no)
@@ -128,6 +129,17 @@ class AttributionPartitionReaderTests {
     @Test
     void returnsAnEmptyMapWhenThePeriodHasNoProducts() {
         assertThat(reader.readMaterialUsage(1L, 2L)).isEmpty();
+    }
+
+    @Test
+    void readsRecordedMaterialCostWithoutInventingProductCost() {
+        jdbcTemplate.update("INSERT INTO production_order VALUES (1, 'PO-1', 'P', 10)");
+        jdbcTemplate.update("INSERT INTO material_consumption VALUES (1, 'PO-1', 'P', 'M', 4, 123.45)");
+
+        assertThat(reader.readMaterialUsage(1, 1)).containsOnly(entry(
+                new Node("M", new BigDecimal("4"), new BigDecimal("123.45")),
+                List.of(node("P", 10))));
+        assertThat(reader.getAllProductsInPeriod(1, 1).get("P").cost()).isNull();
     }
 
     @Test

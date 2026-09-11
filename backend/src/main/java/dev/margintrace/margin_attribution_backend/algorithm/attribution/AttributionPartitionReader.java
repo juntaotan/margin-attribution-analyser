@@ -35,9 +35,7 @@ public class AttributionPartitionReader {
      * @param endId The ending product ID (inclusive) for the range of products to read
      * @return Material nodes mapped to all corresponding product nodes
      */
-    public Map<Node, List<Node>> readMaterialUsage(long startId,
-                                                    long endId
-    ) {
+    public Map<Node, List<Node>> readMaterialUsage(long startId, long endId) {
         // Read and index all products in the specified period.
         Map<String, Node> productsById = getAllProductsInPeriod(startId, endId);
         if (productsById.isEmpty()) {
@@ -128,10 +126,11 @@ public class AttributionPartitionReader {
             Map<String, Node> productsById = new LinkedHashMap<>();
 
             while (resultSet.next()) {
-                // Create a new Node for each product with its ID and quantity
+                // Production has no recorded cost column; null means not yet calculated.
                 Node product = new Node(
                         resultSet.getString("product_no"),
-                        resultSet.getBigDecimal("product_num")
+                        resultSet.getBigDecimal("product_num"),
+                        null
                 );
 
                 // Attempt to put the product in the map ??
@@ -161,7 +160,7 @@ public class AttributionPartitionReader {
 
         // Query all material consumption rows for this Java-managed product batch.
         String sql = """
-                SELECT material_no, material_num, product_no
+                SELECT material_no, material_num, material_total_cost, product_no
                 FROM material_consumption
                 WHERE product_no IN (:productIds)
                 ORDER BY id
@@ -171,7 +170,8 @@ public class AttributionPartitionReader {
         // Execute the query and process the result set to build the edges map
         jdbcTemplate.query(sql, parameters, resultSet -> {
             Node material = new Node(resultSet.getString("material_no"),
-                                     resultSet.getBigDecimal("material_num")
+                                     resultSet.getBigDecimal("material_num"),
+                                     resultSet.getBigDecimal("material_total_cost")
             );
             Node product = productsById.get(resultSet.getString("product_no"));
             if (product == null) {
