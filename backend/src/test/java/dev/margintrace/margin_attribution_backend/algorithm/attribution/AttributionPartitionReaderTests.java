@@ -149,6 +149,38 @@ class AttributionPartitionReaderTests {
                 .withMessage("startId must not be greater than endId");
     }
 
+    @Test
+    void readsOnlySelectedProductionOrdersEvenWhenProductNumbersRepeat() {
+        jdbcTemplate.update("INSERT INTO production_order VALUES (1, 'PO-1', 'P', 10)");
+        jdbcTemplate.update("INSERT INTO production_order VALUES (2, 'PO-2', 'OTHER', 20)");
+        jdbcTemplate.update("INSERT INTO production_order VALUES (3, 'PO-3', 'P', 10)");
+        insertMaterial(1, "PO-1", "P", "SELECTED-MATERIAL", 4);
+        insertMaterial(2, "PO-3", "P", "OTHER-ORDER-MATERIAL", 7);
+
+        // Selecting only ID 1 must exclude PO-3's material for the same product P.
+        assertThat(reader.readMaterialUsageForProductionIds(List.of(1L)))
+                .containsOnly(
+                        entry(node("P", 10), List.of()),
+                        entry(node("SELECTED-MATERIAL", 4), List.of(node("P", 10)))
+                );
+
+        // The non-contiguous selection includes PO-1 and PO-3, but not ID 2.
+        assertThat(reader.readMaterialUsageForProductionIds(List.of(1L, 3L)))
+                .containsOnly(
+                        entry(node("P", 10), List.of()),
+                        entry(node("SELECTED-MATERIAL", 4), List.of(node("P", 10))),
+                        entry(node("OTHER-ORDER-MATERIAL", 7), List.of(node("P", 10)))
+                );
+    }
+
+    @Test
+    void keepsSelectedProductsWithoutMaterialConsumptionInTheGraph() {
+        jdbcTemplate.update("INSERT INTO production_order VALUES (1, 'PO-1', 'P', 10)");
+
+        assertThat(reader.readMaterialUsageForProductionIds(List.of(1L)))
+                .containsOnly(entry(node("P", 10), List.of()));
+    }
+
     private void insertMaterial(
             long id,
             String productionOrderNo,

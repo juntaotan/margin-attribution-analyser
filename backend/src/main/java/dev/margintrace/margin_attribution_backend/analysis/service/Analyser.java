@@ -1,15 +1,11 @@
 package dev.margintrace.margin_attribution_backend.analysis.service;
 
 import dev.margintrace.margin_attribution_backend.algorithm.AttributionWorkflow;
-import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
-import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,37 +16,19 @@ public class Analyser {
     private final AttributionWorkflow attributionWorkflow;
 
     /**
+     * Starts the graph and path calculation. Converting those paths to adjacency entries
+     * belongs to the next implementation step, so this method currently returns no entries.
      *
-     * For the list of target points, its input's type can include all products in specified period or specified product
-     * that user directly provides.
-     *
-     * @param targets a list of all product to be analysis
-     * @return a new analysis result containing the graph
+     * @param targets target inventory IDs; empty or null requests every product in the period
+     * @param startDate inclusive start of the production period
+     * @param endDate inclusive end of the production period
+     * @return an analysis result whose adjacency entries are not populated yet
      */
     public AnalysisResults analyser (List<String> targets, LocalDate startDate, LocalDate endDate) {
-
-        // Create a hashmap to make frontend using this data to build up its DAG diagram.
-        // Hash map can make
-        HashMap<String, List<Node[]>> analysisGraph = new HashMap<>();
-
-        CsrResult csrResult = attributionWorkflow.trace(startDate, endDate, targets);
-
-        for (int i = 0; i < targets.size(); i++){
-            // 1st. Confirm i's index
-
-            // 2nd. Finds all upstream for this index
-
-            // 3rd. Get the information of this index
-            List<Node[]> nodeList = new ArrayList<>();
-            // 4th. Record this node into the hashmap
-            analysisGraph.put(targets.get(i), nodeList);
-        }
-
-        // Generate result and return it
-        AnalysisResults results = AnalysisResults.builder()
+        attributionWorkflow.trace(startDate, endDate, targets);
+        return AnalysisResults.builder()
                 .analysisId(UUID.randomUUID())
-                .analysisGraph(analysisGraph)
+                .results(List.of())
                 .build();
-        return results;
     }
 }

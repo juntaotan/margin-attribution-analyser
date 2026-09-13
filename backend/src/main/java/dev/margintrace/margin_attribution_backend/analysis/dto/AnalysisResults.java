@@ -1,10 +1,8 @@
 package dev.margintrace.margin_attribution_backend.analysis.dto;
 
-import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,5 +10,6 @@ import java.util.UUID;
 @Builder
 public class AnalysisResults {
     private UUID analysisId;
-    private HashMap<String, List<Node[]>> analysisGraph;
+    /** Entries of the traced Node-to-direct-downstream-nodes adjacency map. */
+    private List<AnalysisAdjacencyEntry> results;
 }

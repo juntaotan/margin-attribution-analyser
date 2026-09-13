@@ -40,9 +40,10 @@ services:
     working_dir: /workspace
     command: mvn spring-boot:run
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/margin_attribution
-      DB_USERNAME: ${DB_USERNAME:?Set DB_USERNAME in .env}
-      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_URL: jdbc:postgresql://100.93.141.50:5432/margin_attribution
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${REMOTE_DB_PASSWORD:?Set REMOTE_DB_PASSWORD in .env}
+      SPRING_FLYWAY_TARGET: "2"
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
