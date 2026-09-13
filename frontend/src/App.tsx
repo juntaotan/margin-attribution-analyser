@@ -10,6 +10,7 @@ import {
   Package,
   ChevronDown,
   ChevronUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { DataPreparation } from './DataPreparation';
 import {
@@ -31,6 +32,14 @@ import {
   type Edge as FlowEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+
+export interface VarianceItem {
+  inventoryId: string;
+  actualQuantity: number;
+  plannedQuantity: number;
+  variance: number;
+  rawNode: AnalysisNode;
+}
 
 type AnalysisFlowNode = FlowNode<{ label: React.ReactNode; raw: AnalysisNode }>;
 
@@ -100,6 +109,7 @@ export const App: React.FC = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
   const [selectedNodeData, setSelectedNodeData] = useState<AnalysisNode | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [varianceItems, setVarianceItems] = useState<VarianceItem[]>([]);
 
   /** Requests traced adjacency entries, then lays out their recorded Nodes. */
   const handleStartAnalysis = async () => {
@@ -111,6 +121,7 @@ export const App: React.FC = () => {
       setEdges([]);
       setSelectedNodeData(null);
       setLastAnalyzedAt(null);
+      setVarianceItems([]);
       setAnalysisError('Please select both period dates.');
       return;
     }
@@ -119,6 +130,7 @@ export const App: React.FC = () => {
       setEdges([]);
       setSelectedNodeData(null);
       setLastAnalyzedAt(null);
+      setVarianceItems([]);
       setAnalysisError('Period start must not be after period end.');
       return;
     }
@@ -127,6 +139,7 @@ export const App: React.FC = () => {
       setEdges([]);
       setSelectedNodeData(null);
       setLastAnalyzedAt(null);
+      setVarianceItems([]);
       setAnalysisError('Please enter at least one product ID in Products to compare with Bill of Material.');
       return;
     }
@@ -169,6 +182,7 @@ export const App: React.FC = () => {
           setNodes([]);
           setEdges([]);
           setSelectedNodeData(null);
+          setVarianceItems([]);
           setAnalysisError('No records found for the specified period and products.');
           return;
         }
@@ -177,6 +191,24 @@ export const App: React.FC = () => {
         const bomQtyByItem = new Map<string, number>(
           bomGraph.nodes.map(({ node }) => [node.inventoryId, node.quantity])
         );
+
+        // Collect anomalous items for the variance table
+        const anomalyMap = new Map<string, VarianceItem>();
+        for (const { node } of actualGraph.nodes) {
+          const plannedQty = bomQtyByItem.get(node.inventoryId);
+          if (plannedQty !== undefined && Math.abs(node.quantity - plannedQty) > 0.0001) {
+            if (!anomalyMap.has(node.inventoryId)) {
+              anomalyMap.set(node.inventoryId, {
+                inventoryId: node.inventoryId,
+                actualQuantity: node.quantity,
+                plannedQuantity: plannedQty,
+                variance: node.quantity - plannedQty,
+                rawNode: node,
+              });
+            }
+          }
+        }
+        setVarianceItems(Array.from(anomalyMap.values()));
 
         // Build Top Branch: BOM Benchmark nodes
         const bomNodes: AnalysisFlowNode[] = bomGraph.nodes.map(({ id, node }) => ({
@@ -302,6 +334,7 @@ export const App: React.FC = () => {
           setSelectedNodeData(bomGraph.nodes[0].node);
         }
       } else {
+        setVarianceItems([]);
         // Standard single-branch production trace
         const response = await fetch('/api/v1/analysis/trace', {
           method: 'POST',
@@ -324,6 +357,7 @@ export const App: React.FC = () => {
           setNodes([]);
           setEdges([]);
           setSelectedNodeData(null);
+          setVarianceItems([]);
           setAnalysisError('No products found for the selected period.');
         } else {
           const rawNodes: AnalysisFlowNode[] = graph.nodes.map(({ id, node }) => ({
@@ -375,6 +409,7 @@ export const App: React.FC = () => {
       setNodes([]);
       setEdges([]);
       setSelectedNodeData(null);
+      setVarianceItems([]);
       setAnalysisError(err instanceof Error ? err.message : 'Error executing analysis');
     } finally {
       setIsAnalyzing(false);
@@ -399,6 +434,11 @@ export const App: React.FC = () => {
     window.history.pushState({}, '', path);
     setCurrentRoute(path);
   };
+
+  const totalActual = varianceItems.reduce((acc, item) => acc + item.actualQuantity, 0);
+  const totalBenchmark = varianceItems.reduce((acc, item) => acc + item.plannedQuantity, 0);
+  const totalVariance = varianceItems.reduce((acc, item) => acc + item.variance, 0);
+  const anomalousMaterialNames = varianceItems.map((item) => item.inventoryId).join(', ');
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-50 text-slate-800 font-sans select-none overflow-hidden">
@@ -681,8 +721,8 @@ export const App: React.FC = () => {
             </main>
 
             {/* 4. Right: Detail Panel */}
-            <aside className="w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto">
-              <div className="h-11 px-4 border-b border-slate-200 flex items-center justify-between">
+            <aside className="w-96 bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto">
+              <div className="h-11 px-4 border-b border-slate-200 flex items-center justify-between shrink-0">
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Details
                 </h3>
@@ -694,6 +734,83 @@ export const App: React.FC = () => {
               </div>
 
               <div className="p-4 space-y-4">
+                {/* Variance Analysis Section */}
+                {lastAnalyzedAt && isComparisonExpanded && comparisonMode === 'bom' && (
+                  <section className="bg-slate-50/70 border border-slate-200 rounded-lg p-3.5 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 pb-1.5 border-b border-slate-200/60">
+                      <AlertTriangle className={`w-4 h-4 ${varianceItems.length > 0 ? 'text-rose-600' : 'text-emerald-600'}`} />
+                      <span>Variance Analysis</span>
+                    </div>
+
+                    {varianceItems.length > 0 ? (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead>
+                              <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase font-semibold">
+                                <th className="py-1.5 pr-1 font-semibold">Item</th>
+                                <th className="py-1.5 px-1 text-right font-semibold">Actual</th>
+                                <th className="py-1.5 px-1 text-right font-semibold">Benchmark</th>
+                                <th className="py-1.5 pl-1 text-right font-semibold">Variance</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {varianceItems.map((item) => (
+                                <tr
+                                  key={item.inventoryId}
+                                  onClick={() => setSelectedNodeData(item.rawNode)}
+                                  className="cursor-pointer hover:bg-slate-100/70 transition-colors"
+                                  title={`Click to inspect ${item.inventoryId}`}
+                                >
+                                  <td className="py-2 pr-1 font-medium text-slate-800 truncate max-w-[90px]" title={item.inventoryId}>
+                                    {item.inventoryId}
+                                  </td>
+                                  <td className="py-2 px-1 text-right font-mono text-slate-600">
+                                    {formatQuantity(item.actualQuantity)}
+                                  </td>
+                                  <td className="py-2 px-1 text-right font-mono text-slate-600">
+                                    {formatQuantity(item.plannedQuantity)}
+                                  </td>
+                                  <td className="py-2 pl-1 text-right font-mono font-semibold text-rose-600">
+                                    {item.variance > 0 ? `+${formatQuantity(item.variance)}` : formatQuantity(item.variance)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr className="border-t-2 border-slate-200 font-semibold text-slate-800 bg-slate-100/50">
+                                <td className="py-2 pr-1 text-slate-700">Total Variance</td>
+                                <td className="py-2 px-1 text-right font-mono text-slate-700">
+                                  {formatQuantity(totalActual)}
+                                </td>
+                                <td className="py-2 px-1 text-right font-mono text-slate-700">
+                                  {formatQuantity(totalBenchmark)}
+                                </td>
+                                <td className="py-2 pl-1 text-right font-mono text-rose-600">
+                                  {totalVariance > 0 ? `+${formatQuantity(totalVariance)}` : formatQuantity(totalVariance)}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        <div className="p-2.5 bg-rose-50/80 border border-rose-200 rounded text-xs text-rose-900 leading-relaxed">
+                          <p className="font-semibold text-rose-950 mb-1 flex items-center gap-1">
+                            <span>Analysis Summary</span>
+                          </p>
+                          <p className="text-slate-700">
+                            Material consumption analysis detected quantity variance in <strong className="font-semibold text-slate-900">{anomalousMaterialNames}</strong>. Actual usage exceeded planned BOM benchmarks, indicating material overconsumption during production.
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800">
+                        No material consumption anomalies detected. Actual usage aligns with planned BOM benchmarks.
+                      </div>
+                    )}
+                  </section>
+                )}
+
                 {/* The analyser returns the recorded Node fields only. */}
                 <section className="bg-slate-50/70 border border-slate-200 rounded-lg p-3.5 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 pb-1.5 border-b border-slate-200/60">
