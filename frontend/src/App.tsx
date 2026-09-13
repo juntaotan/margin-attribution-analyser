@@ -3,18 +3,20 @@ import {
   Network,
   Database,
   Settings,
-  Layers,
   FileText,
   DollarSign,
-  ChevronRight,
-  ChevronLeft,
   Play,
-  Building2,
   Calendar,
   Package,
-  ClipboardList,
 } from 'lucide-react';
 import { DataPreparation } from './DataPreparation';
+import {
+  buildAnalysisGraph,
+  formatAmount,
+  formatQuantity,
+  type AnalysisNode,
+  type AnalysisResponse,
+} from './analysisGraph';
 import dagre from 'dagre';
 import {
   ReactFlow,
@@ -28,44 +30,18 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-export interface GraphNodeData {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  department: string;
-  cost: number | null;
-}
-
-export interface GraphEdgeData {
-  id: string;
-  source: string;
-  target: string;
-  quantity: number;
-  cost: number | null;
-}
-
-export interface AnalysisResponse {
-  summary: {
-    totalNodes: number;
-    totalEdges: number;
-    analyzedAt: string;
-    message?: string;
-  };
-  nodes: GraphNodeData[];
-  edges: GraphEdgeData[];
-}
+type AnalysisFlowNode = FlowNode<{ label: React.ReactNode; raw: AnalysisNode }>;
 
 const getLayoutedElements = (
-  rawNodes: FlowNode[],
+  rawNodes: AnalysisFlowNode[],
   rawEdges: FlowEdge[],
   direction = 'LR'
 ) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-  const nodeWidth = 180;
-  const nodeHeight = 65;
+  const nodeWidth = 220;
+  const nodeHeight = 94;
 
   dagreGraph.setGraph({ rankdir: direction, ranksep: 70, nodesep: 35 });
 
@@ -106,80 +82,99 @@ const getInitialRoute = (): string => {
 export const App: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState<string>(getInitialRoute);
 
-  // Margin Topology Filters State
-  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  // The trace accepts a date range and optional comma-separated inventory IDs.
   const [periodFrom, setPeriodFrom] = useState<string>('');
   const [periodTo, setPeriodTo] = useState<string>('');
-  const [productName, setProductName] = useState<string>('');
-  const [productionOrder, setProductionOrder] = useState<string>('');
-  const [showMoreFilters, setShowMoreFilters] = useState<boolean>(false);
+  const [targetInput, setTargetInput] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [lastAnalyzedAt, setLastAnalyzedAt] = useState<string | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AnalysisFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
-  const [selectedNodeData, setSelectedNodeData] = useState<GraphNodeData | null>(null);
+  const [selectedNodeData, setSelectedNodeData] = useState<AnalysisNode | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
+  /** Requests traced adjacency entries, then lays out their recorded Nodes. */
   const handleStartAnalysis = async () => {
     if (!periodFrom || !periodTo) {
-      alert('Please select both "Period: From" and "Period: To".');
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeData(null);
+      setLastAnalyzedAt(null);
+      setAnalysisError('Please select both period dates.');
+      return;
+    }
+    if (periodFrom > periodTo) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeData(null);
+      setLastAnalyzedAt(null);
+      setAnalysisError('Period start must not be after period end.');
       return;
     }
 
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setLastAnalyzedAt(null);
 
     try {
-      const response = await fetch('/api/v1/analysis/margin-topology', {
+      const targets = targetInput.split(',').map((target) => target.trim()).filter(Boolean);
+      const response = await fetch('/api/v1/analysis/trace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          company: selectedCompany || undefined,
           startDate: periodFrom,
           endDate: periodTo,
+          targets,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Analysis failed with HTTP status ${response.status}`);
+        const errorBody = await response.json().catch(() => null) as { message?: string } | null;
+        throw new Error(errorBody?.message || `Analysis failed with HTTP status ${response.status}`);
       }
 
       const data: AnalysisResponse = await response.json();
+      if (!Array.isArray(data.results)) {
+        throw new Error('The analysis response did not contain adjacency entries.');
+      }
+      const graph = buildAnalysisGraph(data.results);
 
-      if (!data.nodes || data.nodes.length === 0) {
+      if (graph.nodes.length === 0) {
         setNodes([]);
         setEdges([]);
         setSelectedNodeData(null);
-        setAnalysisError(data.summary?.message || 'No graph data found for the selected period.');
+        setAnalysisError('No products found for the selected period.');
       } else {
-        const rawNodes: FlowNode[] = data.nodes.map((n) => ({
-          id: n.id,
+        const rawNodes: AnalysisFlowNode[] = graph.nodes.map(({ id, node }) => ({
+          id,
           data: {
             label: (
               <div className="text-left font-sans">
-                <div className="font-semibold text-xs text-slate-800 truncate">{n.name}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  {n.category === 'FINISHED_GOOD' ? 'Finished Good' : 'Raw Material'}
+                <div className="font-semibold text-xs text-slate-800 truncate" title={node.inventoryId}>
+                  {node.inventoryId}
                 </div>
-                <div className="text-[10px] text-blue-600 font-mono mt-0.5">
-                  Qty: {n.quantity}
+                <div className="text-[11px] text-blue-700 font-mono mt-1">
+                  Qty: {formatQuantity(node.quantity)}
+                </div>
+                <div className="text-[11px] text-emerald-700 font-mono mt-0.5">
+                  Amount: {formatAmount(node.cost)}
                 </div>
               </div>
             ),
+            raw: node,
           },
           position: { x: 0, y: 0 },
           style: {
-            background: n.category === 'FINISHED_GOOD' ? '#eff6ff' : '#f8fafc',
-            border: n.category === 'FINISHED_GOOD' ? '2px solid #3b82f6' : '1px solid #94a3b8',
+            background: '#ffffff',
+            border: '1px solid #94a3b8',
             borderRadius: '8px',
-            padding: '8px',
-            width: 170,
+            padding: '10px',
+            width: 210,
             boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
           },
-          raw: n,
-        } as FlowNode));
+        }));
 
-        const rawEdges: FlowEdge[] = (data.edges || []).map((e) => ({
+        const rawEdges: FlowEdge[] = graph.edges.map((e) => ({
           id: e.id,
           source: e.source,
           target: e.target,
@@ -191,13 +186,14 @@ export const App: React.FC = () => {
         const layouted = getLayoutedElements(rawNodes, rawEdges, 'LR');
         setNodes(layouted.nodes);
         setEdges(layouted.edges);
-        if (data.nodes.length > 0) {
-          setSelectedNodeData(data.nodes[0]);
-        }
+        setSelectedNodeData(graph.nodes[0].node);
       }
       setLastAnalyzedAt(new Date().toLocaleTimeString());
-    } catch (err: any) {
-      setAnalysisError(err.message || 'Error executing analysis');
+    } catch (err) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeData(null);
+      setAnalysisError(err instanceof Error ? err.message : 'Error executing analysis');
     } finally {
       setIsAnalyzing(false);
     }
@@ -311,23 +307,6 @@ export const App: React.FC = () => {
               {/* Filter Toolbar Above Canvas */}
               <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 shrink-0 z-20">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  {/* Company Name */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                      Company:
-                    </span>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={selectedCompany}
-                        onChange={(e) => setSelectedCompany(e.target.value)}
-                        placeholder="Company name"
-                        className="h-8 w-36 pl-7 pr-2.5 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      />
-                      <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-
                   {/* Period: From and To date pickers */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
@@ -358,60 +337,25 @@ export const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* More Filters: Product Name & Production Order */}
-                  {showMoreFilters && (
-                    <>
-                      {/* Product Name */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                          Product:
-                        </span>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
-                            placeholder="Product name"
-                            className="h-8 w-36 pl-7 pr-2 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                          />
-                          <Package className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
-                      </div>
+                  {/* Inventory IDs are optional; an empty value traces all period products. */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                      Products:
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={targetInput}
+                        onChange={(e) => setTargetInput(e.target.value)}
+                        aria-label="Product inventory IDs"
+                        placeholder="IDs separated by commas (optional)"
+                        className="h-8 w-64 pl-7 pr-2 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                      />
+                      <Package className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
 
-                      {/* Production Order */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                          Production Order:
-                        </span>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={productionOrder}
-                            onChange={(e) => setProductionOrder(e.target.value)}
-                            placeholder="Production order no."
-                            className="h-8 w-36 pl-7 pr-2 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                          />
-                          <ClipboardList className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Toggle Arrow (ChevronRight when collapsed, ChevronLeft when expanded) */}
-                  <button
-                    type="button"
-                    onClick={() => setShowMoreFilters((prev) => !prev)}
-                    title={showMoreFilters ? 'Collapse additional filters' : 'Expand additional filters (Product, Production Order)'}
-                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-all cursor-pointer shrink-0"
-                  >
-                    {showMoreFilters ? (
-                      <ChevronLeft className="w-4 h-4 text-blue-600" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-slate-600" />
-                    )}
-                  </button>
-
-                  {/* Start Analysis Button (right of the arrow) */}
+                  {/* Start the date-scoped trace. */}
                   <button
                     type="button"
                     onClick={handleStartAnalysis}
@@ -439,11 +383,7 @@ export const App: React.FC = () => {
                       edges={edges}
                       onNodesChange={onNodesChange}
                       onEdgesChange={onEdgesChange}
-                      onNodeClick={(_, node) => {
-                        if ((node as any).raw) {
-                          setSelectedNodeData((node as any).raw);
-                        }
-                      }}
+                      onNodeClick={(_, node) => setSelectedNodeData(node.data.raw)}
                       fitView
                     >
                       <Background color="#e2e8f0" gap={16} />
@@ -466,10 +406,8 @@ export const App: React.FC = () => {
                         ) : lastAnalyzedAt ? (
                           <p className="text-xs text-emerald-600 font-mono mt-2 bg-emerald-50 px-3 py-1 rounded border border-emerald-100 inline-block">
                             Active Filters: {[
-                              selectedCompany ? `Company: ${selectedCompany}` : null,
                               periodFrom || periodTo ? `Period: ${periodFrom || '—'} to ${periodTo || '—'}` : null,
-                              productName ? `Product: ${productName}` : null,
-                              productionOrder ? `Order: ${productionOrder}` : null,
+                              targetInput.trim() ? `Products: ${targetInput}` : 'All period products',
                             ].filter(Boolean).join(' | ') || 'All Records (No Filters Applied)'}
                           </p>
                         ) : (
@@ -492,13 +430,13 @@ export const App: React.FC = () => {
                 </h3>
                 {selectedNodeData && (
                   <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 font-medium">
-                    {selectedNodeData.category}
+                    Selected node
                   </span>
                 )}
               </div>
 
               <div className="p-4 space-y-4">
-                {/* Section 1: Basic Information */}
+                {/* The analyser returns the recorded Node fields only. */}
                 <section className="bg-slate-50/70 border border-slate-200 rounded-lg p-3.5 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 pb-1.5 border-b border-slate-200/60">
                     <FileText className="w-4 h-4 text-blue-600" />
@@ -506,86 +444,33 @@ export const App: React.FC = () => {
                   </div>
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-400">Item / Part Name</span>
-                      <span className="font-medium text-slate-700">{selectedNodeData?.name || '[Pending Item]'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-400">Part Code / Drawing</span>
-                      <span className="font-mono text-slate-700">{selectedNodeData?.id || '[PART-CODE]'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-400">Level / Category</span>
-                      <span className="text-slate-700">{selectedNodeData?.category || '[Level / Category]'}</span>
+                      <span className="text-slate-400">Inventory ID</span>
+                      <span className="font-medium text-slate-700 break-all text-right pl-2">
+                        {selectedNodeData?.inventoryId || '—'}
+                      </span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-400">Work Center / Owner</span>
-                      <span className="text-slate-700">{selectedNodeData?.department || '[Work Center]'}</span>
+                      <span className="text-slate-400">Quantity</span>
+                      <span className="font-mono text-slate-700">
+                        {selectedNodeData ? formatQuantity(selectedNodeData.quantity) : '—'}
+                      </span>
                     </div>
                   </div>
                 </section>
 
-                {/* Section 2: Cost Breakdown (M / L / O) */}
+                {/* A null cost is unavailable; it is never displayed as zero. */}
                 <section className="bg-slate-50/70 border border-slate-200 rounded-lg p-3.5 space-y-2.5">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 pb-1.5 border-b border-slate-200/60">
                     <DollarSign className="w-4 h-4 text-emerald-600" />
-                    <span>Cost Breakdown</span>
+                    <span>Recorded Amount</span>
                   </div>
                   <div className="space-y-2 text-xs font-mono">
                     <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200/80">
-                      <span className="text-slate-600 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-sky-500" />
-                        Material (M)
-                      </span>
-                      <span className="font-semibold text-slate-800">
-                        {selectedNodeData?.cost != null ? `$${selectedNodeData.cost.toFixed(2)}` : '—'}
+                      <span className="text-slate-600">Cost</span>
+                      <span className="font-semibold text-slate-800 text-right">
+                        {selectedNodeData ? formatAmount(selectedNodeData.cost) : '—'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200/80">
-                      <span className="text-slate-600 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-500" />
-                        Labor (L)
-                      </span>
-                      <span className="font-semibold text-slate-800">$0.00</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200/80">
-                      <span className="text-slate-600 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-violet-500" />
-                        Overhead (O)
-                      </span>
-                      <span className="font-semibold text-slate-800">$0.00</span>
-                    </div>
-                    <div className="pt-1.5 border-t border-slate-200 flex justify-between text-xs font-bold text-slate-900">
-                      <span>Total Cost</span>
-                      <span>
-                        {selectedNodeData?.cost != null ? `$${selectedNodeData.cost.toFixed(2)} NZD` : '—'}
-                      </span>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Section 3: Direct Dependencies & Operations */}
-                <section className="bg-slate-50/70 border border-slate-200 rounded-lg p-3.5 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 pb-1.5 border-b border-slate-200/60">
-                    <Layers className="w-4 h-4 text-indigo-600" />
-                    <span>Direct Dependencies & Operations</span>
-                  </div>
-                  <div className="border border-dashed border-slate-200 rounded p-3 text-xs bg-white">
-                    {selectedNodeData ? (
-                      <div className="space-y-1.5 text-slate-600">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Total Quantity:</span>
-                          <span className="font-mono font-medium">{selectedNodeData.quantity}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Node Identifier:</span>
-                          <span className="font-mono text-[11px] text-blue-600">{selectedNodeData.id}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center text-slate-400 py-2">
-                        [Click any node on canvas to view details]
-                      </div>
-                    )}
                   </div>
                 </section>
               </div>
