@@ -97,4 +97,30 @@ class AnalysisControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Target not found in period: MISSING"));
     }
+
+    @Test
+    void bomEndpointAcceptsTargetsAndSerializesBomAdjacency() throws Exception {
+        Node material = new Node("MAT-1", new BigDecimal("2"), null);
+        Node product = new Node("PROD-A", BigDecimal.ONE, null);
+        AnalysisResults expected = AnalysisResults.builder()
+                .analysisId(UUID.randomUUID())
+                .results(List.of(
+                        new AnalysisAdjacencyEntry(material, List.of(product)),
+                        new AnalysisAdjacencyEntry(product, List.of())))
+                .build();
+        when(analyser.traceBom(List.of("PROD-A"), null, null)).thenReturn(expected);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(analysisController).build();
+
+        mvc.perform(post("/api/v1/analysis/bom")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targets":["PROD-A"]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[0].upstream.inventoryId").value("MAT-1"))
+                .andExpect(jsonPath("$.results[0].upstream.quantity").value(2))
+                .andExpect(jsonPath("$.results[0].downstream[0].inventoryId").value("PROD-A"))
+                .andExpect(jsonPath("$.results[1].upstream.inventoryId").value("PROD-A"))
+                .andExpect(jsonPath("$.results[1].downstream").isEmpty());
+    }
 }

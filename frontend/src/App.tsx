@@ -8,6 +8,8 @@ import {
   Play,
   Calendar,
   Package,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { DataPreparation } from './DataPreparation';
 import {
@@ -82,6 +84,12 @@ const getInitialRoute = (): string => {
 export const App: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState<string>(getInitialRoute);
 
+  // Comparison expansion state (toggleable second row)
+  const [isComparisonExpanded, setIsComparisonExpanded] = useState<boolean>(false);
+  const [comparisonMode, setComparisonMode] = useState<'bom' | 'comparable_period'>('bom');
+  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('');
+  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('');
+
   // The trace accepts a date range and optional comma-separated inventory IDs.
   const [periodFrom, setPeriodFrom] = useState<string>('');
   const [periodTo, setPeriodTo] = useState<string>('');
@@ -95,6 +103,9 @@ export const App: React.FC = () => {
 
   /** Requests traced adjacency entries, then lays out their recorded Nodes. */
   const handleStartAnalysis = async () => {
+    const targets = targetInput.split(',').map((target) => target.trim()).filter(Boolean);
+    const isBomMode = isComparisonExpanded && comparisonMode === 'bom';
+
     if (!periodFrom || !periodTo) {
       setNodes([]);
       setEdges([]);
@@ -111,53 +122,81 @@ export const App: React.FC = () => {
       setAnalysisError('Period start must not be after period end.');
       return;
     }
+    if (isBomMode && targets.length === 0) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNodeData(null);
+      setLastAnalyzedAt(null);
+      setAnalysisError('Please enter at least one product ID in Products to compare with Bill of Material.');
+      return;
+    }
 
     setIsAnalyzing(true);
     setAnalysisError(null);
     setLastAnalyzedAt(null);
 
     try {
-      const targets = targetInput.split(',').map((target) => target.trim()).filter(Boolean);
-      const response = await fetch('/api/v1/analysis/trace', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startDate: periodFrom,
-          endDate: periodTo,
-          targets,
-        }),
-      });
+      if (isBomMode) {
+        // Fetch both actual production trace and standard BOM concurrently
+        const [actualRes, bomRes] = await Promise.all([
+          fetch('/api/v1/analysis/trace', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ startDate: periodFrom, endDate: periodTo, targets }),
+          }),
+          fetch('/api/v1/analysis/bom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ startDate: periodFrom, endDate: periodTo, targets }),
+          }),
+        ]);
 
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null) as { message?: string } | null;
-        throw new Error(errorBody?.message || `Analysis failed with HTTP status ${response.status}`);
-      }
+        if (!actualRes.ok) {
+          const err = await actualRes.json().catch(() => null) as { message?: string } | null;
+          throw new Error(err?.message || `Actual trace failed (${actualRes.status})`);
+        }
+        if (!bomRes.ok) {
+          const err = await bomRes.json().catch(() => null) as { message?: string } | null;
+          throw new Error(err?.message || `BOM trace failed (${bomRes.status})`);
+        }
 
-      const data: AnalysisResponse = await response.json();
-      if (!Array.isArray(data.results)) {
-        throw new Error('The analysis response did not contain adjacency entries.');
-      }
-      const graph = buildAnalysisGraph(data.results);
+        const actualData: AnalysisResponse = await actualRes.json();
+        const bomData: AnalysisResponse = await bomRes.json();
+        const actualGraph = buildAnalysisGraph(actualData.results || []);
+        const bomGraph = buildAnalysisGraph(bomData.results || []);
 
-      if (graph.nodes.length === 0) {
-        setNodes([]);
-        setEdges([]);
-        setSelectedNodeData(null);
-        setAnalysisError('No products found for the selected period.');
-      } else {
-        const rawNodes: AnalysisFlowNode[] = graph.nodes.map(({ id, node }) => ({
-          id,
+        if (actualGraph.nodes.length === 0 && bomGraph.nodes.length === 0) {
+          setNodes([]);
+          setEdges([]);
+          setSelectedNodeData(null);
+          setAnalysisError('No records found for the specified period and products.');
+          return;
+        }
+
+        // Map BOM planned quantity by inventory ID for anomaly detection (!= planned)
+        const bomQtyByItem = new Map<string, number>(
+          bomGraph.nodes.map(({ node }) => [node.inventoryId, node.quantity])
+        );
+
+        // Build Top Branch: BOM Benchmark nodes
+        const bomNodes: AnalysisFlowNode[] = bomGraph.nodes.map(({ id, node }) => ({
+          id: 'bom__' + id,
           data: {
             label: (
               <div className="text-left font-sans">
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[10px] font-bold text-indigo-600 uppercase bg-indigo-50 px-1.5 py-0.5 rounded">
+                    BOM Benchmark
+                  </span>
+                </div>
                 <div className="font-semibold text-xs text-slate-800 truncate" title={node.inventoryId}>
                   {node.inventoryId}
                 </div>
-                <div className="text-[11px] text-blue-700 font-mono mt-1">
-                  Qty: {formatQuantity(node.quantity)}
+                <div className="text-[11px] text-indigo-700 font-mono mt-1">
+                  Plan Qty: {formatQuantity(node.quantity)}
                 </div>
-                <div className="text-[11px] text-emerald-700 font-mono mt-0.5">
-                  Amount: {formatAmount(node.cost)}
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                  Standard
                 </div>
               </div>
             ),
@@ -166,27 +205,170 @@ export const App: React.FC = () => {
           position: { x: 0, y: 0 },
           style: {
             background: '#ffffff',
-            border: '1px solid #94a3b8',
+            border: '1px solid #818cf8',
             borderRadius: '8px',
             padding: '10px',
-            width: 210,
-            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+            width: 220,
+            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.08)',
           },
         }));
 
-        const rawEdges: FlowEdge[] = graph.edges.map((e) => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
+        const bomEdges: FlowEdge[] = bomGraph.edges.map((e) => ({
+          id: 'bom__' + e.id,
+          source: 'bom__' + e.source,
+          target: 'bom__' + e.target,
+          animated: true,
+          style: { stroke: '#818cf8', strokeWidth: 1.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#818cf8' },
+        }));
+
+        // Build Bottom Branch: Actual Production nodes with anomaly highlighting
+        const actualNodes: AnalysisFlowNode[] = actualGraph.nodes.map(({ id, node }) => {
+          const plannedQty = bomQtyByItem.get(node.inventoryId);
+          // Anomaly rule: not equal to planned BOM quantity (with floating point tolerance)
+          const isAnomaly = plannedQty !== undefined && Math.abs(node.quantity - plannedQty) > 0.0001;
+
+          return {
+            id: 'act__' + id,
+            data: {
+              label: (
+                <div className="text-left font-sans">
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                      Actual
+                    </span>
+                    {isAnomaly && (
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        ⚠️ Anomaly
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-semibold text-xs text-slate-800 truncate" title={node.inventoryId}>
+                    {node.inventoryId}
+                  </div>
+                  <div className={`text-[11px] font-mono mt-1 ${isAnomaly ? 'text-rose-700 font-bold' : 'text-blue-700'}`}>
+                    Qty: {formatQuantity(node.quantity)}
+                    {isAnomaly && plannedQty !== undefined && (
+                      <span className="text-[10px] text-rose-600 font-normal ml-1">
+                        (Plan: {formatQuantity(plannedQty)})
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-emerald-700 font-mono mt-0.5">
+                    Amount: {formatAmount(node.cost)}
+                  </div>
+                </div>
+              ),
+              raw: node,
+            },
+            position: { x: 0, y: 0 },
+            style: {
+              background: isAnomaly ? '#fff1f2' : '#ffffff',
+              border: isAnomaly ? '2px solid #e11d48' : '1px solid #94a3b8',
+              borderRadius: '8px',
+              padding: '10px',
+              width: 220,
+              boxShadow: isAnomaly
+                ? '0 0 0 1px #e11d48, 0 4px 6px -1px rgb(225 29 72 / 0.15)'
+                : '0 1px 3px 0 rgb(0 0 0 / 0.08)',
+            },
+          };
+        });
+
+        const actualEdges: FlowEdge[] = actualGraph.edges.map((e) => ({
+          id: 'act__' + e.id,
+          source: 'act__' + e.source,
+          target: 'act__' + e.target,
           animated: true,
           style: { stroke: '#64748b', strokeWidth: 1.5 },
           markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
         }));
 
-        const layouted = getLayoutedElements(rawNodes, rawEdges, 'LR');
-        setNodes(layouted.nodes);
-        setEdges(layouted.edges);
-        setSelectedNodeData(graph.nodes[0].node);
+        // Layout both branches in LR mode
+        const bomLayout = getLayoutedElements(bomNodes, bomEdges, 'LR');
+        const actualLayout = getLayoutedElements(actualNodes, actualEdges, 'LR');
+
+        // Shift actual branch down below BOM branch
+        const bomMaxY = bomLayout.nodes.reduce((max, n) => Math.max(max, n.position.y), 0);
+        actualLayout.nodes.forEach((n) => {
+          n.position.y += bomMaxY + 220;
+        });
+
+        setNodes([...bomLayout.nodes, ...actualLayout.nodes]);
+        setEdges([...bomLayout.edges, ...actualLayout.edges]);
+        if (actualGraph.nodes.length > 0) {
+          setSelectedNodeData(actualGraph.nodes[0].node);
+        } else if (bomGraph.nodes.length > 0) {
+          setSelectedNodeData(bomGraph.nodes[0].node);
+        }
+      } else {
+        // Standard single-branch production trace
+        const response = await fetch('/api/v1/analysis/trace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: periodFrom, endDate: periodTo, targets }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null) as { message?: string } | null;
+          throw new Error(errorBody?.message || `Analysis failed with HTTP status ${response.status}`);
+        }
+
+        const data: AnalysisResponse = await response.json();
+        if (!Array.isArray(data.results)) {
+          throw new Error('The analysis response did not contain adjacency entries.');
+        }
+        const graph = buildAnalysisGraph(data.results);
+
+        if (graph.nodes.length === 0) {
+          setNodes([]);
+          setEdges([]);
+          setSelectedNodeData(null);
+          setAnalysisError('No products found for the selected period.');
+        } else {
+          const rawNodes: AnalysisFlowNode[] = graph.nodes.map(({ id, node }) => ({
+            id,
+            data: {
+              label: (
+                <div className="text-left font-sans">
+                  <div className="font-semibold text-xs text-slate-800 truncate" title={node.inventoryId}>
+                    {node.inventoryId}
+                  </div>
+                  <div className="text-[11px] text-blue-700 font-mono mt-1">
+                    Qty: {formatQuantity(node.quantity)}
+                  </div>
+                  <div className="text-[11px] text-emerald-700 font-mono mt-0.5">
+                    Amount: {formatAmount(node.cost)}
+                  </div>
+                </div>
+              ),
+              raw: node,
+            },
+            position: { x: 0, y: 0 },
+            style: {
+              background: '#ffffff',
+              border: '1px solid #94a3b8',
+              borderRadius: '8px',
+              padding: '10px',
+              width: 210,
+              boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+            },
+          }));
+
+          const rawEdges: FlowEdge[] = graph.edges.map((e) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            animated: true,
+            style: { stroke: '#64748b', strokeWidth: 1.5 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
+          }));
+
+          const layouted = getLayoutedElements(rawNodes, rawEdges, 'LR');
+          setNodes(layouted.nodes);
+          setEdges(layouted.edges);
+          setSelectedNodeData(graph.nodes[0].node);
+        }
       }
       setLastAnalyzedAt(new Date().toLocaleTimeString());
     } catch (err) {
@@ -305,72 +487,148 @@ export const App: React.FC = () => {
             {/* 3. Center: Main Margin Topology Canvas Workspace */}
             <main className="flex-1 relative bg-slate-50 flex flex-col overflow-hidden">
               {/* Filter Toolbar Above Canvas */}
-              <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 shrink-0 z-20">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {/* Period: From and To date pickers */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                      Period:
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={periodFrom}
-                          onChange={(e) => setPeriodFrom(e.target.value)}
-                          aria-label="Period from date"
-                          className="h-8 pl-7 pr-1 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
-                        />
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      <span className="text-xs text-slate-400 font-medium">to</span>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={periodTo}
-                          onChange={(e) => setPeriodTo(e.target.value)}
-                          aria-label="Period to date"
-                          className="h-8 pl-7 pr-1 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
-                        />
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Inventory IDs are optional; an empty value traces all period products. */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                      Products:
-                    </span>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={targetInput}
-                        onChange={(e) => setTargetInput(e.target.value)}
-                        aria-label="Product inventory IDs"
-                        placeholder="IDs separated by commas (optional)"
-                        className="h-8 w-64 pl-7 pr-2 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex flex-col gap-2.5 shrink-0 z-20">
+                {/* Row 1: Primary Controls */}
+                <div className="flex items-center justify-between gap-3 shrink-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* Toggle button with upward chevron that animates to point downward */}
+                    <button
+                      type="button"
+                      onClick={() => setIsComparisonExpanded((prev) => !prev)}
+                      aria-label={isComparisonExpanded ? 'Collapse comparison options' : 'Expand comparison options'}
+                      title={isComparisonExpanded ? 'Collapse comparison options' : 'Expand comparison options'}
+                      className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-all cursor-pointer shrink-0"
+                    >
+                      <ChevronUp
+                        className={`w-4 h-4 transition-transform duration-300 ease-in-out ${
+                          isComparisonExpanded ? 'rotate-180' : ''
+                        }`}
                       />
-                      <Package className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </button>
+
+                    {/* Primary Period: From and To date pickers */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                        Period:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className="relative">
+                          <input
+                            type="date"
+                            value={periodFrom}
+                            onChange={(e) => setPeriodFrom(e.target.value)}
+                            aria-label="Period from date"
+                            className="h-8 pl-7 pr-1 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                          />
+                          <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                        <span className="text-xs text-slate-400 font-medium">to</span>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            value={periodTo}
+                            onChange={(e) => setPeriodTo(e.target.value)}
+                            aria-label="Period to date"
+                            className="h-8 pl-7 pr-1 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                          />
+                          <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Products inventory IDs */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                        Products:
+                      </span>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={targetInput}
+                          onChange={(e) => setTargetInput(e.target.value)}
+                          aria-label="Product inventory IDs"
+                          placeholder={isComparisonExpanded && comparisonMode === 'bom' ? 'e.g. Product-A (required)' : 'IDs separated by commas (optional)'}
+                          className="h-8 w-64 pl-7 pr-2 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                        <Package className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Start the date-scoped trace. */}
+                    <button
+                      type="button"
+                      onClick={handleStartAnalysis}
+                      disabled={isAnalyzing}
+                      className="h-8 px-3.5 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-semibold rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>{isAnalyzing ? 'Analyzing…' : 'Start Analysis'}</span>
+                    </button>
                   </div>
 
-                  {/* Start the date-scoped trace. */}
-                  <button
-                    type="button"
-                    onClick={handleStartAnalysis}
-                    disabled={isAnalyzing}
-                    className="h-8 px-3.5 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-semibold rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>{isAnalyzing ? 'Analyzing…' : 'Start Analysis'}</span>
-                  </button>
+                  {lastAnalyzedAt && (
+                    <span className="text-[11px] font-mono text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md shrink-0 hidden lg:inline-block">
+                      Analyzed at: {lastAnalyzedAt}
+                    </span>
+                  )}
                 </div>
 
-                {lastAnalyzedAt && (
-                  <span className="text-[11px] font-mono text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md shrink-0 hidden lg:inline-block">
-                    Analyzed at: {lastAnalyzedAt}
-                  </span>
+                {/* Row 2: Revealed comparison benchmark row when expanded */}
+                {isComparisonExpanded && (
+                  <div className="pt-2 border-t border-slate-100 flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                        Compare with:
+                      </span>
+                      <div className="relative">
+                        <select
+                          value={comparisonMode}
+                          onChange={(e) => {
+                            setComparisonMode(e.target.value as 'bom' | 'comparable_period');
+                            setAnalysisError(null);
+                          }}
+                          aria-label="Comparison benchmark"
+                          className="h-8 pl-3 pr-8 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                        >
+                          <option value="bom">Bill of Material</option>
+                          <option value="comparable_period">Comparable Period</option>
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Only show Period XXX to XXX in Row 2 if Comparable Period is selected */}
+                    {comparisonMode === 'comparable_period' && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                          Period:
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <div className="relative">
+                            <input
+                              type="date"
+                              value={comparablePeriodFrom}
+                              onChange={(e) => setComparablePeriodFrom(e.target.value)}
+                              aria-label="Comparable period from date"
+                              className="h-8 pl-7 pr-1 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                            />
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                          <span className="text-xs text-slate-400 font-medium">to</span>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              value={comparablePeriodTo}
+                              onChange={(e) => setComparablePeriodTo(e.target.value)}
+                              aria-label="Comparable period to date"
+                              className="h-8 pl-7 pr-1 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                            />
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 

@@ -41,6 +41,19 @@ public class AnalysisController {
     }
 
     /**
+     * Traces the multi-level Bill of Materials (BOM) hierarchy for the requested target products.
+     *
+     * @param request optional target product inventory IDs
+     * @return an analysis ID and the traced BOM adjacency entries
+     */
+    @PostMapping("/bom")
+    public ResponseEntity<AnalysisResults> traceBom(@RequestBody AnalysisRequest request) {
+        AnalysisResults response = analyser.traceBom(
+                request.getTargets(), request.getStartDate(), request.getEndDate());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Turns an invalid date range or absent target into a readable HTTP 400 response.
      * This keeps validation failures separate from server-side analysis failures.
      *

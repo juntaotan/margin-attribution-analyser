@@ -14,4 +14,6 @@ public interface BillOfMaterialRepository extends JpaRepository<BillOfMaterial, 
     );
 
     List<BillOfMaterial> findAllByBomNoAndProductNo(String bomNo, String productNo);
+
+    List<BillOfMaterial> findAllByProductNoIn(java.util.Collection<String> productNos);
 }

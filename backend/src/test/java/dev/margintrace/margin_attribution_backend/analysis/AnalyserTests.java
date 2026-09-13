@@ -7,6 +7,9 @@ import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
+import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +21,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -28,6 +32,8 @@ class AnalyserTests {
     private static final LocalDate END = LocalDate.of(2026, 1, 31);
 
     @Mock private AttributionWorkflow attributionWorkflow;
+    @Mock private BillOfMaterialRepository billOfMaterialRepository;
+    @Mock private ProductionRepository productionRepository;
     @InjectMocks private Analyser analyser;
 
     @Test
@@ -89,6 +95,29 @@ class AnalyserTests {
                 new AnalysisAdjacencyEntry(produced, List.of(consumed)),
                 new AnalysisAdjacencyEntry(consumed, List.of(finished)),
                 new AnalysisAdjacencyEntry(finished, List.of()));
+    }
+
+    @Test
+    void traceBomBuildsMultiLevelBomAdjacencyWithSubMaterialsUpstream() {
+        BillOfMaterial bomA1 = BillOfMaterial.of("BOM-A", "PROD-A", "SEMI-B", new BigDecimal("1.000000"));
+        BillOfMaterial bomB1 = BillOfMaterial.of("BOM-B", "SEMI-B", "MAT-D", new BigDecimal("2.500000"));
+
+        when(billOfMaterialRepository.findAllByProductNoIn(Set.of("PROD-A"))).thenReturn(List.of(bomA1));
+        when(billOfMaterialRepository.findAllByProductNoIn(Set.of("SEMI-B"))).thenReturn(List.of(bomB1));
+        when(billOfMaterialRepository.findAllByProductNoIn(Set.of("MAT-D"))).thenReturn(List.of());
+
+        AnalysisResults result = analyser.traceBom(List.of("PROD-A"));
+
+        Node targetNode = new Node("PROD-A", BigDecimal.ONE);
+        Node semiNode = new Node("SEMI-B", new BigDecimal("1.000000"));
+        Node semiParentNode = new Node("SEMI-B", BigDecimal.ONE);
+        Node matDNode = new Node("MAT-D", new BigDecimal("2.500000"));
+
+        assertThat(result.getAnalysisId()).isNotNull();
+        assertThat(result.getResults()).contains(
+                new AnalysisAdjacencyEntry(targetNode, List.of()),
+                new AnalysisAdjacencyEntry(semiNode, List.of(targetNode)),
+                new AnalysisAdjacencyEntry(matDNode, List.of(semiParentNode)));
     }
 
     /** Creates a node with its original recorded quantity and optional cost. */
