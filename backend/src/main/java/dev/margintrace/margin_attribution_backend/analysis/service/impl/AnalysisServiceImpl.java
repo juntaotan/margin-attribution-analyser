@@ -107,7 +107,7 @@ public class AnalysisServiceImpl implements AnalysisService {
                     .category(category)
                     .quantity(node.quantity())
                     .department(department)
-                    .cost(BigDecimal.ZERO)
+                    .cost(node.cost())
                     .build());
         }
 
@@ -127,7 +127,7 @@ public class AnalysisServiceImpl implements AnalysisService {
                         .source(sourceId)
                         .target(targetId)
                         .quantity(nodes[i].quantity())
-                        .cost(BigDecimal.ZERO)
+                        .cost(nodes[i].cost())
                         .build());
             }
         }

@@ -88,7 +88,7 @@ class AnalysisServiceImplTests {
         when(productionRepository.findAllByDateBetweenOrderByDateAsc(from, to))
                 .thenReturn(List.of(prod));
 
-        Node matNode = new Node("MAT-1", new BigDecimal("50"));
+        Node matNode = new Node("MAT-1", new BigDecimal("50"), new BigDecimal("123.45"));
         Node prodNode = new Node("PROD-A", new BigDecimal("100"));
         Map<Node, List<Node>> usage = Map.of(matNode, List.of(prodNode));
 
@@ -105,6 +105,9 @@ class AnalysisServiceImplTests {
 
         assertThat(response.getNodes()).hasSize(2);
         assertThat(response.getEdges()).hasSize(1);
+        assertThat(response.getNodes().get(0).getCost()).isEqualByComparingTo("123.45");
+        assertThat(response.getNodes().get(1).getCost()).isNull();
+        assertThat(response.getEdges().get(0).getCost()).isEqualByComparingTo("123.45");
         assertThat(response.getEdges().get(0).getSource()).isEqualTo("MAT-1");
         assertThat(response.getEdges().get(0).getTarget()).isEqualTo("PROD-A");
     }

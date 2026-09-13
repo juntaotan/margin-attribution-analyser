@@ -34,7 +34,7 @@ export interface GraphNodeData {
   category: string;
   quantity: number;
   department: string;
-  cost: number;
+  cost: number | null;
 }
 
 export interface GraphEdgeData {
@@ -42,7 +42,7 @@ export interface GraphEdgeData {
   source: string;
   target: string;
   quantity: number;
-  cost: number;
+  cost: number | null;
 }
 
 export interface AnalysisResponse {
@@ -537,7 +537,7 @@ export const App: React.FC = () => {
                         Material (M)
                       </span>
                       <span className="font-semibold text-slate-800">
-                        ${selectedNodeData ? selectedNodeData.cost.toFixed(2) : '0.00'}
+                        {selectedNodeData?.cost != null ? `$${selectedNodeData.cost.toFixed(2)}` : '—'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200/80">
@@ -557,7 +557,7 @@ export const App: React.FC = () => {
                     <div className="pt-1.5 border-t border-slate-200 flex justify-between text-xs font-bold text-slate-900">
                       <span>Total Cost</span>
                       <span>
-                        ${selectedNodeData ? selectedNodeData.cost.toFixed(2) : '0.00'} NZD
+                        {selectedNodeData?.cost != null ? `$${selectedNodeData.cost.toFixed(2)} NZD` : '—'}
                       </span>
                     </div>
                   </div>
