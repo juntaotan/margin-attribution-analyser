@@ -84,8 +84,8 @@ const getLayoutedElements = (
 
 const getInitialRoute = (): string => {
   const path = window.location.pathname;
-  if (path === '/data-prep') {
-    return '/data-prep';
+  if (path === '/data-prep' || path === '/settings') {
+    return path;
   }
   return '/margin-topology';
 };
@@ -423,7 +423,7 @@ export const App: React.FC = () => {
     }
 
     const handlePopState = () => {
-      setCurrentRoute(window.location.pathname === '/data-prep' ? '/data-prep' : '/margin-topology');
+      setCurrentRoute(getInitialRoute());
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -448,7 +448,11 @@ export const App: React.FC = () => {
           <span className="font-semibold text-slate-700">MarginTrace</span>
           <span>/</span>
           <span className="text-slate-600 font-medium">
-            {currentRoute === '/data-prep' ? 'Data Preparation' : 'Margin Topology Analysis'}
+            {currentRoute === '/data-prep'
+              ? 'Data Preparation'
+              : currentRoute === '/settings'
+                ? 'Settings & Parameters'
+                : 'Margin Topology Analysis'}
           </span>
           <span>/</span>
           <span>Top Bar (Reserved)</span>
@@ -519,6 +523,8 @@ export const App: React.FC = () => {
           /* PAGE: Data Preparation                                                    */
           /* ========================================================================= */
           <DataPreparation />
+        ) : currentRoute === '/settings' ? (
+          <main className="flex-1 bg-slate-50" aria-label="Settings & Parameters" />
         ) : (
           /* ========================================================================= */
           /* PAGE: Margin Topology Canvas (Default: Canvas Center + Detail Panel Right) */
