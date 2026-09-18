@@ -45,6 +45,34 @@ public class MarginAttributionAlgorithm {
         return paths.toArray(int[][]::new);
     }
 
+    /**
+     * Returns every node that points directly to the supplied node.
+     *
+     * @param graph dependency graph whose edges point from upstream to downstream
+     * @param position node position whose direct upstream nodes are required
+     * @return direct upstream node positions
+     */
+    public List<Integer> findDirectUpstreamPositions(CsrGraph graph, int position) {
+        validateGraph(graph);
+
+        int nodeCount = graph.nodes().length;
+        if (position < 0 || position >= nodeCount) {
+            throw new IndexOutOfBoundsException(
+                    "position must be between 0 and " + (nodeCount - 1) + ": " + position
+            );
+        }
+
+        int[] reverseOffsets = calculateReverseOffsets(nodeCount, graph.successors());
+        int[] predecessors = buildPredecessors(graph, reverseOffsets);
+        List<Integer> upstreamPositions = new ArrayList<>();
+        for (int edgeIndex = reverseOffsets[position];
+             edgeIndex < reverseOffsets[position + 1];
+             edgeIndex++) {
+            upstreamPositions.add(predecessors[edgeIndex]);
+        }
+        return upstreamPositions;
+    }
+
     private void tracePaths(
             int position,
             int[] reverseOffsets,

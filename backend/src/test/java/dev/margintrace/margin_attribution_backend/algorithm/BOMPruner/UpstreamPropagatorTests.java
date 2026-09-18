@@ -14,26 +14,94 @@ class UpstreamPropagatorTests {
     private final UpstreamPropagator propagator = new UpstreamPropagator();
 
     @Test
-    void traversesFromEToItsUpstreamNodes() {
+    void returnsNoGraphDiffWhenEveryUpstreamNodeIsWithinVariance() {
         CsrGraph graph = new CsrGraph(
                 new Node[] {node("A"), node("B"), node("C"), node("D"), node("E")},
                 new int[] {0, 2, 4, 4, 4, 4},
                 new int[] {1, 2, 3, 4}
         );
-        Map<Integer, BigDecimal> comparablePoints = Map.of(
-                0, BigDecimal.ONE,
-                1, BigDecimal.ONE,
-                2, BigDecimal.ONE,
-                3, BigDecimal.ONE,
-                4, BigDecimal.ONE
+        CsrGraph comparableGraph = new CsrGraph(
+                new Node[] {node("A"), node("B"), node("C"), node("D"), node("E")},
+                new int[] {0, 2, 4, 4, 4, 4},
+                new int[] {1, 2, 3, 4}
+        );
+        Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints = Map.of(
+                0, new NodeSimilarityScorer.Embedding("A"),
+                1, new NodeSimilarityScorer.Embedding("B"),
+                2, new NodeSimilarityScorer.Embedding("C"),
+                3, new NodeSimilarityScorer.Embedding("D"),
+                4, new NodeSimilarityScorer.Embedding("E")
         );
 
         assertThat(propagator.adaptivePruning(
                 graph,
+                comparableGraph,
                 4,
                 comparablePoints,
                 BigDecimal.ZERO
-        )).containsExactly(4, 1, 0);
+        )).isEmpty();
+    }
+
+    @Test
+    void stopsTheBranchWhenTheParentQuantityDifferenceExceedsVariance() {
+        CsrGraph graph = new CsrGraph(
+                new Node[] {node("A"), new Node("B", BigDecimal.TEN), node("E")},
+                new int[] {0, 1, 2, 2},
+                new int[] {1, 2}
+        );
+        CsrGraph comparableGraph = new CsrGraph(
+                new Node[] {node("A"), node("B"), node("E")},
+                new int[] {0, 1, 2, 2},
+                new int[] {1, 2}
+        );
+
+        assertThat(propagator.adaptivePruning(
+                graph,
+                comparableGraph,
+                2,
+                Map.of(
+                        0, new NodeSimilarityScorer.Embedding("A"),
+                        1, new NodeSimilarityScorer.Embedding("B"),
+                        2, new NodeSimilarityScorer.Embedding("E")
+                ),
+                BigDecimal.ONE
+        )).containsExactly(Map.entry(1, java.util.List.of(2)));
+    }
+
+    @Test
+    void recordsEveryCompletePathThatReachesTheVarianceBoundary() {
+        CsrGraph graph = new CsrGraph(
+                new Node[] {
+                        new Node("A", BigDecimal.TEN),
+                        node("B"),
+                        node("C"),
+                        node("E")
+                },
+                new int[] {0, 2, 3, 4, 4},
+                new int[] {1, 2, 3, 3}
+        );
+        CsrGraph comparableGraph = new CsrGraph(
+                new Node[] {node("A"), node("B"), node("C"), node("E")},
+                new int[] {0, 2, 3, 4, 4},
+                new int[] {1, 2, 3, 3}
+        );
+
+        assertThat(propagator.adaptivePruning(
+                graph,
+                comparableGraph,
+                3,
+                Map.of(
+                        0, new NodeSimilarityScorer.Embedding("A"),
+                        1, new NodeSimilarityScorer.Embedding("B"),
+                        2, new NodeSimilarityScorer.Embedding("C"),
+                        3, new NodeSimilarityScorer.Embedding("E")
+                ),
+                BigDecimal.ONE
+        )).containsExactly(
+                Map.entry(1, java.util.List.of(3)),
+                Map.entry(0, java.util.List.of(1, 2)),
+                Map.entry(2, java.util.List.of(3))
+        );
     }
 
     @Test
@@ -44,8 +112,9 @@ class UpstreamPropagatorTests {
         assertThatIndexOutOfBoundsException()
                 .isThrownBy(() -> propagator.adaptivePruning(
                         graph,
+                        graph,
                         1,
-                        Map.of(0, BigDecimal.ONE),
+                        Map.of(0, new NodeSimilarityScorer.Embedding("PRODUCT")),
                         BigDecimal.ZERO
                 ));
     }

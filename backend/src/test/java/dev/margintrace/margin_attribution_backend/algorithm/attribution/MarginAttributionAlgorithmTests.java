@@ -31,6 +31,14 @@ class MarginAttributionAlgorithmTests {
     }
 
     @Test
+    void returnsDirectUpstreamPositions() {
+        CsrGraph graph = graphWithSharedUpstreamPath();
+
+        assertThat(algorithm.findDirectUpstreamPositions(graph, 2))
+                .containsExactly(0, 1);
+    }
+
+    @Test
     void rejectsAPositionOutsideTheNodeArray() {
         CsrGraph graph = graphWithSharedUpstreamPath();
 

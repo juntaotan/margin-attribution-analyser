@@ -1,5 +1,6 @@
 package dev.margintrace.margin_attribution_backend.algorithm.BOMPruner;
 
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 
 import java.math.BigDecimal;
@@ -13,26 +14,34 @@ import java.util.*;
  * when one node has multiple upstream predecessors.</p>
  */
 public class UpstreamPropagator {
+    private final MarginAttributionAlgorithm marginAttributionAlgorithm =
+            new MarginAttributionAlgorithm();
+    private final NodeSimilarityScorer nodeSimilarityScorer = new NodeSimilarityScorer();
 
     /**
-     * Visits the starting position and every node reachable through incoming edges.
-     * Each position is returned once, in breadth-first downstream-to-upstream order.
+     * Finds complete upstream paths that end at a node outside the allowed variance.
      *
      * @param graph graph whose stored edges point from upstream to downstream
+     * @param comparableGraph graph containing quantities for comparable embeddings
      * @param startPosition downstream position at which propagation begins
-     * @return visited node positions, including {@code startPosition}
+     * @param comparablePoints comparable positions mapped to their embeddings
+     * @param variance maximum allowed absolute quantity difference
+     * @return edges from paths that exceed the variance, mapped from upstream
+     *         positions to downstream positions
      */
-    public List<Integer> adaptivePruning(
+    public Map<Integer, List<Integer>> adaptivePruning(
             CsrGraph graph,
+            CsrGraph comparableGraph,
             int startPosition,
-            Map<Integer, BigDecimal> comparablePoints,
+            Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints,
             BigDecimal variance
     ) {
 
-        Queue<Integer> propagatingQueue = new ArrayDeque<>();
-        Map<Integer, Integer> graphDiff = new LinkedHashMap<>();
-        List<Integer> result = new ArrayList<>();
-        Set<Integer> visited = new HashSet<>();
+        // Stores only paths whose boundary node exceeds the allowed variance.
+        Map<Integer, List<Integer>> graphDiff = new LinkedHashMap<>();
+
+        // Each queue entry owns its path so that converging DAG branches remain distinct.
+        Queue<PropagationState> propagatingQueue = new ArrayDeque<>();
 
         if (startPosition < 0 || startPosition >= graph.nodes().length) {
             throw new IndexOutOfBoundsException(
@@ -41,68 +50,102 @@ public class UpstreamPropagator {
             );
         }
 
-        propagatingQueue.add(startPosition);
-        visited.add(startPosition);
+        propagatingQueue.add(new PropagationState(startPosition, List.of(startPosition)));
 
         while(!propagatingQueue.isEmpty()){
-            int current = propagatingQueue.remove();
-            result.add(current);
+            PropagationState state = propagatingQueue.remove();
+            int current = state.currentPosition();
 
-            BigDecimal comparableQuantity = comparablePoints.get(current);
-            if (comparableQuantity == null
-                    || isContinue(
-                            graph.nodes()[current].quantity(),
-                            comparableQuantity,
-                            variance)) {
-                continue;
-            }
-
-            List<Integer> upstreams = findDirectUpstreamPositions(graph, current);
+            // Step 1: Find the direct upstream nodes of the current node, then
+            // look in comparablePoints for a node with a matching embedding.
+            List<Integer> upstreams =
+                    marginAttributionAlgorithm.findDirectUpstreamPositions(graph, current);
             for (int upstreamPosition : upstreams) {
-                if (visited.add(upstreamPosition)) {
-                    propagatingQueue.add(upstreamPosition);
+                // A valid DAG cannot revisit a node in the same path. This guard also
+                // prevents an invalid cyclic graph from causing an infinite loop.
+                if (state.path().contains(upstreamPosition)) {
+                    continue;
                 }
+
+                List<Integer> upstreamPath = new ArrayList<>(state.path());
+                upstreamPath.add(upstreamPosition);
+
+                NodeSimilarityScorer.Embedding upstreamEmbedding =
+                        nodeSimilarityScorer.buildEmbedding(graph.nodes()[upstreamPosition]);
+                Integer comparablePosition = findMatchingComparablePosition(
+                        upstreamEmbedding,
+                        comparablePoints
+                );
+
+                if (comparablePosition == null) {
+                    continue;
+                }
+
+                BigDecimal originalQuantity = graph.nodes()[upstreamPosition].quantity();
+                BigDecimal comparableQuantity =
+                        comparableGraph.nodes()[comparablePosition].quantity();
+
+                // Step 2: Once the boundary node exceeds the allowed variance, add
+                // its complete downstream-to-upstream path to graphDiff and stop
+                // propagating only this path.
+                if (exceedsVariance(
+                        originalQuantity,
+                        comparableQuantity,
+                        variance)) {
+                    addPathToGraphDiff(graphDiff, upstreamPath);
+                    continue;
+                }
+
+                // Step 3: Keep the complete path while propagating farther upstream.
+                propagatingQueue.add(new PropagationState(
+                        upstreamPosition,
+                        List.copyOf(upstreamPath)
+                ));
             }
         }
 
-        return result;
+        return graphDiff;
     }
 
-    /**
-     * Returns the positions of all nodes that point directly to the supplied node.
-     *
-     * @param graph graph whose CSR edges are stored from upstream to downstream
-     * @param currentPosition position of the material whose direct upstream is required
-     * @return direct upstream node positions
-     */
-    public List<Integer> findDirectUpstreamPositions(CsrGraph graph, int currentPosition) {
-        if (currentPosition < 0 || currentPosition >= graph.nodes().length) {
-            throw new IndexOutOfBoundsException(
-                    "currentPosition must be between 0 and "
-                            + (graph.nodes().length - 1) + ": " + currentPosition
-            );
-        }
+    private void addPathToGraphDiff(
+            Map<Integer, List<Integer>> graphDiff,
+            List<Integer> downstreamToUpstreamPath
+    ) {
+        for (int index = 1; index < downstreamToUpstreamPath.size(); index++) {
+            int downstreamPosition = downstreamToUpstreamPath.get(index - 1);
+            int upstreamPosition = downstreamToUpstreamPath.get(index);
+            List<Integer> downstreamPositions =
+                    graphDiff.computeIfAbsent(upstreamPosition, ignored -> new ArrayList<>());
 
-        List<Integer> upstreamPositions = new ArrayList<>();
-        for (int candidatePosition = 0;
-             candidatePosition < graph.nodes().length;
-             candidatePosition++) {
-            int start = graph.offset()[candidatePosition];
-            int end = graph.offset()[candidatePosition + 1];
-
-            for (int edgeIndex = start; edgeIndex < end; edgeIndex++) {
-                if (graph.successors()[edgeIndex] == currentPosition) {
-                    upstreamPositions.add(candidatePosition);
-                    break;
-                }
+            if (!downstreamPositions.contains(downstreamPosition)) {
+                downstreamPositions.add(downstreamPosition);
             }
         }
-        return upstreamPositions;
     }
 
-    private boolean isContinue(BigDecimal original, BigDecimal comparable, BigDecimal threshold){
+    private Integer findMatchingComparablePosition(
+            NodeSimilarityScorer.Embedding source,
+            Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints
+    ) {
+        for (Map.Entry<Integer, NodeSimilarityScorer.Embedding> entry
+                : comparablePoints.entrySet()) {
+            if (nodeSimilarityScorer.match(source, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    private boolean exceedsVariance(
+            BigDecimal original,
+            BigDecimal comparable,
+            BigDecimal threshold
+    ) {
         return original.subtract(comparable)
                 .abs()
                 .compareTo(threshold) > 0;
+    }
+
+    private record PropagationState(int currentPosition, List<Integer> path) {
     }
 }
