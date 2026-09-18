@@ -1,8 +1,8 @@
 package dev.margintrace.margin_attribution_backend.algorithm;
 
-import dev.margintrace.margin_attribution_backend.algorithm.attribution.AttributionPartitionReader;
-import dev.margintrace.margin_attribution_backend.algorithm.attribution.MarginAttributionAlgorithm;
-import dev.margintrace.margin_attribution_backend.algorithm.attribution.TopologicalSort;
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionPartitionReader;
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.TopologicalSort;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;

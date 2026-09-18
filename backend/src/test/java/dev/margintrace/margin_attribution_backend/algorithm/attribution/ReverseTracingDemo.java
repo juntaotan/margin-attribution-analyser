@@ -1,4 +1,4 @@
-package dev.margintrace.margin_attribution_backend.algorithm.attribution;
+package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import java.math.BigDecimal;
 import java.util.Arrays;

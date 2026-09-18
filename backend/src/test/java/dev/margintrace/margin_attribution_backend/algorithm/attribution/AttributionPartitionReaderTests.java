@@ -1,4 +1,4 @@
-package dev.margintrace.margin_attribution_backend.algorithm.attribution;
+package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import org.junit.jupiter.api.AfterEach;

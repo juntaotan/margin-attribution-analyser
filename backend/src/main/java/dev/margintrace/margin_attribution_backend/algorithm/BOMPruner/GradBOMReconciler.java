@@ -25,11 +25,26 @@ public class GradBOMReconciler {
         Map<Integer, Integer> actualGraphDiff = new LinkedHashMap<>();
         Map<Integer, Integer> comparableGraphDiff = new LinkedHashMap<>();
 
+        for (int position = 0; position < actualGraph.nodes().length; position++) {
+            int score = nodeSimilarityScorer.score(
+                    actualGraph.nodes()[position],
+                    comparableGraph.nodes()
+            );
+            actualGraphDiff.put(position, score);
+        }
+
         // Get all nodes and its embedding value
-        Map<Integer, Integer> comparablePoints = new HashMap<>();
+        Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints = new HashMap<>();
         for (int position = 0; position < comparableGraph.nodes().length; position++) {
-            Integer embedding = nodeSimilarityScorer.score(comparableGraph.nodes()[position], actualGraph.nodes());
+            NodeSimilarityScorer.Embedding embedding =
+                    nodeSimilarityScorer.buildEmbedding(comparableGraph.nodes()[position]);
             comparablePoints.put(position, embedding);
+
+            int score = nodeSimilarityScorer.score(
+                    comparableGraph.nodes()[position],
+                    actualGraph.nodes()
+            );
+            comparableGraphDiff.put(position, score);
         }
 
         return new ReconciliationResult(actualGraphDiff, comparableGraphDiff);

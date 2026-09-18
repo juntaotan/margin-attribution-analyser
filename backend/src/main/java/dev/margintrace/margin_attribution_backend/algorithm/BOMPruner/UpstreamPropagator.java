@@ -25,14 +25,84 @@ public class UpstreamPropagator {
     public List<Integer> adaptivePruning(
             CsrGraph graph,
             int startPosition,
-            Map<Integer, Integer> comparablePoints,
+            Map<Integer, BigDecimal> comparablePoints,
             BigDecimal variance
     ) {
+
+        Queue<Integer> propagatingQueue = new ArrayDeque<>();
+        Map<Integer, Integer> graphDiff = new LinkedHashMap<>();
         List<Integer> result = new ArrayList<>();
+        Set<Integer> visited = new HashSet<>();
+
+        if (startPosition < 0 || startPosition >= graph.nodes().length) {
+            throw new IndexOutOfBoundsException(
+                    "startPosition must be between 0 and "
+                            + (graph.nodes().length - 1) + ": " + startPosition
+            );
+        }
+
+        propagatingQueue.add(startPosition);
+        visited.add(startPosition);
+
+        while(!propagatingQueue.isEmpty()){
+            int current = propagatingQueue.remove();
+            result.add(current);
+
+            BigDecimal comparableQuantity = comparablePoints.get(current);
+            if (comparableQuantity == null
+                    || isContinue(
+                            graph.nodes()[current].quantity(),
+                            comparableQuantity,
+                            variance)) {
+                continue;
+            }
+
+            List<Integer> upstreams = findDirectUpstreamPositions(graph, current);
+            for (int upstreamPosition : upstreams) {
+                if (visited.add(upstreamPosition)) {
+                    propagatingQueue.add(upstreamPosition);
+                }
+            }
+        }
+
         return result;
     }
 
-    private void comparer(BigDecimal original, BigDecimal comparable, BigDecimal threshold){
+    /**
+     * Returns the positions of all nodes that point directly to the supplied node.
+     *
+     * @param graph graph whose CSR edges are stored from upstream to downstream
+     * @param currentPosition position of the material whose direct upstream is required
+     * @return direct upstream node positions
+     */
+    public List<Integer> findDirectUpstreamPositions(CsrGraph graph, int currentPosition) {
+        if (currentPosition < 0 || currentPosition >= graph.nodes().length) {
+            throw new IndexOutOfBoundsException(
+                    "currentPosition must be between 0 and "
+                            + (graph.nodes().length - 1) + ": " + currentPosition
+            );
+        }
 
+        List<Integer> upstreamPositions = new ArrayList<>();
+        for (int candidatePosition = 0;
+             candidatePosition < graph.nodes().length;
+             candidatePosition++) {
+            int start = graph.offset()[candidatePosition];
+            int end = graph.offset()[candidatePosition + 1];
+
+            for (int edgeIndex = start; edgeIndex < end; edgeIndex++) {
+                if (graph.successors()[edgeIndex] == currentPosition) {
+                    upstreamPositions.add(candidatePosition);
+                    break;
+                }
+            }
+        }
+        return upstreamPositions;
+    }
+
+    private boolean isContinue(BigDecimal original, BigDecimal comparable, BigDecimal threshold){
+        return original.subtract(comparable)
+                .abs()
+                .compareTo(threshold) > 0;
     }
 }

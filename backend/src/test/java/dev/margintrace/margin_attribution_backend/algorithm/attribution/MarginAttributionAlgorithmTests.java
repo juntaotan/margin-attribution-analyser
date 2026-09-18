@@ -1,4 +1,4 @@
-package dev.margintrace.margin_attribution_backend.algorithm.attribution;
+package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIndexOutOfBoundsException;
