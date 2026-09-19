@@ -2,6 +2,7 @@ package dev.margintrace.margin_attribution_backend.algorithm.BOMPruner;
 
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
+import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -22,10 +23,10 @@ public class UpstreamPropagator {
      * Finds complete upstream paths that end at a node outside the allowed variance.
      *
      * @param graph graph whose stored edges point from upstream to downstream
-     * @param comparableGraph graph containing quantities for comparable embeddings
+     * @param comparableGraph graph containing quantities and costs for comparable embeddings
      * @param startPosition downstream position at which propagation begins
      * @param comparablePoints comparable positions mapped to their embeddings
-     * @param variance maximum allowed absolute quantity difference
+     * @param variance maximum allowed absolute quantity or cost difference
      * @return edges from paths that exceed the variance, mapped from upstream
      *         positions to downstream positions
      */
@@ -81,16 +82,12 @@ public class UpstreamPropagator {
                     continue;
                 }
 
-                BigDecimal originalQuantity = graph.nodes()[upstreamPosition].quantity();
-                BigDecimal comparableQuantity =
-                        comparableGraph.nodes()[comparablePosition].quantity();
-
                 // Step 2: Once the boundary node exceeds the allowed variance, add
                 // its complete downstream-to-upstream path to graphDiff and stop
                 // propagating only this path.
-                if (exceedsVariance(
-                        originalQuantity,
-                        comparableQuantity,
+                if (nodeExceedsVariance(
+                        graph.nodes()[upstreamPosition],
+                        comparableGraph.nodes()[comparablePosition],
                         variance)) {
                     addPathToGraphDiff(graphDiff, upstreamPath);
                     continue;
@@ -144,6 +141,22 @@ public class UpstreamPropagator {
         return original.subtract(comparable)
                 .abs()
                 .compareTo(threshold) > 0;
+    }
+
+    private boolean nodeExceedsVariance(
+            Node original,
+            Node comparable,
+            BigDecimal threshold
+    ) {
+        if (exceedsVariance(original.quantity(), comparable.quantity(), threshold)) {
+            return true;
+        }
+
+        if (original.cost() == null || comparable.cost() == null) {
+            return original.cost() != comparable.cost();
+        }
+
+        return exceedsVariance(original.cost(), comparable.cost(), threshold);
     }
 
     private record PropagationState(int currentPosition, List<Integer> path) {

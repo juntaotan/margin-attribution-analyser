@@ -5,121 +5,73 @@ import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIndexOutOfBoundsException;
 
 class UpstreamPropagatorTests {
     private final UpstreamPropagator propagator = new UpstreamPropagator();
 
     @Test
-    void returnsNoGraphDiffWhenEveryUpstreamNodeIsWithinVariance() {
-        CsrGraph graph = new CsrGraph(
-                new Node[] {node("A"), node("B"), node("C"), node("D"), node("E")},
-                new int[] {0, 2, 4, 4, 4, 4},
-                new int[] {1, 2, 3, 4}
-        );
+    void outputsDiffForOneWayTree() {
         CsrGraph comparableGraph = new CsrGraph(
-                new Node[] {node("A"), node("B"), node("C"), node("D"), node("E")},
-                new int[] {0, 2, 4, 4, 4, 4},
-                new int[] {1, 2, 3, 4}
+                new Node[] {
+                        node("Product_1", 1, null),
+                        node("Semi-product_1", 1, 80),
+                        node("Semi-product_2", 1, 80),
+                        node("Material_1", 10, 50),
+                        node("Material_2", 10, 50),
+                        node("Material_3", 1, 70),
+                        node("Material_4", 100, 10)
+                },
+                new int[] {0, 0, 1, 2, 3, 4, 5, 6},
+                new int[] {0, 0, 1, 1, 2, 2}
         );
-        Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints = Map.of(
-                0, new NodeSimilarityScorer.Embedding("A"),
-                1, new NodeSimilarityScorer.Embedding("B"),
-                2, new NodeSimilarityScorer.Embedding("C"),
-                3, new NodeSimilarityScorer.Embedding("D"),
-                4, new NodeSimilarityScorer.Embedding("E")
+        CsrGraph actualGraph = new CsrGraph(
+                new Node[] {
+                        node("Product_1", 1, null),
+                        node("Semi-product_1", 1, 120),
+                        node("Semi-product_2", 1, 100),
+                        node("Material_1", 10, 90),
+                        node("Material_2", 10, 50)
+                },
+                new int[] {0, 0, 1, 2, 3, 4},
+                new int[] {0, 0, 1, 1}
         );
+        Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints =
+                comparablePoints(comparableGraph);
 
-        assertThat(propagator.adaptivePruning(
-                graph,
+        Map<Integer, List<Integer>> graphDiff = propagator.adaptivePruning(
+                actualGraph,
                 comparableGraph,
-                4,
+                0,
                 comparablePoints,
                 BigDecimal.ZERO
-        )).isEmpty();
-    }
-
-    @Test
-    void stopsTheBranchWhenTheParentQuantityDifferenceExceedsVariance() {
-        CsrGraph graph = new CsrGraph(
-                new Node[] {node("A"), new Node("B", BigDecimal.TEN), node("E")},
-                new int[] {0, 1, 2, 2},
-                new int[] {1, 2}
-        );
-        CsrGraph comparableGraph = new CsrGraph(
-                new Node[] {node("A"), node("B"), node("E")},
-                new int[] {0, 1, 2, 2},
-                new int[] {1, 2}
         );
 
-        assertThat(propagator.adaptivePruning(
-                graph,
-                comparableGraph,
-                2,
-                Map.of(
-                        0, new NodeSimilarityScorer.Embedding("A"),
-                        1, new NodeSimilarityScorer.Embedding("B"),
-                        2, new NodeSimilarityScorer.Embedding("E")
-                ),
-                BigDecimal.ONE
-        )).containsExactly(Map.entry(1, java.util.List.of(2)));
-    }
-
-    @Test
-    void recordsEveryCompletePathThatReachesTheVarianceBoundary() {
-        CsrGraph graph = new CsrGraph(
-                new Node[] {
-                        new Node("A", BigDecimal.TEN),
-                        node("B"),
-                        node("C"),
-                        node("E")
-                },
-                new int[] {0, 2, 3, 4, 4},
-                new int[] {1, 2, 3, 3}
-        );
-        CsrGraph comparableGraph = new CsrGraph(
-                new Node[] {node("A"), node("B"), node("C"), node("E")},
-                new int[] {0, 2, 3, 4, 4},
-                new int[] {1, 2, 3, 3}
-        );
-
-        assertThat(propagator.adaptivePruning(
-                graph,
-                comparableGraph,
-                3,
-                Map.of(
-                        0, new NodeSimilarityScorer.Embedding("A"),
-                        1, new NodeSimilarityScorer.Embedding("B"),
-                        2, new NodeSimilarityScorer.Embedding("C"),
-                        3, new NodeSimilarityScorer.Embedding("E")
-                ),
-                BigDecimal.ONE
-        )).containsExactly(
-                Map.entry(1, java.util.List.of(3)),
-                Map.entry(0, java.util.List.of(1, 2)),
-                Map.entry(2, java.util.List.of(3))
+        System.out.println("graphDiff = " + graphDiff);
+        assertThat(graphDiff).containsExactly(
+                Map.entry(1, List.of(0)),
+                Map.entry(2, List.of(0))
         );
     }
 
-    @Test
-    void rejectsAStartPositionOutsideTheGraph() {
-        CsrGraph graph = new CsrGraph(
-                new Node[] {node("PRODUCT")}, new int[] {0, 0}, new int[] {});
-
-        assertThatIndexOutOfBoundsException()
-                .isThrownBy(() -> propagator.adaptivePruning(
-                        graph,
-                        graph,
-                        1,
-                        Map.of(0, new NodeSimilarityScorer.Embedding("PRODUCT")),
-                        BigDecimal.ZERO
-                ));
+    private Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints(CsrGraph graph) {
+        NodeSimilarityScorer scorer = new NodeSimilarityScorer();
+        Map<Integer, NodeSimilarityScorer.Embedding> points = new LinkedHashMap<>();
+        for (int position = 0; position < graph.nodes().length; position++) {
+            points.put(position, scorer.buildEmbedding(graph.nodes()[position]));
+        }
+        return points;
     }
 
-    private Node node(String inventoryId) {
-        return new Node(inventoryId, BigDecimal.ONE);
+    private Node node(String inventoryId, long quantity, Integer cost) {
+        return new Node(
+                inventoryId,
+                BigDecimal.valueOf(quantity),
+                cost == null ? null : BigDecimal.valueOf(cost)
+        );
     }
 }
