@@ -55,9 +55,12 @@ buildNumber.properties
 
 # Markdown documentation
 *.md
+!DEPLOYMENT.md
+!DEPLOYMENT_GUIDE.md
 
 # environment variables
 .env
+.env.deploy
 
 # Intellij Idea
 .idea
