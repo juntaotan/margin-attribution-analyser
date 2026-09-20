@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Network, Database, Settings } from 'lucide-react';
+import { Network, Database, Settings, FileText } from 'lucide-react';
 import { DataPreparation } from './DataPreparation';
 import { DualBomAnalysisPage } from './components/DualBom/DualBomAnalysisPage';
+import { ReportStudioPage } from './components/ReportStudio/ReportStudioPage';
 
 const getInitialRoute = (): string => {
   const path = window.location.pathname;
-  if (path === '/data-prep' || path === '/settings') {
+  if (path === '/data-prep' || path === '/settings' || path === '/report-studio') {
     return path;
   }
   return '/margin-topology';
@@ -51,6 +52,8 @@ export const App: React.FC = () => {
               ? 'Data Preparation'
               : currentRoute === '/settings'
               ? 'Settings & Parameters'
+              : currentRoute === '/report-studio'
+              ? 'Management Report Studio'
               : 'Dual-BOM MAS Variance Analysis'}
           </span>
         </div>
@@ -81,6 +84,20 @@ export const App: React.FC = () => {
               >
                 <Network className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>Dual-BOM Analysis</span>
+              </button>
+
+              {/* Report Studio -> /report-studio */}
+              <button
+                type="button"
+                onClick={() => navigate('/report-studio')}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
+                  currentRoute === '/report-studio'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200/80 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                }`}
+              >
+                <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Report Studio</span>
               </button>
 
               {/* Data Preparation -> /data-prep */}
@@ -125,6 +142,8 @@ export const App: React.FC = () => {
           <main className="flex-1 bg-slate-50 flex items-center justify-center text-slate-400 text-xs font-mono">
             [Settings &amp; Parameters Panel Placeholder]
           </main>
+        ) : currentRoute === '/report-studio' ? (
+          <ReportStudioPage />
         ) : (
           <DualBomAnalysisPage />
         )}

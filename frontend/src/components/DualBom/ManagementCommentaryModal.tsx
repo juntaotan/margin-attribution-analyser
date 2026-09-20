@@ -11,6 +11,7 @@ import {
   Users,
   Globe,
   Loader2,
+  Edit3,
 } from 'lucide-react';
 import {
   Document,
@@ -380,8 +381,22 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
             </div>
           </div>
 
-          {/* Right Action Icons: Export to docx + Close */}
+          {/* Right Action Icons: Open Studio + Export to docx + Close */}
           <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                window.history.pushState({}, '', '/report-studio');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              title="Open and edit dynamically in Report Studio"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-xs font-semibold shadow-xs transition-all"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit in Report Studio</span>
+            </button>
+
             <button
               type="button"
               onClick={handleExportDocx}
