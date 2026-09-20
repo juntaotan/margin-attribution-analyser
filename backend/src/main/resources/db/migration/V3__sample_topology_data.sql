@@ -37,14 +37,16 @@ INSERT INTO production_order (
 ) ON CONFLICT DO NOTHING;
 
 -- 3. Material consumption for COMP-01 (Raw material MAT-STEEL -> COMP-01)
-INSERT INTO material_consumption (
-    material_consumption_no,
-    production_order_no,
+INSERT INTO inventory_usage (
+    date,
+    movement_no,
+    order_no,
     product_no,
     material_no,
     material_num,
     material_total_cost
 ) VALUES (
+    '2026-01-10',
     'MC-2026-001',
     'PO-2026-002',
     'COMP-01',
@@ -54,14 +56,15 @@ INSERT INTO material_consumption (
 ) ON CONFLICT DO NOTHING;
 
 -- 4. Material consumption for PROD-A (Component COMP-01 and Raw material MAT-PAINT -> PROD-A)
-INSERT INTO material_consumption (
-    material_consumption_no,
-    production_order_no,
+INSERT INTO inventory_usage (
+    date,
+    movement_no,
+    order_no,
     product_no,
     material_no,
     material_num,
     material_total_cost
 ) VALUES 
-('MC-2026-002', 'PO-2026-001', 'PROD-A', 'COMP-01', 50.000000, 3500.000000),
-('MC-2026-003', 'PO-2026-001', 'PROD-A', 'MAT-PAINT', 20.000000, 800.000000)
+('2026-01-15', 'MC-2026-002', 'PO-2026-001', 'PROD-A', 'COMP-01', 50.000000, 3500.000000),
+('2026-01-15', 'MC-2026-003', 'PO-2026-001', 'PROD-A', 'MAT-PAINT', 20.000000, 800.000000)
 ON CONFLICT DO NOTHING;

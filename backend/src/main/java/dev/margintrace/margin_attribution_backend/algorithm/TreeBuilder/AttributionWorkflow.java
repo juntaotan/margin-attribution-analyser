@@ -10,7 +10,10 @@ import java.time.LocalDate;
 @Component
 @RequiredArgsConstructor
 public class AttributionWorkflow {
-    private final ReadDataHandler firstHandler;
+
+    // This workflow uses responsibilty chain model: 
+    // Read data -> Connect nodes -> Build Csr Graph (offset and succ)
+    private final ReadDataHandler readDataHandler;
 
     public CsrResult trace(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
@@ -21,7 +24,8 @@ public class AttributionWorkflow {
         }
 
         TraceContext context = new TraceContext(startDate, endDate);
-        firstHandler.handle(context);
+        readDataHandler.handle(context);
+
         return context.result;
     }
 }

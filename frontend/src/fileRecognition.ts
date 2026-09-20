@@ -10,8 +10,7 @@ export type BusinessModule = keyof typeof MODULE_LABELS;
 // Canonical tables, enum names and aliases from SchemaMappingPresetCatalog.
 export const TABLE_PRESETS = [
   { table: 'production_order', module: 'production', aliases: ['production', '生产', '生产明细', '生产订单'] },
-  { table: 'material_consumption', module: 'production', aliases: ['物料消耗', '材料消耗', '生产领料'] },
-  { table: 'inventory_usage', module: 'production', aliases: ['inventory_movement', '库存移动', '库存流水', '出入库明细'] },
+  { table: 'inventory_usage', module: 'production', aliases: ['inventory_movement', '库存移动', '库存流水', '出入库明细', 'material_consumption', '物料消耗', '材料消耗', '生产领料'] },
   { table: 'bill_of_material', module: 'production', aliases: ['bom', '物料清单', '产品配方'] },
   { table: 'sales_order', module: 'sales', aliases: ['sales', '销售', '销售明细', '销售订单'] },
   { table: 'purchases', module: 'procurement', aliases: ['purchase', '采购', '采购明细', '采购订单'] },
@@ -64,4 +63,3 @@ export function recognizeFileName(fileName: string): FileRecognition | null {
 
   return null;
 }
-

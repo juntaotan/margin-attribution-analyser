@@ -21,8 +21,8 @@
 BEGIN;
 
 -- 1. Clean up previously seeded demo records for idempotency
-DELETE FROM material_consumption
-WHERE production_order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C');
+DELETE FROM inventory_usage
+WHERE order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C');
 
 DELETE FROM bill_of_material
 WHERE product_no IN ('Product-A', 'Semi-product-B', 'Semi-product-C');
@@ -73,9 +73,10 @@ VALUES
 
 
 -- 4. Insert Material Consumption (Actual issued material lines)
-INSERT INTO material_consumption (
-    material_consumption_no,
-    production_order_no,
+INSERT INTO inventory_usage (
+    date,
+    movement_no,
+    order_no,
     product_no,
     material_no,
     material_num,
@@ -83,21 +84,21 @@ INSERT INTO material_consumption (
 ) VALUES
 -- Issue lines for PO-DEMO-SEMI-B:
 -- Material-D planned total = 100 * 1.0 = 100, actual issued = 125 (Overrun by +25)
-('MC-DEMO-B-01', 'PO-DEMO-SEMI-B', 'Semi-product-B', 'Material-D', 125.000000, 1250.000000),
+('2026-01-10', 'MC-DEMO-B-01', 'PO-DEMO-SEMI-B', 'Semi-product-B', 'Material-D', 125.000000, 1250.000000),
 -- Material-E planned total = 100 * 2.0 = 200, actual issued = 200 (Normal)
-('MC-DEMO-B-02', 'PO-DEMO-SEMI-B', 'Semi-product-B', 'Material-E', 200.000000, 1000.000000),
+('2026-01-10', 'MC-DEMO-B-02', 'PO-DEMO-SEMI-B', 'Semi-product-B', 'Material-E', 200.000000, 1000.000000),
 
 -- Issue lines for PO-DEMO-SEMI-C:
 -- Material-F planned total = 100 * 1.5 = 150, actual issued = 150 (Normal)
-('MC-DEMO-C-01', 'PO-DEMO-SEMI-C', 'Semi-product-C', 'Material-F', 150.000000, 1500.000000),
+('2026-01-10', 'MC-DEMO-C-01', 'PO-DEMO-SEMI-C', 'Semi-product-C', 'Material-F', 150.000000, 1500.000000),
 -- Material-G planned total = 100 * 1.0 = 100, actual issued = 100 (Normal)
-('MC-DEMO-C-02', 'PO-DEMO-SEMI-C', 'Semi-product-C', 'Material-G', 100.000000,  800.000000),
+('2026-01-10', 'MC-DEMO-C-02', 'PO-DEMO-SEMI-C', 'Semi-product-C', 'Material-G', 100.000000,  800.000000),
 
 -- Issue lines for PO-DEMO-PROD-A:
 -- Semi-product-B planned total = 100 * 1.0 = 100, actual issued = 100 (Normal)
-('MC-DEMO-A-01', 'PO-DEMO-PROD-A', 'Product-A',      'Semi-product-B', 100.000000, 2250.000000),
+('2026-01-15', 'MC-DEMO-A-01', 'PO-DEMO-PROD-A', 'Product-A',      'Semi-product-B', 100.000000, 2250.000000),
 -- Semi-product-C planned total = 100 * 1.0 = 100, actual issued = 100 (Normal)
-('MC-DEMO-A-02', 'PO-DEMO-PROD-A', 'Product-A',      'Semi-product-C', 100.000000, 2300.000000);
+('2026-01-15', 'MC-DEMO-A-02', 'PO-DEMO-PROD-A', 'Product-A',      'Semi-product-C', 100.000000, 2300.000000);
 
 COMMIT;
 
@@ -123,8 +124,8 @@ FROM production_order p
 JOIN bill_of_material b
   ON b.bom_no = p.bom_no
  AND b.product_no = p.product_no
-JOIN material_consumption m
-  ON m.production_order_no = p.production_order_no
+JOIN inventory_usage m
+  ON m.order_no = p.production_order_no
  AND m.product_no = p.product_no
  AND m.material_no = b.material_no
 WHERE p.production_order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C')

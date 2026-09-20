@@ -50,9 +50,10 @@ public class AttributionPartitionReader {
                 SELECT p.product_no, p.product_num,
                        m.material_no, m.material_num, m.material_total_cost
                 FROM production_order p
-                LEFT JOIN material_consumption m
-                  ON m.production_order_no = p.production_order_no
+                LEFT JOIN inventory_usage m
+                  ON m.order_no = p.production_order_no
                  AND m.product_no = p.product_no
+                 AND m.material_no IS NOT NULL
                 WHERE p.id IN (:productionIds)
                 ORDER BY p.id, m.id
                 """;

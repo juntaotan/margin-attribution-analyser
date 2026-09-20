@@ -46,6 +46,15 @@ public class InventoryUsage {
     @Column(name = "order_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
     private String orderNo;
 
+    @Column(name = "material_no", length = BUSINESS_KEY_MAX_LENGTH)
+    private String materialNo;
+
+    @Column(name = "material_num", precision = 18, scale = 6)
+    private BigDecimal materialNum;
+
+    @Column(name = "material_total_cost", precision = 18, scale = 6)
+    private BigDecimal materialTotalCost;
+
     public static InventoryUsage of(
             LocalDate date,
             String movementNo,

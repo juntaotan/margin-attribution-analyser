@@ -4,6 +4,7 @@ import dev.margintrace.margin_attribution_backend.importation.context.ImportCont
 import dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog;
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.DataSetDefinition;
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
+import dev.margintrace.margin_attribution_backend.importation.model.DataSetType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -48,10 +49,22 @@ public class SchemaMappingHandler extends AbstractImportHandler {
             mappings.put(sourceColumn, targetField);
         }
 
+        boolean materialUsage = dataSet.type() == DataSetType.INVENTORY_MOVEMENT
+                && mappedTargetColumns.contains("material_no");
         Set<String> missingRequiredFields = new LinkedHashSet<>();
         for (TargetFieldDefinition field : dataSet.fields()) {
-            if (field.required() && !mappedTargetColumns.contains(field.columnName())) {
+            if (field.required() && !mappedTargetColumns.contains(field.columnName())
+                    && !(materialUsage && field.columnName().equals("date"))) {
                 missingRequiredFields.add(field.fieldKey());
+            }
+        }
+        if (materialUsage) {
+            for (String column : new String[]{"material_num", "material_total_cost"}) {
+                if (!mappedTargetColumns.contains(column)) {
+                    missingRequiredFields.add(dataSet.fields().stream()
+                            .filter(field -> field.columnName().equals(column))
+                            .findFirst().orElseThrow().fieldKey());
+                }
             }
         }
         if (!missingRequiredFields.isEmpty()) {

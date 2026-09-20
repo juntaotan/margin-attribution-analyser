@@ -10,6 +10,5 @@ public enum DataSetType {
     // Inventory management and production part
     INVENTORY_MOVEMENT,
     PRODUCTION,
-    BOM,
-    MATERIAL_CONSUMPTION
+    BOM
 }

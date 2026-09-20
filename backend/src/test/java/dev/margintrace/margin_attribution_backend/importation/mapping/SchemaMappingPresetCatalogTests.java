@@ -7,7 +7,6 @@ import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.warehouse.model.AccountPayableLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.AccountReceivableLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
-import dev.margintrace.margin_attribution_backend.warehouse.model.MaterialConsumption;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.model.PurchaseOrderLine;
@@ -87,8 +86,7 @@ class SchemaMappingPresetCatalogTests {
                 DataSetType.ACCOUNT_PAYABLE, AccountPayableLine.class,
                 DataSetType.INVENTORY_MOVEMENT, InventoryUsage.class,
                 DataSetType.PRODUCTION, Production.class,
-                DataSetType.BOM, BillOfMaterial.class,
-                DataSetType.MATERIAL_CONSUMPTION, MaterialConsumption.class
+                DataSetType.BOM, BillOfMaterial.class
         );
 
         warehouseEntities.forEach((dataSetType, entityType) -> {
@@ -129,7 +127,7 @@ class SchemaMappingPresetCatalogTests {
                 DataSetType.ACCOUNT_PAYABLE,
                 DataSetType.PRODUCTION,
                 DataSetType.BOM,
-                DataSetType.MATERIAL_CONSUMPTION
+                DataSetType.INVENTORY_MOVEMENT
         }) {
             for (TargetFieldDefinition field : catalog.getRequired(type).fields()) {
                 assertThat(field.aliases()).contains(field.fieldKey(), field.columnName());

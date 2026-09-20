@@ -32,7 +32,6 @@ public class SchemaMappingPresetCatalog {
         register(presets, inventoryMovement());
         register(presets, production());
         register(presets, billOfMaterial());
-        register(presets, materialConsumption());
         definitions = Map.copyOf(presets);
     }
 
@@ -147,18 +146,30 @@ public class SchemaMappingPresetCatalog {
 
     private static DataSetDefinition inventoryMovement() {
         return dataSet(DataSetType.INVENTORY_MOVEMENT, "inventory_usage",
-                Set.of("inventory_movement", "库存移动", "库存流水", "出入库明细"),
+                Set.of("inventory_movement", "库存移动", "库存流水", "出入库明细",
+                        "material_consumption", "物料消耗", "材料消耗", "生产领料"),
                 requiredDate("date", "date", "movement date", "inventory date", "移动日期", "出入库日期", "日期"),
                 requiredText("movementNo", "movement_no", "movement no", "inventory movement no",
-                        "库存移动号", "库存流水号", "出入库单号"),
-                requiredText("productNo", "product_no", "product no", "item no", "sku", "material no",
-                        "产品编号", "商品编号", "物料编号"),
+                        "material_consumption_no", "materialConsumptionNo", "material consumption no",
+                        "material issue no", "issue no", "picking no",
+                        "库存移动号", "库存流水号", "出入库单号", "物料消耗单号", "材料消耗单号", "领料单号", "出库单号"),
+                requiredText("productNo", "product_no", "product no", "product number", "item no", "sku",
+                        "finished product no", "finished goods no", "产品编号", "产品编码", "商品编号", "成品编号", "成品编码"),
                 numeric("productNum", "product_num", "product quantity", "quantity", "qty", "movement quantity",
                         "产品数量", "移动数量", "出入库数量"),
                 numeric("productTotalCost", "product_total_cost", "total cost", "product total cost",
                         "产品总成本", "总成本"),
                 requiredText("orderNo", "order_no", "order no", "business order no", "source order no",
-                        "订单号", "业务单号", "来源单号"));
+                        "production_order_no", "productionOrderNo", "production order no", "work order no",
+                        "production order number", "manufacturing order no", "mo no",
+                        "订单号", "业务单号", "来源单号", "生产单号", "生产订单号", "生产订单编号", "工单号"),
+                text("materialNo", "material_no", "material no", "material number", "material code",
+                        "component no", "component code", "物料编号", "物料编码", "材料编号", "组件编号"),
+                numeric("materialNum", "material_num", "material quantity", "issued quantity",
+                        "issue quantity", "consumption quantity", "发料数量", "领料数量", "物料数量", "材料数量", "消耗数量"),
+                numeric("materialTotalCost", "material_total_cost", "material total cost",
+                        "issued total cost", "issue total cost", "consumption cost",
+                        "发料总成本", "领料总成本", "物料总成本", "材料总成本", "消耗成本"));
     }
 
     private static DataSetDefinition production() {
@@ -187,25 +198,6 @@ public class SchemaMappingPresetCatalog {
                         "component no", "component code", "ingredient no", "child item no", "物料编号", "物料编码", "材料编号", "组件编号", "子项编号"),
                 requiredNumeric("materialUsage", "material_usage", "material usage", "component usage",
                         "usage", "quantity per", "quantity per unit", "usage quantity", "物料用量", "材料用量", "组件用量", "单位用量", "单耗"));
-    }
-
-    private static DataSetDefinition materialConsumption() {
-        return dataSet(DataSetType.MATERIAL_CONSUMPTION, "material_consumption",
-                Set.of("物料消耗", "材料消耗", "生产领料"),
-                requiredText("materialConsumptionNo", "material_consumption_no", "material consumption no",
-                        "material issue no", "issue no", "picking no", "物料消耗单号", "材料消耗单号", "领料单号", "出库单号"),
-                requiredText("productionOrderNo", "production_order_no", "production order no", "work order no",
-                        "production order number", "manufacturing order no", "mo no", "生产单号", "生产订单号", "生产订单编号", "工单号"),
-                requiredText("productNo", "product_no", "product no", "product number", "finished product no",
-                        "finished goods no", "产品编号", "产品编码", "成品编号", "成品编码"),
-                requiredText("materialNo", "material_no", "material no", "material number", "material code",
-                        "component no", "component code", "item no", "物料编号", "物料编码", "材料编号", "组件编号"),
-                requiredNumeric("issuedQuantity", "material_num", "materialNum", "issued quantity",
-                        "issue quantity", "material quantity", "consumption quantity", "quantity", "qty",
-                        "发料数量", "领料数量", "物料数量", "材料数量", "消耗数量"),
-                requiredNumeric("issuedTotalCost", "material_total_cost", "materialTotalCost",
-                        "issued total cost", "issue total cost", "material total cost", "consumption cost",
-                        "total cost", "发料总成本", "领料总成本", "物料总成本", "材料总成本", "消耗成本", "总成本"));
     }
 
     private static DataSetDefinition dataSet(

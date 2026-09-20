@@ -8,7 +8,7 @@
 --   - Bill of materials (BOM) for Product-A, Semi-product-B, Semi-product-C
 --
 -- Deletion order respects database foreign key constraints:
---   1. material_consumption (child table referencing production_order)
+--   1. inventory_usage (child table referencing production_order)
 --   2. production_order (parent table)
 --   3. bill_of_material (independent reference table)
 -- =============================================================================
@@ -16,8 +16,8 @@
 BEGIN;
 
 -- 1. Remove material consumption records (child records with FK to production_order)
-DELETE FROM material_consumption
-WHERE production_order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C');
+DELETE FROM inventory_usage
+WHERE order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C');
 
 -- 2. Remove production order records
 DELETE FROM production_order
@@ -39,6 +39,5 @@ SELECT
      WHERE production_order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C')) AS remaining_orders,
     (SELECT COUNT(*) FROM bill_of_material 
      WHERE product_no IN ('Product-A', 'Semi-product-B', 'Semi-product-C')) AS remaining_bom_lines,
-    (SELECT COUNT(*) FROM material_consumption 
-     WHERE production_order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C')) AS remaining_consumptions;
-
+    (SELECT COUNT(*) FROM inventory_usage
+     WHERE order_no IN ('PO-DEMO-PROD-A', 'PO-DEMO-SEMI-B', 'PO-DEMO-SEMI-C')) AS remaining_consumptions;

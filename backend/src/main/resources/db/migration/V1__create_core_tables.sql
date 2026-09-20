@@ -50,29 +50,6 @@ CREATE TABLE production_order
 
 CREATE INDEX idx_production_bom_no ON production_order (bom_no);
 
-CREATE TABLE material_consumption
-(
-    id                      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    material_consumption_no VARCHAR(100)   NOT NULL,
-    production_order_no     VARCHAR(100)   NOT NULL,
-    product_no              VARCHAR(100)   NOT NULL,
-    material_no             VARCHAR(100)   NOT NULL,
-    material_num            NUMERIC(18, 6) NOT NULL,
-    material_total_cost     NUMERIC(18, 6) NOT NULL,
-
-    CONSTRAINT uk_material_consumption_line UNIQUE (material_consumption_no, material_no),
-    CONSTRAINT fk_material_consumption_production
-        FOREIGN KEY (production_order_no, product_no)
-        REFERENCES production_order (production_order_no, product_no),
-    CONSTRAINT ck_material_consumption_quantity CHECK (material_num > 0),
-    CONSTRAINT ck_material_consumption_total_cost CHECK (material_total_cost >= 0)
-);
-
-CREATE INDEX idx_material_consumption_production
-    ON material_consumption (production_order_no, product_no);
-CREATE INDEX idx_material_consumption_product_no ON material_consumption (product_no);
-CREATE INDEX idx_material_consumption_material_no ON material_consumption (material_no);
-
 CREATE TABLE inventory_usage
 (
     id                 BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -82,13 +59,23 @@ CREATE TABLE inventory_usage
     product_num        NUMERIC(18, 6),
     product_total_cost NUMERIC(18, 6),
     order_no           VARCHAR(100) NOT NULL,
+    material_no        VARCHAR(100),
+    material_num       NUMERIC(18, 6),
+    material_total_cost NUMERIC(18, 6),
 
     CONSTRAINT pk_inventory_usage PRIMARY KEY (id, date),
+    CONSTRAINT uk_inventory_material_line UNIQUE (date, movement_no, material_no),
     CONSTRAINT fk_inventory_usage_production
         FOREIGN KEY (order_no, product_no)
-        REFERENCES production_order (production_order_no, product_no)
+        REFERENCES production_order (production_order_no, product_no),
+    CONSTRAINT ck_inventory_material_values CHECK (
+        material_no IS NULL OR (material_num > 0 AND material_total_cost >= 0)
+    )
 )
 PARTITION BY HASH (date);
+
+CREATE INDEX idx_inventory_usage_product_order ON inventory_usage (product_no, order_no);
+CREATE INDEX idx_inventory_usage_material_no ON inventory_usage (material_no);
 
 CREATE TABLE bill_of_material
 (

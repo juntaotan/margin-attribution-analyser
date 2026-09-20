@@ -74,6 +74,79 @@ class DataWarehouseWriterHandlerTests {
         )).doesNotContain("NOTES_0");
     }
 
+    @Test
+    void importsMaterialConsumptionDirectlyIntoInventoryUsage() {
+        JdbcTemplate jdbcTemplate = createJdbcTemplate();
+        jdbcTemplate.execute("CREATE SCHEMA IF NOT EXISTS raw");
+        jdbcTemplate.execute("""
+                CREATE TABLE production_order (
+                    production_order_no VARCHAR(100), product_no VARCHAR(100), date DATE,
+                    PRIMARY KEY (production_order_no, product_no)
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE inventory_usage (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    date DATE NOT NULL,
+                    movement_no VARCHAR(100) NOT NULL,
+                    order_no VARCHAR(100) NOT NULL,
+                    product_no VARCHAR(100) NOT NULL,
+                    material_no VARCHAR(100),
+                    material_num NUMERIC(18,6),
+                    material_total_cost NUMERIC(18,6)
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE raw.material_lines (
+                    consumption_no VARCHAR(100), production_no VARCHAR(100),
+                    product_no VARCHAR(100), material_no VARCHAR(100),
+                    material_num NUMERIC(18,6), material_cost NUMERIC(18,6)
+                )
+                """);
+        jdbcTemplate.update("INSERT INTO production_order VALUES (?, ?, ?)",
+                "PO-1", "P", java.sql.Date.valueOf("2026-01-15"));
+        jdbcTemplate.update("INSERT INTO raw.material_lines VALUES (?, ?, ?, ?, ?, ?)",
+                "MC-1", "PO-1", "P", "M", 4, 123.45);
+
+        ImportContext context = new ImportContext();
+        context.setMappingTableName("material_consumption");
+        context.setMappingResult(true);
+        context.setTableStructure(new TableStructure("materials", 0, 0, 5, 1, 1.0));
+        Map<String, DataType> columns = new LinkedHashMap<>();
+        columns.put("Material Consumption No", DataType.TEXT);
+        columns.put("Production Order No", DataType.TEXT);
+        columns.put("Product No", DataType.TEXT);
+        columns.put("Material No", DataType.TEXT);
+        columns.put("Issued Quantity", DataType.NUMERIC);
+        columns.put("Issued Total Cost", DataType.NUMERIC);
+        context.setColumnTypes(columns);
+        context.setRawTableName("raw.material_lines");
+        context.setRawColumnNames(Map.of(
+                "Material Consumption No", "consumption_no",
+                "Production Order No", "production_no",
+                "Product No", "product_no",
+                "Material No", "material_no",
+                "Issued Quantity", "material_num",
+                "Issued Total Cost", "material_cost"));
+
+        new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
+        new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
+
+        assertThat(context.getWarehouseImportedRows()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForMap("""
+                SELECT date, movement_no, order_no, product_no,
+                       material_no, material_num, material_total_cost
+                FROM inventory_usage
+                """))
+                .containsEntry("DATE", java.sql.Date.valueOf("2026-01-15"))
+                .containsEntry("MOVEMENT_NO", "MC-1")
+                .containsEntry("ORDER_NO", "PO-1")
+                .containsEntry("PRODUCT_NO", "P")
+                .containsEntry("MATERIAL_NO", "M")
+                .containsEntry("MATERIAL_NUM", new BigDecimal("4.000000"))
+                .containsEntry("MATERIAL_TOTAL_COST", new BigDecimal("123.450000"));
+    }
+
     private static ImportContext salesContext() {
         ImportContext context = new ImportContext();
         context.setObjectKey("raw/test-sales.xlsx");
@@ -134,7 +207,8 @@ class DataWarehouseWriterHandlerTests {
 
     private static JdbcTemplate createJdbcTemplate() {
         JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL("jdbc:h2:mem:data-warehouse-writer-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1");
+        dataSource.setURL("jdbc:h2:mem:data-warehouse-writer-"
+                + java.util.UUID.randomUUID() + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1");
         return new JdbcTemplate(dataSource);
     }
 }

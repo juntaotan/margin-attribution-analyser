@@ -44,11 +44,13 @@ public class DataWarehouseWriterHandler extends AbstractImportHandler {
             return;
         }
 
-        String sql = buildInsertSelectSql(
-                context.getRawTableName(),
-                context.getDataSetDefinition().tableName(),
-                mappedColumns
-        );
+        String sql = needsProductionDate(context.getDataSetDefinition().tableName(), mappedColumns)
+                ? buildMaterialUsageInsertSql(context.getRawTableName(), mappedColumns)
+                : buildInsertSelectSql(
+                        context.getRawTableName(),
+                        context.getDataSetDefinition().tableName(),
+                        mappedColumns
+                );
         context.setWarehouseImportedRows(jdbcTemplate.update(sql));
         handleNext(context);
     }
@@ -80,6 +82,37 @@ public class DataWarehouseWriterHandler extends AbstractImportHandler {
 
         return "INSERT INTO " + warehouseTableName + "(" + targetColumns + ") SELECT "
                 + sourceColumns + " FROM " + rawTableName;
+    }
+
+    private boolean needsProductionDate(String tableName, List<MappedDatabaseColumn> mappedColumns) {
+        return tableName.equals("inventory_usage")
+                && mappedColumns.stream().anyMatch(column -> column.targetField().columnName().equals("material_no"))
+                && mappedColumns.stream().noneMatch(column -> column.targetField().columnName().equals("date"));
+    }
+
+    private String buildMaterialUsageInsertSql(
+            String rawTableName,
+            List<MappedDatabaseColumn> mappedColumns
+    ) {
+        String orderColumn = rawColumnFor(mappedColumns, "order_no");
+        String productColumn = rawColumnFor(mappedColumns, "product_no");
+        String targetColumns = mappedColumns.stream()
+                .map(column -> column.targetField().columnName())
+                .collect(Collectors.joining(","));
+        String sourceColumns = mappedColumns.stream()
+                .map(column -> castExpression("r." + column.rawColumnName(), column.targetField().dataType()))
+                .collect(Collectors.joining(","));
+
+        return "INSERT INTO inventory_usage(date," + targetColumns + ") SELECT p.date," + sourceColumns
+                + " FROM " + rawTableName + " r LEFT JOIN production_order p"
+                + " ON p.production_order_no = CAST(r." + orderColumn + " AS VARCHAR)"
+                + " AND p.product_no = CAST(r." + productColumn + " AS VARCHAR)";
+    }
+
+    private String rawColumnFor(List<MappedDatabaseColumn> mappedColumns, String targetColumn) {
+        return mappedColumns.stream()
+                .filter(column -> column.targetField().columnName().equals(targetColumn))
+                .findFirst().orElseThrow().rawColumnName();
     }
 
     private String castExpression(String rawColumnName, DataType targetType) {
