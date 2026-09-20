@@ -2,6 +2,8 @@ package dev.margintrace.margin_attribution_backend.analysis.controller;
 
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisRequest;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,15 @@ import java.util.Map;
 public class AnalysisController {
 
     private final Analyser analyser;
+
+    /** Compares two supplied CSR graphs and returns complete cost-difference paths. */
+    @PostMapping("/reconcile")
+    public ResponseEntity<ReconciliationAnalysisResponse> reconcile(
+            @RequestBody ReconciliationAnalysisRequest request) {
+        return ResponseEntity.ok(analyser.reconcileGraphs(
+                request.actualGraph(), request.comparableGraph(),
+                request.leafThreshold(), request.stopThreshold()));
+    }
 
     /**
      * Runs the date-scoped, multi-target trace and returns JSON-safe adjacency entries.

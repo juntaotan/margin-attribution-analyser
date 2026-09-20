@@ -2,10 +2,15 @@ package dev.margintrace.margin_attribution_backend.analysis.service;
 
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
+import dev.margintrace.margin_attribution_backend.algorithm.BOMPruner.GradBOMReconciler;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
+import dev.margintrace.margin_attribution_backend.algorithm.model.PropagationPath;
+import dev.margintrace.margin_attribution_backend.algorithm.model.ReconciliationResult;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPathEntry;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
@@ -34,6 +39,22 @@ public class Analyser {
     private final ProductionRepository productionRepository;
     private final SalesOrderLineRepository salesOrderLineRepository;
     private final MarginAttributionAlgorithm pathFinder = new MarginAttributionAlgorithm();
+    private final GradBOMReconciler reconciler = new GradBOMReconciler();
+
+    /** Returns complete threshold-triggered paths with recorded node values for the UI. */
+    public ReconciliationAnalysisResponse reconcileGraphs(
+            CsrGraph actualGraph, CsrGraph comparableGraph,
+            BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        ReconciliationResult result = reconciler.reconcile(
+                actualGraph, comparableGraph, leafThreshold, stopThreshold);
+        List<ReconciliationPathEntry> paths = result.paths().stream()
+                .filter(path -> path.endReason() == PropagationPath.EndReason.THRESHOLD_EXCEEDED)
+                .map(path -> new ReconciliationPathEntry(
+                        path.positions().stream().map(position -> actualGraph.nodes()[position]).toList(),
+                        path.edges(), path.endReason(), path.endingCostDifference()))
+                .toList();
+        return new ReconciliationAnalysisResponse(UUID.randomUUID(), paths);
+    }
 
     /**
      * Runs the attribution workflow and traces sold targets through its CSR graph.

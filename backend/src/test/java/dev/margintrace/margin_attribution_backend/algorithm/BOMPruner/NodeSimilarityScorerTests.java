@@ -4,6 +4,7 @@ import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,24 +12,22 @@ class NodeSimilarityScorerTests {
     private final NodeSimilarityScorer scorer = new NodeSimilarityScorer();
 
     @Test
-    void returnsOneWhenAnyCandidateHasTheSameInventoryId() {
-        Node node = new Node("ITEM-1", BigDecimal.ONE);
-        Node[] candidates = {
-                new Node("ITEM-2", BigDecimal.ONE),
-                new Node("ITEM-1", BigDecimal.TEN, BigDecimal.valueOf(25))
-        };
+    void returnsOneWhenDirectedEndpointIdsMatch() {
+        var edge = scorer.buildEdgeEmbedding(node("M", 1), node("P", 1));
+        var candidate = scorer.buildEdgeEmbedding(node("M", 10), node("P", 25));
 
-        assertThat(scorer.score(node, candidates)).isOne();
+        assertThat(scorer.scoreEdge(edge, Set.of(candidate))).isOne();
     }
 
     @Test
-    void returnsZeroWhenNoCandidateHasTheSameInventoryId() {
-        Node node = new Node("ITEM-1", BigDecimal.ONE);
-        Node[] candidates = {
-                new Node("ITEM-2", BigDecimal.ONE),
-                new Node("ITEM-3", BigDecimal.ONE)
-        };
+    void returnsZeroWhenTheEdgeDirectionIsReversed() {
+        var edge = scorer.buildEdgeEmbedding(node("M", 1), node("P", 1));
+        var reversed = scorer.buildEdgeEmbedding(node("P", 1), node("M", 1));
 
-        assertThat(scorer.score(node, candidates)).isZero();
+        assertThat(scorer.scoreEdge(edge, Set.of(reversed))).isZero();
+    }
+
+    private Node node(String id, long quantity) {
+        return new Node(id, BigDecimal.valueOf(quantity));
     }
 }
