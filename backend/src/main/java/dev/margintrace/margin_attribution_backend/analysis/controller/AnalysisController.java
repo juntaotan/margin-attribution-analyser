@@ -4,6 +4,7 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPeriodRequest;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,16 @@ public class AnalysisController {
             @RequestBody ReconciliationAnalysisRequest request) {
         return ResponseEntity.ok(analyser.reconcileGraphs(
                 request.actualGraph(), request.comparableGraph(),
+                request.leafThreshold(), request.stopThreshold()));
+    }
+
+    /** Builds and compares the CSR graphs for two selected periods. */
+    @PostMapping("/reconcile-periods")
+    public ResponseEntity<ReconciliationAnalysisResponse> reconcilePeriods(
+            @RequestBody ReconciliationPeriodRequest request) {
+        return ResponseEntity.ok(analyser.reconcilePeriods(
+                request.actualStartDate(), request.actualEndDate(),
+                request.comparableStartDate(), request.comparableEndDate(),
                 request.leafThreshold(), request.stopThreshold()));
     }
 

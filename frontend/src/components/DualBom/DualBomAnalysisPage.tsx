@@ -5,12 +5,13 @@ import { KpiSummaryBar } from './KpiSummaryBar';
 import { DualBomTreeCanvas } from './DualBomTreeCanvas';
 import { MaterialLedgerWorkbench } from './MaterialLedgerWorkbench';
 import { AuditSidebar } from './AuditSidebar';
+import { ReconciliationPathsPanel } from './ReconciliationPathsPanel';
 import {
   DualBomNode,
   DualBomReconciliationResult,
   reconcileDualBom,
 } from '../../varianceEngine';
-import { AnalysisResponse, AnalysisAdjacencyEntry } from '../../analysisGraph';
+import { AnalysisResponse, AnalysisAdjacencyEntry, ReconciliationPath, ReconciliationResponse } from '../../analysisGraph';
 
 export const DualBomAnalysisPage: React.FC = () => {
   const [plantContext, setPlantContext] = useState<string>(
@@ -20,6 +21,11 @@ export const DualBomAnalysisPage: React.FC = () => {
   const [periodTo, setPeriodTo] = useState<string>('2024-06-30');
   const [targetProducts, setTargetProducts] = useState<string>('EBOM-SYS-00');
   const [threshold, setThreshold] = useState<number>(250.0);
+  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('');
+  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('');
+  const [leafThreshold, setLeafThreshold] = useState<number>(0);
+  const [reconciliationPaths, setReconciliationPaths] = useState<ReconciliationPath[] | null>(null);
+  const [pathError, setPathError] = useState<string | null>(null);
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -77,9 +83,21 @@ export const DualBomAnalysisPage: React.FC = () => {
       setAnalysisError('Start Date must not be after End Date.');
       return;
     }
+    if ((comparablePeriodFrom || comparablePeriodTo)
+      && (!comparablePeriodFrom || !comparablePeriodTo || comparablePeriodFrom > comparablePeriodTo)) {
+      setAnalysisError('Please select an ordered comparable period.');
+      return;
+    }
+    if (!Number.isFinite(leafThreshold) || leafThreshold < 0
+      || !Number.isFinite(threshold) || threshold < 0) {
+      setAnalysisError('Cost thresholds must be non-negative numbers.');
+      return;
+    }
 
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setPathError(null);
+    setReconciliationPaths(null);
 
     const targets = targetProducts
       .split(',')
@@ -136,6 +154,34 @@ export const DualBomAnalysisPage: React.FC = () => {
       if (topOverrun) {
         setSelectedNode(topOverrun);
       }
+
+      if (comparablePeriodFrom && comparablePeriodTo) {
+        try {
+          const pathResponse = await fetch('/api/v1/analysis/reconcile-periods', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              actualStartDate: periodFrom,
+              actualEndDate: periodTo,
+              comparableStartDate: comparablePeriodFrom,
+              comparableEndDate: comparablePeriodTo,
+              leafThreshold,
+              stopThreshold: threshold,
+            }),
+          });
+          if (!pathResponse.ok) {
+            const body = await pathResponse.json().catch(() => null) as { message?: string } | null;
+            throw new Error(body?.message || `Cost path analysis failed (${pathResponse.status})`);
+          }
+          const pathData: ReconciliationResponse = await pathResponse.json();
+          if (!Array.isArray(pathData.paths)) {
+            throw new Error('Cost path response did not contain paths.');
+          }
+          setReconciliationPaths(pathData.paths);
+        } catch (pathFailure) {
+          setPathError(pathFailure instanceof Error ? pathFailure.message : 'Cost path analysis failed.');
+        }
+      }
     } catch (err) {
       // Graceful fallback to sample workbench so UI is fully functional and interactive
       console.warn('Backend trace failed, falling back to workbench baseline:', err);
@@ -176,9 +222,17 @@ export const DualBomAnalysisPage: React.FC = () => {
         setTargetProducts={setTargetProducts}
         threshold={threshold}
         setThreshold={setThreshold}
+        comparablePeriodFrom={comparablePeriodFrom}
+        setComparablePeriodFrom={setComparablePeriodFrom}
+        comparablePeriodTo={comparablePeriodTo}
+        setComparablePeriodTo={setComparablePeriodTo}
+        leafThreshold={leafThreshold}
+        setLeafThreshold={setLeafThreshold}
         isAnalyzing={isAnalyzing}
         onRunAnalysis={handleRunAnalysis}
       />
+
+      <ReconciliationPathsPanel paths={reconciliationPaths} error={pathError} />
 
       {/* 3. Top Summary KPI Bar */}
       <KpiSummaryBar
@@ -330,4 +384,3 @@ function getSampleActualEntries(): AnalysisAdjacencyEntry[] {
     },
   ];
 }
-

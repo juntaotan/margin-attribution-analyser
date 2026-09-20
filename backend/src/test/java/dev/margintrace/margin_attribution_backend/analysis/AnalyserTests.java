@@ -5,6 +5,7 @@ import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
@@ -35,6 +36,44 @@ class AnalyserTests {
     @Mock private ProductionRepository productionRepository;
     @Mock private SalesOrderLineRepository salesOrderLineRepository;
     @InjectMocks private Analyser analyser;
+
+    @Test
+    void returnsCompleteThresholdPathWithActualNodeValues() {
+        Node material = node("M", 1, "10");
+        Node semi = node("S", 1, "5");
+        Node product = node("P", 1, "20");
+        CsrGraph actual = new CsrGraph(new Node[] {material, semi, product},
+                new int[] {0, 1, 2, 2}, new int[] {1, 2});
+        CsrGraph comparable = new CsrGraph(new Node[] {
+                node("P", 1, "5"), node("S", 1, "5"), node("M", 1, "0")},
+                new int[] {0, 0, 1, 2}, new int[] {0, 1});
+
+        ReconciliationAnalysisResponse response = analyser.reconcileGraphs(
+                actual, comparable, BigDecimal.TEN, BigDecimal.TEN);
+
+        assertThat(response.analysisId()).isNotNull();
+        assertThat(response.paths()).hasSize(1);
+        assertThat(response.paths().getFirst().nodes()).containsExactly(material, semi, product);
+        assertThat(response.paths().getFirst().endingCostDifference()).isEqualByComparingTo("15");
+    }
+
+    @Test
+    void buildsBothPeriodGraphsBeforeReconciling() {
+        LocalDate comparableStart = LocalDate.of(2025, 1, 1);
+        LocalDate comparableEnd = LocalDate.of(2025, 1, 31);
+        CsrGraph actual = new CsrGraph(new Node[] {node("M", 1, "10"), node("P", 1, "20")},
+                new int[] {0, 1, 1}, new int[] {1});
+        CsrGraph comparable = new CsrGraph(new Node[] {node("M", 1, "0"), node("P", 1, "0")},
+                new int[] {0, 1, 1}, new int[] {1});
+        when(attributionWorkflow.trace(START, END)).thenReturn(actual);
+        when(attributionWorkflow.trace(comparableStart, comparableEnd)).thenReturn(comparable);
+
+        ReconciliationAnalysisResponse response = analyser.reconcilePeriods(
+                START, END, comparableStart, comparableEnd, BigDecimal.TEN, BigDecimal.TEN);
+
+        assertThat(response.paths()).hasSize(1);
+        assertThat(response.paths().getFirst().nodes()).containsExactly(actual.nodes());
+    }
 
     @Test
     void combinesOnlyTracedEdgesAcrossTargetsAndRemovesDuplicates() {

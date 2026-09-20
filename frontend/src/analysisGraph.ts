@@ -15,6 +15,18 @@ export interface AnalysisResponse {
   results: AnalysisAdjacencyEntry[];
 }
 
+export interface ReconciliationPath {
+  nodes: AnalysisNode[];
+  edges: { fromPosition: number; toPosition: number; edgeIndex: number }[];
+  endReason: 'THRESHOLD_EXCEEDED';
+  endingCostDifference: number;
+}
+
+export interface ReconciliationResponse {
+  analysisId: string;
+  paths: ReconciliationPath[];
+}
+
 export interface AnalysisEdge {
   id: string;
   source: string;

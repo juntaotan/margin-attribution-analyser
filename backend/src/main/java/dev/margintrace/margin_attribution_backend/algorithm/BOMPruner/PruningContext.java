@@ -33,7 +33,7 @@ final class PruningContext {
         this.comparablePositions = comparablePositions;
     }
 
-    /** Missing IDs have no comparable cost and cannot trigger a threshold. */
+    /** Missing IDs or costs cannot trigger a cost threshold. */
     BigDecimal costDifference(int actualPosition) {
         String id = actualGraph.nodes()[actualPosition].inventoryId();
         Integer comparablePosition = comparablePositions.get(id);
@@ -43,7 +43,7 @@ final class PruningContext {
         BigDecimal actualCost = actualGraph.nodes()[actualPosition].cost();
         BigDecimal comparableCost = comparableGraph.nodes()[comparablePosition].cost();
         if (actualCost == null || comparableCost == null) {
-            throw new IllegalArgumentException("cost is required in both graphs for inventoryId: " + id);
+            return null;
         }
         BigDecimal difference = actualCost.subtract(comparableCost).abs();
         return difference.setScale(Math.max(0, Math.max(actualCost.scale(), comparableCost.scale())));

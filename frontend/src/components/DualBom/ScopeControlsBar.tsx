@@ -12,6 +12,12 @@ interface ScopeControlsBarProps {
   setTargetProducts: (val: string) => void;
   threshold: number;
   setThreshold: (val: number) => void;
+  comparablePeriodFrom: string;
+  setComparablePeriodFrom: (val: string) => void;
+  comparablePeriodTo: string;
+  setComparablePeriodTo: (val: string) => void;
+  leafThreshold: number;
+  setLeafThreshold: (val: number) => void;
   isAnalyzing: boolean;
   onRunAnalysis: () => void;
 }
@@ -27,11 +33,17 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
   setTargetProducts,
   threshold,
   setThreshold,
+  comparablePeriodFrom,
+  setComparablePeriodFrom,
+  comparablePeriodTo,
+  setComparablePeriodTo,
+  leafThreshold,
+  setLeafThreshold,
   isAnalyzing,
   onRunAnalysis,
 }) => {
   return (
-    <div className="w-full px-4 py-2 bg-slate-50 flex flex-wrap items-center justify-between gap-y-2.5 border-b border-slate-200 text-xs shrink-0">
+    <div className="w-full px-4 py-2 bg-slate-50 flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-200 text-xs shrink-0">
       {/* Group 1: Company Context & Date Range */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5">
@@ -80,6 +92,22 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
             />
           </div>
         </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap border-l border-slate-200 pl-3">
+        <span className="text-[10px] font-bold text-slate-500 uppercase">Compare period:</span>
+        <input type="date" aria-label="Comparable period start" value={comparablePeriodFrom}
+          onChange={(event) => setComparablePeriodFrom(event.target.value)}
+          className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-mono text-xs" />
+        <span className="text-slate-400">to</span>
+        <input type="date" aria-label="Comparable period end" value={comparablePeriodTo}
+          onChange={(event) => setComparablePeriodTo(event.target.value)}
+          className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-mono text-xs" />
+        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase">
+          Material θ:
+          <input type="number" aria-label="Material cost threshold" min="0" step="any"
+            value={leafThreshold} onChange={(event) => setLeafThreshold(Number(event.target.value))}
+            className="w-20 bg-white border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono text-xs text-slate-800" />
+        </label>
       </div>
 
       {/* Group 2: Threshold & Trace Method & Run Button */}

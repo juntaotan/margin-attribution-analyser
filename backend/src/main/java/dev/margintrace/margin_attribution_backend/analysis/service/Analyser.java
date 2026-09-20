@@ -56,6 +56,24 @@ public class Analyser {
         return new ReconciliationAnalysisResponse(UUID.randomUUID(), paths);
     }
 
+    /** Builds both period graphs, then returns their threshold-triggered paths. */
+    public ReconciliationAnalysisResponse reconcilePeriods(
+            LocalDate actualStartDate, LocalDate actualEndDate,
+            LocalDate comparableStartDate, LocalDate comparableEndDate,
+            BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        validatePeriod(actualStartDate, actualEndDate, "actual");
+        validatePeriod(comparableStartDate, comparableEndDate, "comparable");
+        CsrGraph actualGraph = attributionWorkflow.trace(actualStartDate, actualEndDate);
+        CsrGraph comparableGraph = attributionWorkflow.trace(comparableStartDate, comparableEndDate);
+        return reconcileGraphs(actualGraph, comparableGraph, leafThreshold, stopThreshold);
+    }
+
+    private void validatePeriod(LocalDate startDate, LocalDate endDate, String label) {
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException(label + " period requires ordered start and end dates");
+        }
+    }
+
     /**
      * Runs the attribution workflow and traces sold targets through its CSR graph.
      * Nodes and edges outside the traced paths are excluded.
