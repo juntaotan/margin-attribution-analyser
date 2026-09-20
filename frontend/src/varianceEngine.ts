@@ -2,6 +2,19 @@ import { AnalysisAdjacencyEntry, AnalysisNode } from './analysisGraph';
 
 export type SeverityLevel = 'sync' | 'minor' | 'moderate' | 'major' | 'favorable';
 
+/**
+ * Three-factor cost structure: 料 (Material), 工 (Labor), 费 (Manufacturing Overhead)
+ * Reserved for convolution-based decomposition algorithms from backend.
+ */
+export interface CostBreakdown {
+  materialCost?: number;   // 料 (Direct Material)
+  laborCost?: number;      // 工 (Direct Labor)
+  overheadCost?: number;   // 费 (Manufacturing Overhead)
+  materialRatio?: number;  // 0~100 (Default 100)
+  laborRatio?: number;     // 0~100 (Default 0)
+  overheadRatio?: number;  // 0~100 (Default 0)
+}
+
 export interface DualBomNode {
   id: string; // inventoryId
   name: string;
@@ -25,6 +38,66 @@ export interface DualBomNode {
   statusText: string;
   isLastChild: boolean;
   ancestorContinues: boolean[];
+  /** Reserved interface for convolution-based 3-factor cost breakdown */
+  costBreakdown?: CostBreakdown;
+}
+
+/**
+ * Helper to compute Material (Blue), Labor (Green), Overhead (Orange) proportions.
+ * In accordance with specifications: cost is currently regarded as pure Material Cost (100% Blue).
+ */
+export function getCostBreakdown(node?: DualBomNode | null): {
+  materialRatio: number;
+  laborRatio: number;
+  overheadRatio: number;
+  materialCost: number;
+  laborCost: number;
+  overheadCost: number;
+} {
+  const total = node?.actualCost ?? node?.baselineCost ?? 0;
+
+  if (node?.costBreakdown) {
+    const cb = node.costBreakdown;
+    if (cb.materialRatio !== undefined || cb.laborRatio !== undefined || cb.overheadRatio !== undefined) {
+      const mRatio = Math.max(0, cb.materialRatio ?? 0);
+      const lRatio = Math.max(0, cb.laborRatio ?? 0);
+      const oRatio = Math.max(0, cb.overheadRatio ?? 0);
+      const sum = mRatio + lRatio + oRatio || 100;
+      return {
+        materialRatio: (mRatio / sum) * 100,
+        laborRatio: (lRatio / sum) * 100,
+        overheadRatio: (oRatio / sum) * 100,
+        materialCost: cb.materialCost ?? (total * (mRatio / sum)),
+        laborCost: cb.laborCost ?? (total * (lRatio / sum)),
+        overheadCost: cb.overheadCost ?? (total * (oRatio / sum)),
+      };
+    }
+    if (cb.materialCost !== undefined || cb.laborCost !== undefined || cb.overheadCost !== undefined) {
+      const mCost = Math.max(0, cb.materialCost ?? 0);
+      const lCost = Math.max(0, cb.laborCost ?? 0);
+      const oCost = Math.max(0, cb.overheadCost ?? 0);
+      const costSum = mCost + lCost + oCost || total || 1;
+      return {
+        materialRatio: (mCost / costSum) * 100,
+        laborRatio: (lCost / costSum) * 100,
+        overheadRatio: (oCost / costSum) * 100,
+        materialCost: mCost,
+        laborCost: lCost,
+        overheadCost: oCost,
+      };
+    }
+  }
+
+  // Baseline: In current state before backend convolution is attached,
+  // cost is strictly regarded as Material Cost (料成本) -> 100% Blue.
+  return {
+    materialRatio: 100,
+    laborRatio: 0,
+    overheadRatio: 0,
+    materialCost: total,
+    laborCost: 0,
+    overheadCost: 0,
+  };
 }
 
 export interface MaterialLedgerItem {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnalysisHeader } from './AnalysisHeader';
 import { ScopeControlsBar } from './ScopeControlsBar';
 import { KpiSummaryBar } from './KpiSummaryBar';
@@ -20,12 +20,40 @@ export const DualBomAnalysisPage: React.FC = () => {
   const [periodTo, setPeriodTo] = useState<string>('2024-06-30');
   const [targetProducts, setTargetProducts] = useState<string>('EBOM-SYS-00');
   const [threshold, setThreshold] = useState<number>(250.0);
-  const [traceMethod, setTraceMethod] = useState<string>('causal');
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [result, setResult] = useState<DualBomReconciliationResult | null>(null);
   const [selectedNode, setSelectedNode] = useState<DualBomNode | null>(null);
+
+  // Resizable vertical split between Tree (default 70%) and Material Ledger (default 30%)
+  const [treeHeightPct, setTreeHeightPct] = useState<number>(70);
+  const [isDraggingSplitter, setIsDraggingSplitter] = useState<boolean>(false);
+  const leftAreaRef = useRef<HTMLDivElement>(null);
+
+  const handleSplitterMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDraggingSplitter(true);
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!leftAreaRef.current) return;
+      const rect = leftAreaRef.current.getBoundingClientRect();
+      const relativeY = moveEvent.clientY - rect.top;
+      const newPct = (relativeY / rect.height) * 100;
+      // Allow dragging up to expand the ledger (down to 15% tree) or down (up to 85% tree)
+      const clamped = Math.max(15, Math.min(85, newPct));
+      setTreeHeightPct(clamped);
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingSplitter(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
 
   // Focus and pulse animation micro-interaction
   const handleInspectNode = (node: DualBomNode) => {
@@ -148,8 +176,6 @@ export const DualBomAnalysisPage: React.FC = () => {
         setTargetProducts={setTargetProducts}
         threshold={threshold}
         setThreshold={setThreshold}
-        traceMethod={traceMethod}
-        setTraceMethod={setTraceMethod}
         isAnalyzing={isAnalyzing}
         onRunAnalysis={handleRunAnalysis}
       />
@@ -170,8 +196,13 @@ export const DualBomAnalysisPage: React.FC = () => {
 
       {/* 4. Main Split: Left Scrollable Canvas vs Right Fixed Sidebar */}
       <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden min-h-0">
-        {/* Left Area: 70% Tree Structure + 30% Material Ledger */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-slate-200">
+        {/* Left Area: Symmetrical Tree Structure + Resizable Material Ledger */}
+        <div
+          ref={leftAreaRef}
+          className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-slate-200 ${
+            isDraggingSplitter ? 'select-none cursor-row-resize' : ''
+          }`}
+        >
           {analysisError && (
             <div className="m-3 p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700 shrink-0">
               Notice: {analysisError}
@@ -180,8 +211,11 @@ export const DualBomAnalysisPage: React.FC = () => {
 
           {result && (
             <>
-              {/* SECTION 1: Dual-BOM True Tree Canvas (70% Vertical Height Space) */}
-              <div className="h-[70%] min-h-0 overflow-y-auto overflow-x-auto border-b border-slate-200 flex flex-col">
+              {/* SECTION 1: Dual-BOM True Tree Canvas (Default 70% Vertical Height Space, adjustable) */}
+              <div
+                style={{ height: `${treeHeightPct}%` }}
+                className="min-h-0 overflow-y-auto overflow-x-auto border-b border-slate-200 flex flex-col shrink-0"
+              >
                 <DualBomTreeCanvas
                   nodes={result.nodes}
                   selectedNodeId={selectedNode?.id ?? null}
@@ -189,8 +223,35 @@ export const DualBomAnalysisPage: React.FC = () => {
                 />
               </div>
 
-              {/* SECTION 2: Full-Width Production Material Ledger Workbench (30% Vertical Height Space) */}
-              <div className="h-[30%] min-h-0 flex flex-col overflow-hidden">
+              {/* VERTICAL SPLITTER: Draggable Bar allowing users to pull the bottom table upwards */}
+              <div
+                onMouseDown={handleSplitterMouseDown}
+                onDoubleClick={() => setTreeHeightPct(70)}
+                className={`h-3 bg-slate-100 hover:bg-blue-100 active:bg-blue-200 border-y border-slate-200 cursor-row-resize flex items-center justify-center transition-colors group relative z-20 select-none shrink-0 ${
+                  isDraggingSplitter ? 'bg-blue-200 border-blue-400' : ''
+                }`}
+                title="Drag up or down to adjust table height (Double-click to reset to 70%)"
+              >
+                <div className="flex items-center gap-1">
+                  <div className="w-10 h-1 rounded-full bg-slate-300 group-hover:bg-blue-500 group-active:bg-blue-600 transition-colors" />
+                </div>
+                {/* Visual indicator / tooltip */}
+                <div
+                  className={`absolute right-4 text-[10px] font-mono font-medium px-2 py-0.5 rounded shadow-sm transition-opacity pointer-events-none ${
+                    isDraggingSplitter
+                      ? 'bg-slate-900 text-white opacity-100'
+                      : 'bg-white text-slate-500 border border-slate-200 opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  Tree: {Math.round(treeHeightPct)}% / Table: {Math.round(100 - treeHeightPct)}% (Drag to resize)
+                </div>
+              </div>
+
+              {/* SECTION 2: Full-Width Production Material Ledger Workbench (Default 30%, pulled upwards via splitter) */}
+              <div
+                style={{ height: `calc(${100 - treeHeightPct}% - 12px)` }}
+                className="min-h-0 flex flex-col overflow-hidden"
+              >
                 <MaterialLedgerWorkbench
                   items={result.ledgerItems}
                   selectedNodeId={selectedNode?.id ?? null}
@@ -205,9 +266,6 @@ export const DualBomAnalysisPage: React.FC = () => {
         <AuditSidebar
           selectedNode={selectedNode}
           allNodes={result?.nodes ?? []}
-          onDraftEcn={(node) => {
-            alert(`ECN Notice Drafted for Component: ${node.id} (${node.name})`);
-          }}
         />
       </div>
     </div>

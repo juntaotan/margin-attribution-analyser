@@ -186,12 +186,6 @@ export const MaterialLedgerWorkbench: React.FC<MaterialLedgerWorkbenchProps> = (
                       >
                         Inspect &amp; Trace
                       </button>
-                      <button
-                        type="button"
-                        className="px-2 py-0.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded text-[10px] transition-colors shadow-2xs"
-                      >
-                        Flag ECN
-                      </button>
                     </div>
                   </td>
                 </tr>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Factory, Calendar, Play, ChevronDown } from 'lucide-react';
+import { Factory, Calendar, Play } from 'lucide-react';
 
 interface ScopeControlsBarProps {
   plantContext: string;
@@ -12,8 +12,6 @@ interface ScopeControlsBarProps {
   setTargetProducts: (val: string) => void;
   threshold: number;
   setThreshold: (val: number) => void;
-  traceMethod: string;
-  setTraceMethod: (val: string) => void;
   isAnalyzing: boolean;
   onRunAnalysis: () => void;
 }
@@ -29,8 +27,6 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
   setTargetProducts,
   threshold,
   setThreshold,
-  traceMethod,
-  setTraceMethod,
   isAnalyzing,
   onRunAnalysis,
 }) => {
@@ -120,25 +116,6 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           </div>
         </div>
 
-        {/* Backward Trace Selector */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Trace:
-          </span>
-          <div className="relative">
-            <select
-              value={traceMethod}
-              onChange={(e) => setTraceMethod(e.target.value)}
-              className="h-6 py-0 pl-2 pr-6 text-xs font-mono bg-white border border-slate-200 rounded text-slate-800 appearance-none focus:ring-1 focus:ring-blue-500 focus:outline-hidden shadow-xs cursor-pointer"
-            >
-              <option value="causal">MAS Causal Propagation (Recursive)</option>
-              <option value="direct">Direct Parent Allocation</option>
-              <option value="strict">Strict Routing Pass-Through</option>
-            </select>
-            <ChevronDown className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-        </div>
-
         {/* Execute Button */}
         <button
           type="button"
@@ -147,7 +124,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           className="h-6 px-3 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Play className={`w-3 h-3 fill-current ${isAnalyzing ? 'animate-spin' : ''}`} />
-          <span>{isAnalyzing ? 'Tracing...' : 'Run Trace'}</span>
+          <span>{isAnalyzing ? 'Analyzing...' : 'Run Analysis'}</span>
         </button>
       </div>
     </div>

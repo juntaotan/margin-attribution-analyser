@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   Crosshair,
   AlertTriangle,
-  FileSpreadsheet,
-  FileEdit,
   Sparkles,
   ArrowUp,
 } from 'lucide-react';
@@ -18,13 +16,11 @@ import {
 interface AuditSidebarProps {
   selectedNode: DualBomNode | null;
   allNodes: DualBomNode[];
-  onDraftEcn?: (node: DualBomNode) => void;
 }
 
 export const AuditSidebar: React.FC<AuditSidebarProps> = ({
   selectedNode,
   allNodes,
-  onDraftEcn,
 }) => {
   const [commandInput, setCommandInput] = useState<string>('');
 
@@ -151,30 +147,6 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
           </div>
         )}
 
-        {/* Upper Action Buttons */}
-        <div className="flex items-center gap-1.5 pt-1">
-          <button
-            type="button"
-            className="flex-1 h-7 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 rounded text-xs transition-colors"
-          >
-            Dismiss Alert
-          </button>
-          <button
-            type="button"
-            className="h-7 px-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded text-slate-600 text-xs flex items-center gap-1 transition-colors"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Usage</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onDraftEcn?.(selectedNode)}
-            className="flex-1 h-7 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium flex items-center justify-center gap-1 shadow-xs transition-colors"
-          >
-            <FileEdit className="w-3.5 h-3.5" />
-            <span>Draft ECN</span>
-          </button>
-        </div>
       </div>
 
       {/* ================= Lower 50%: MAS Root-Cause Audit Report & AI Assistant ================= */}
@@ -254,10 +226,10 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
           <div className="flex flex-wrap gap-1 mb-2">
             <button
               type="button"
-              onClick={() => handleQuickCommand(`Draft ECN Notice for ${selectedNode.id}`)}
+              onClick={() => handleQuickCommand(`Break down root-cause attribution for ${selectedNode.id}`)}
               className="text-[10px] font-mono bg-white hover:bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 shadow-2xs"
             >
-              + Draft ECN Notice
+              + Root-Cause Breakdown
             </button>
             <button
               type="button"
