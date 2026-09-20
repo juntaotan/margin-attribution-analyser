@@ -1,7 +1,8 @@
 package dev.margintrace.margin_attribution_backend.analysis.service;
 
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
-import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
+import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
@@ -9,6 +10,7 @@ import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,11 +32,12 @@ public class Analyser {
     private final AttributionWorkflow attributionWorkflow;
     private final BillOfMaterialRepository billOfMaterialRepository;
     private final ProductionRepository productionRepository;
+    private final SalesOrderLineRepository salesOrderLineRepository;
+    private final MarginAttributionAlgorithm pathFinder = new MarginAttributionAlgorithm();
 
     /**
-     * Runs the attribution workflow and turns its source-to-target index paths into
-     * a Node-to-direct-downstream-nodes adjacency map. The graph is used only to
-     * resolve path indexes; nodes and edges outside the traced paths are excluded.
+     * Runs the attribution workflow and traces sold targets through its CSR graph.
+     * Nodes and edges outside the traced paths are excluded.
      * Repeated nodes and edges from converging paths or multiple targets are merged.
      *
      * @param startDate inclusive start of the sales and production period
@@ -42,15 +45,25 @@ public class Analyser {
      * @return one entry per traced Node, including terminal nodes with no downstream nodes
      */
     public AnalysisResults analyser(LocalDate startDate, LocalDate endDate) {
-        CsrResult csrResult = attributionWorkflow.trace(startDate, endDate);
-        Node[] graphNodes = csrResult.csrGraph().nodes();
+        CsrGraph graph = attributionWorkflow.trace(startDate, endDate);
+        Node[] graphNodes = graph.nodes();
         Map<Node, LinkedHashSet<Node>> adjacency = new LinkedHashMap<>();
 
-        // Each target has its own paths, but the frontend needs one combined graph.
+        Map<String, Integer> producedPositions = new HashMap<>();
+        for (int position = 0; position < graphNodes.length; position++) {
+            Node node = graphNodes[position];
+            if (node.cost() == null) {
+                producedPositions.put(node.inventoryId(), position);
+            }
+        }
+
+        Set<String> targets = new LinkedHashSet<>();
+        salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(startDate, endDate)
+                .forEach(sale -> targets.add(sale.getProductNo()));
+
         // LinkedHashMap retains first-seen order; LinkedHashSet removes repeated edges.
-        for (int[][] targetPaths : csrResult.pathsByTarget().values()) {
-            // A path is an ordered sequence of indexes into the shared CSR graph.
-            // Process every path because two paths can share upstream sections.
+        for (String target : targets) {
+            int[][] targetPaths = pathFinder.reverseTracing(graph, producedPositions.get(target));
             for (int[] path : targetPaths) {
                 // Add every visited node as a key, including a one-node path and the
                 // terminal target; these nodes have an empty downstream list if needed.

@@ -1,7 +1,6 @@
 package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
-import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 
 import java.time.LocalDate;
@@ -15,11 +14,10 @@ final class TraceContext {
     final LocalDate startDate;
     final LocalDate endDate;
     List<String> targets = List.of();
-    final LinkedHashSet<Node> nodes = new LinkedHashSet<>();
-    final Map<String, Node> producedNodesById = new LinkedHashMap<>();
-    Map<Node, List<Node>> materialUsage = Map.of();
+    final Map<String, Node> nodes = new LinkedHashMap<>();
+    final Map<String, LinkedHashSet<String>> edges = new LinkedHashMap<>();
+    final Map<String, Node> consumedNodes = new LinkedHashMap<>();
     CsrGraph graph;
-    CsrResult result;
 
     TraceContext(LocalDate startDate, LocalDate endDate) {
         this.startDate = startDate;

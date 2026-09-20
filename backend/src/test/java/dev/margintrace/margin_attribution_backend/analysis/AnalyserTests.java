@@ -2,14 +2,15 @@ package dev.margintrace.margin_attribution_backend.analysis;
 
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
-import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
+import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,9 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +33,7 @@ class AnalyserTests {
     @Mock private AttributionWorkflow attributionWorkflow;
     @Mock private BillOfMaterialRepository billOfMaterialRepository;
     @Mock private ProductionRepository productionRepository;
+    @Mock private SalesOrderLineRepository salesOrderLineRepository;
     @InjectMocks private Analyser analyser;
 
     @Test
@@ -48,11 +48,10 @@ class AnalyserTests {
                 new Node[] {material, component, firstTarget, otherMaterial, secondTarget, unrelated},
                 new int[] {0, 1, 3, 3, 4, 4, 4},
                 new int[] {1, 2, 4, 2});
-        Map<String, int[][]> paths = new LinkedHashMap<>();
-        paths.put("TARGET-A", new int[][] {{0, 1, 2}, {3, 2}, {0, 1, 2}});
-        paths.put("TARGET-B", new int[][] {{0, 1, 4}});
         when(attributionWorkflow.trace(START, END))
-                .thenReturn(new CsrResult(graph, paths));
+                .thenReturn(graph);
+        when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
+                .thenReturn(List.of(sale("TARGET-A"), sale("TARGET-B")));
 
         AnalysisResults result = analyser.analyser(START, END);
 
@@ -70,7 +69,9 @@ class AnalyserTests {
         Node target = node("TARGET", 1, null);
         CsrGraph graph = new CsrGraph(new Node[] {target}, new int[] {0, 0}, new int[] {});
         when(attributionWorkflow.trace(START, END))
-                .thenReturn(new CsrResult(graph, Map.of("TARGET", new int[][] {{0}})));
+                .thenReturn(graph);
+        when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
+                .thenReturn(List.of(sale("TARGET")));
 
         AnalysisResults result = analyser.analyser(START, END);
 
@@ -87,7 +88,9 @@ class AnalyserTests {
                 new Node[] {produced, consumed, finished},
                 new int[] {0, 1, 2, 2}, new int[] {1, 2});
         when(attributionWorkflow.trace(START, END))
-                .thenReturn(new CsrResult(graph, Map.of("FINISHED", new int[][] {{0, 1, 2}})));
+                .thenReturn(graph);
+        when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
+                .thenReturn(List.of(sale("FINISHED")));
 
         AnalysisResults result = analyser.analyser(START, END);
 
@@ -126,5 +129,10 @@ class AnalyserTests {
                 inventoryId,
                 BigDecimal.valueOf(quantity),
                 cost == null ? null : new BigDecimal(cost));
+    }
+
+    private SalesOrderLine sale(String productNo) {
+        return SalesOrderLine.of("SO-" + productNo, START, "MOVE-" + productNo,
+                productNo, BigDecimal.ONE, BigDecimal.ONE);
     }
 }

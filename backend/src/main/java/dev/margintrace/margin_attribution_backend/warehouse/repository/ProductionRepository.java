@@ -17,4 +17,10 @@ public interface ProductionRepository extends JpaRepository<Production, Long> {
     List<Production> findAllByDepartment(String department);
 
     List<Production> findAllByDateBetweenOrderByDateAsc(java.time.LocalDate startDate, java.time.LocalDate endDate);
+
+    List<Production> findAllByProductNoAndDateBetweenOrderByDateAscIdAsc(
+            String productNo,
+            java.time.LocalDate startDate,
+            java.time.LocalDate endDate
+    );
 }

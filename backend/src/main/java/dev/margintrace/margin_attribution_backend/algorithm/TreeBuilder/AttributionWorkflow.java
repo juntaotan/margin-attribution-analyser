@@ -1,6 +1,6 @@
 package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
-import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
+import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,11 +11,10 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class AttributionWorkflow {
 
-    // This workflow uses responsibilty chain model: 
-    // Read data -> Connect nodes -> Build Csr Graph (offset and succ)
+    // Read sold targets -> build edges -> build the CSR graph.
     private final ReadDataHandler readDataHandler;
 
-    public CsrResult trace(LocalDate startDate, LocalDate endDate) {
+    public CsrGraph trace(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("startDate and endDate must not be null");
         }
@@ -26,6 +25,6 @@ public class AttributionWorkflow {
         TraceContext context = new TraceContext(startDate, endDate);
         readDataHandler.handle(context);
 
-        return context.result;
+        return context.graph;
     }
 }

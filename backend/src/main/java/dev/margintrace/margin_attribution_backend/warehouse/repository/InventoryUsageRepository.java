@@ -15,4 +15,10 @@ public interface InventoryUsageRepository extends JpaRepository<InventoryUsage, 
     List<InventoryUsage> findAllByOrderNo(String orderNo);
     List<InventoryUsage> findAllByDateBetweenOrderByDateAsc(
         LocalDate startDate, LocalDate endDate);
+
+    List<InventoryUsage> findAllByProductNoAndDateBetweenAndMaterialNoIsNotNullOrderByDateAscIdAsc(
+            String productNo,
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }
