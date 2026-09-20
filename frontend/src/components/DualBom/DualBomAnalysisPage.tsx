@@ -16,12 +16,12 @@ import {
 } from '../../analysisGraph';
 
 export const DualBomAnalysisPage: React.FC = () => {
-  const [periodFrom, setPeriodFrom] = useState<string>('2024-01-01');
-  const [periodTo, setPeriodTo] = useState<string>('2024-06-30');
+  const [periodFrom, setPeriodFrom] = useState<string>('2026-01-01');
+  const [periodTo, setPeriodTo] = useState<string>('2026-01-31');
   const [threshold, setThreshold] = useState<number>(250.0);
-  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('2024-01-01');
-  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('2024-06-30');
-  const [leafThreshold, setLeafThreshold] = useState<number>(0);
+  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('2025-01-01');
+  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('2025-01-31');
+  const [leafThreshold, setLeafThreshold] = useState<number>(100);
   const [reconciliationPaths, setReconciliationPaths] = useState<ReconciliationPath[] | null>(null);
   const [pathError, setPathError] = useState<string | null>(null);
   const [graphSnapshot, setGraphSnapshot] = useState<{
