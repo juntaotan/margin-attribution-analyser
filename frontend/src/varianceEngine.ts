@@ -350,7 +350,7 @@ export const reconcileDualBom = (
     const standardQty = bomNode?.quantity ?? actualQty;
     const actualCost = actualNode?.cost ?? null;
     const unitCost = actualCost !== null && actualQty > 0 ? actualCost / actualQty : null;
-    const baselineCost = unitCost !== null ? standardQty * unitCost : null;
+    const baselineCost = bomNode?.cost ?? (unitCost !== null ? standardQty * unitCost : null);
 
     const qtyDelta = actualQty - standardQty;
     const qtyDeltaPercent = standardQty > 0 ? (qtyDelta / standardQty) * 100 : 0;

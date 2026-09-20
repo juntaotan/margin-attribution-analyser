@@ -6,6 +6,7 @@ import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamEvent;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
@@ -22,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -36,6 +39,39 @@ class AnalyserTests {
     @Mock private ProductionRepository productionRepository;
     @Mock private SalesOrderLineRepository salesOrderLineRepository;
     @InjectMocks private Analyser analyser;
+
+    @Test
+    void streamsTheSameCsrPositionsAndIdsUsedByThresholdPaths() {
+        LocalDate comparableStart = LocalDate.of(2025, 1, 1);
+        LocalDate comparableEnd = LocalDate.of(2025, 1, 31);
+        CsrGraph actual = new CsrGraph(new Node[] {
+                node("M", 1, "10"), node("S", 1, "5"), node("P", 1, "20")},
+                new int[] {0, 1, 2, 2}, new int[] {1, 2});
+        CsrGraph comparable = new CsrGraph(new Node[] {
+                node("P", 1, "5"), node("S", 1, "5"), node("M", 1, "0")},
+                new int[] {0, 0, 1, 2}, new int[] {0, 1});
+        when(attributionWorkflow.trace(START, END)).thenReturn(actual);
+        when(attributionWorkflow.trace(comparableStart, comparableEnd)).thenReturn(comparable);
+        UUID analysisId = UUID.randomUUID();
+        List<ReconciliationStreamEvent> events = new ArrayList<>();
+
+        analyser.streamReconciliation(START, END, comparableStart, comparableEnd,
+                BigDecimal.TEN, BigDecimal.TEN, analysisId, events::add);
+
+        assertThat(events).extracting(ReconciliationStreamEvent::type)
+                .containsExactly("graph", "diff");
+        assertThat(events).allMatch(event -> event.analysisId().equals(analysisId));
+        var graph = events.get(0).actualGraph();
+        var path = events.get(1).paths().getFirst();
+        assertThat(path.positions()).containsExactly(0, 1, 2);
+        assertThat(path.edgeIndexes()).containsExactly(0, 1);
+        assertThat(path.nodeIds()).containsExactly(
+                graph.nodes().get(0).id(), graph.nodes().get(1).id(), graph.nodes().get(2).id());
+        assertThat(path.edgeIds()).containsExactlyElementsOf(graph.edgeIds());
+        assertThat(graph.offset()).containsExactly(actual.offset());
+        assertThat(graph.successors()).containsExactly(actual.successors());
+        assertThat(graph.nodes().get(0).id()).isNotEqualTo(events.get(0).comparableGraph().nodes().get(0).id());
+    }
 
     @Test
     void returnsCompleteThresholdPathWithActualNodeValues() {

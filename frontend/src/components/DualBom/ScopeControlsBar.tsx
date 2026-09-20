@@ -1,15 +1,11 @@
 import React from 'react';
-import { Factory, Calendar, Play } from 'lucide-react';
+import { Calendar, Play } from 'lucide-react';
 
 interface ScopeControlsBarProps {
-  plantContext: string;
-  setPlantContext: (val: string) => void;
   periodFrom: string;
   setPeriodFrom: (val: string) => void;
   periodTo: string;
   setPeriodTo: (val: string) => void;
-  targetProducts: string;
-  setTargetProducts: (val: string) => void;
   threshold: number;
   setThreshold: (val: number) => void;
   comparablePeriodFrom: string;
@@ -23,14 +19,10 @@ interface ScopeControlsBarProps {
 }
 
 export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
-  plantContext,
-  setPlantContext,
   periodFrom,
   setPeriodFrom,
   periodTo,
   setPeriodTo,
-  targetProducts,
-  setTargetProducts,
   threshold,
   setThreshold,
   comparablePeriodFrom,
@@ -44,24 +36,8 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
 }) => {
   return (
     <div className="w-full px-4 py-2 bg-slate-50 flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-200 text-xs shrink-0">
-      {/* Group 1: Company Context & Date Range */}
+      {/* Analysis periods */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5">
-          <Factory className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Plant Context:
-          </span>
-          <input
-            type="text"
-            value={plantContext}
-            onChange={(e) => setPlantContext(e.target.value)}
-            className="font-mono text-xs font-semibold text-slate-800 bg-white px-2 py-0.5 border border-slate-200 rounded shadow-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden w-64 truncate"
-            title={plantContext}
-          />
-        </div>
-
-        <div className="h-4 w-px bg-slate-200 hidden sm:block" />
-
         {/* Date Range */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -112,24 +88,10 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
 
       {/* Group 2: Threshold & Trace Method & Run Button */}
       <div className="flex items-center gap-3 flex-wrap">
-        {/* Products Filter */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Products:
-          </span>
-          <input
-            type="text"
-            value={targetProducts}
-            onChange={(e) => setTargetProducts(e.target.value)}
-            placeholder="e.g. EBOM-SYS-00 (opt)"
-            className="w-40 font-mono text-xs bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-800 placeholder:text-slate-400 shadow-xs focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
-          />
-        </div>
-
         {/* Variance Threshold Input */}
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Variance θ:
+            Cost stop θ:
           </span>
           <div className="flex items-center bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
             <span className="text-slate-400 font-mono text-xs pr-1">$</span>
@@ -148,11 +110,10 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
         <button
           type="button"
           onClick={onRunAnalysis}
-          disabled={isAnalyzing}
-          className="h-6 px-3 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          className="h-6 px-3 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-all"
         >
           <Play className={`w-3 h-3 fill-current ${isAnalyzing ? 'animate-spin' : ''}`} />
-          <span>{isAnalyzing ? 'Analyzing...' : 'Run Analysis'}</span>
+          <span>{isAnalyzing ? 'Run Again' : 'Run Analysis'}</span>
         </button>
       </div>
     </div>

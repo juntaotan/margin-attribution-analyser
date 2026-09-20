@@ -11,6 +11,9 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacency
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPathEntry;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamEvent;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamPath;
+import dev.margintrace.margin_attribution_backend.analysis.dto.StreamCsrGraph;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +44,29 @@ public class Analyser {
     private final SalesOrderLineRepository salesOrderLineRepository;
     private final MarginAttributionAlgorithm pathFinder = new MarginAttributionAlgorithm();
     private final GradBOMReconciler reconciler = new GradBOMReconciler();
+
+    /** Emits the exact CSR snapshots used by the reconciler before calculating paths. */
+    public void streamReconciliation(
+            LocalDate actualStartDate, LocalDate actualEndDate,
+            LocalDate comparableStartDate, LocalDate comparableEndDate,
+            BigDecimal leafThreshold, BigDecimal stopThreshold,
+            UUID analysisId, Consumer<ReconciliationStreamEvent> emit) {
+        validatePeriod(actualStartDate, actualEndDate, "actual");
+        validatePeriod(comparableStartDate, comparableEndDate, "comparable");
+        CsrGraph actualGraph = attributionWorkflow.trace(actualStartDate, actualEndDate);
+        CsrGraph comparableGraph = attributionWorkflow.trace(comparableStartDate, comparableEndDate);
+        emit.accept(ReconciliationStreamEvent.graph(analysisId,
+                StreamCsrGraph.from(actualGraph, analysisId, "actual"),
+                StreamCsrGraph.from(comparableGraph, analysisId, "comparable")));
+
+        ReconciliationResult result = reconciler.reconcile(
+                actualGraph, comparableGraph, leafThreshold, stopThreshold);
+        List<ReconciliationStreamPath> paths = result.paths().stream()
+                .filter(path -> path.endReason() == PropagationPath.EndReason.THRESHOLD_EXCEEDED)
+                .map(path -> ReconciliationStreamPath.from(path, analysisId))
+                .toList();
+        emit.accept(ReconciliationStreamEvent.diff(analysisId, paths));
+    }
 
     /** Returns complete threshold-triggered paths with recorded node values for the UI. */
     public ReconciliationAnalysisResponse reconcileGraphs(

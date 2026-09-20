@@ -5,12 +5,19 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPeriodRequest;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamEvent;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 @RestController
 @RequestMapping("/api/v1/analysis")
@@ -19,6 +26,42 @@ import java.util.Map;
 public class AnalysisController {
 
     private final Analyser analyser;
+    private final ObjectMapper objectMapper;
+
+    /** Sends the CSR snapshots first, then threshold paths from those same snapshots. */
+    @PostMapping(value = "/reconcile-periods/stream", produces = "application/x-ndjson")
+    public ResponseEntity<StreamingResponseBody> streamReconcilePeriods(
+            @RequestBody ReconciliationPeriodRequest request) {
+        UUID analysisId = UUID.randomUUID();
+        StreamingResponseBody body = output -> {
+            try {
+                analyser.streamReconciliation(
+                        request.actualStartDate(), request.actualEndDate(),
+                        request.comparableStartDate(), request.comparableEndDate(),
+                        request.leafThreshold(), request.stopThreshold(), analysisId,
+                        event -> {
+                            try {
+                                writeEvent(output, event);
+                            } catch (IOException exception) {
+                                throw new UncheckedIOException(exception);
+                            }
+                        });
+            } catch (UncheckedIOException exception) {
+                throw exception.getCause();
+            } catch (RuntimeException exception) {
+                writeEvent(output, ReconciliationStreamEvent.error(analysisId,
+                        exception.getMessage() == null ? "Analysis failed" : exception.getMessage()));
+            }
+        };
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/x-ndjson"))
+                .body(body);
+    }
+
+    private void writeEvent(java.io.OutputStream output, ReconciliationStreamEvent event) throws IOException {
+        output.write(objectMapper.writeValueAsBytes(event));
+        output.write('\n');
+        output.flush();
+    }
 
     /** Compares two supplied CSR graphs and returns complete cost-difference paths. */
     @PostMapping("/reconcile")

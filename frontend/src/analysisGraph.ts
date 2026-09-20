@@ -27,6 +27,68 @@ export interface ReconciliationResponse {
   paths: ReconciliationPath[];
 }
 
+export interface StreamNode extends AnalysisNode {
+  id: string;
+  position: number;
+}
+
+export interface StreamCsrGraph {
+  nodes: StreamNode[];
+  offset: number[];
+  successors: number[];
+  edgeIds: string[];
+}
+
+export interface StreamPath {
+  positions: number[];
+  edgeIndexes: number[];
+  nodeIds: string[];
+  edgeIds: string[];
+  endReason: 'THRESHOLD_EXCEEDED';
+  endingCostDifference: number;
+}
+
+export type AnalysisStreamEvent =
+  | { type: 'graph'; analysisId: string; actualGraph: StreamCsrGraph; comparableGraph: StreamCsrGraph }
+  | { type: 'diff'; analysisId: string; paths: StreamPath[] }
+  | { type: 'error'; analysisId: string; message: string };
+
+/** Parses newline-delimited JSON even when network chunks split a line. */
+export async function readAnalysisStream(
+  response: Response,
+  onEvent: (event: AnalysisStreamEvent) => void,
+): Promise<void> {
+  if (!response.body) throw new Error('Analysis response has no stream.');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let pending = '';
+  const processLine = (line: string) => {
+    if (line.trim()) onEvent(JSON.parse(line) as AnalysisStreamEvent);
+  };
+  while (true) {
+    const { value, done } = await reader.read();
+    pending += decoder.decode(value, { stream: !done });
+    let newline = pending.indexOf('\n');
+    while (newline >= 0) {
+      processLine(pending.slice(0, newline));
+      pending = pending.slice(newline + 1);
+      newline = pending.indexOf('\n');
+    }
+    if (done) break;
+  }
+  processLine(pending);
+}
+
+/** Adapts a CSR graph to the existing ledger and sidebar data pipeline. */
+export function csrToAdjacency(graph: StreamCsrGraph): AnalysisAdjacencyEntry[] {
+  return graph.nodes.map((node, position) => ({
+    upstream: node,
+    downstream: graph.successors
+      .slice(graph.offset[position], graph.offset[position + 1])
+      .map((successor) => graph.nodes[successor]),
+  }));
+}
+
 export interface AnalysisEdge {
   id: string;
   source: string;

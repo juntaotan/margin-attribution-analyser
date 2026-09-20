@@ -11,21 +11,28 @@ import {
   DualBomReconciliationResult,
   reconcileDualBom,
 } from '../../varianceEngine';
-import { AnalysisResponse, AnalysisAdjacencyEntry, ReconciliationPath, ReconciliationResponse } from '../../analysisGraph';
+import {
+  ReconciliationPath, StreamCsrGraph, StreamNode, csrToAdjacency, readAnalysisStream,
+} from '../../analysisGraph';
 
 export const DualBomAnalysisPage: React.FC = () => {
-  const [plantContext, setPlantContext] = useState<string>(
-    'AeroTech Precision Propulsion Corp. / Plant #04'
-  );
   const [periodFrom, setPeriodFrom] = useState<string>('2024-01-01');
   const [periodTo, setPeriodTo] = useState<string>('2024-06-30');
-  const [targetProducts, setTargetProducts] = useState<string>('EBOM-SYS-00');
   const [threshold, setThreshold] = useState<number>(250.0);
-  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('');
-  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('');
+  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('2024-01-01');
+  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('2024-06-30');
   const [leafThreshold, setLeafThreshold] = useState<number>(0);
   const [reconciliationPaths, setReconciliationPaths] = useState<ReconciliationPath[] | null>(null);
   const [pathError, setPathError] = useState<string | null>(null);
+  const [graphSnapshot, setGraphSnapshot] = useState<{
+    analysisId: string; actual: StreamCsrGraph; comparable: StreamCsrGraph;
+    actualLabel: string; comparableLabel: string;
+  } | null>(null);
+  const [highlightedNodeIds, setHighlightedNodeIds] = useState<ReadonlySet<string>>(new Set());
+  const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
+  const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(null);
+  const requestVersion = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -64,14 +71,13 @@ export const DualBomAnalysisPage: React.FC = () => {
   // Focus and pulse animation micro-interaction
   const handleInspectNode = (node: DualBomNode) => {
     setSelectedNode(node);
-    const elem = document.getElementById(`target-node-${node.id}`);
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      elem.classList.add('ring-8');
-      setTimeout(() => {
-        elem.classList.remove('ring-8');
-      }, 1200);
-    }
+    const graphNode = graphSnapshot?.actual.nodes.find((item) => item.inventoryId === node.id);
+    setSelectedGraphNodeId(graphNode?.id ?? null);
+  };
+
+  const handleSelectGraphNode = (node: StreamNode) => {
+    setSelectedGraphNodeId(node.id);
+    setSelectedNode(result?.nodesById.get(node.inventoryId) ?? null);
   };
 
   const handleRunAnalysis = async () => {
@@ -83,8 +89,7 @@ export const DualBomAnalysisPage: React.FC = () => {
       setAnalysisError('Start Date must not be after End Date.');
       return;
     }
-    if ((comparablePeriodFrom || comparablePeriodTo)
-      && (!comparablePeriodFrom || !comparablePeriodTo || comparablePeriodFrom > comparablePeriodTo)) {
+    if (!comparablePeriodFrom || !comparablePeriodTo || comparablePeriodFrom > comparablePeriodTo) {
       setAnalysisError('Please select an ordered comparable period.');
       return;
     }
@@ -94,113 +99,103 @@ export const DualBomAnalysisPage: React.FC = () => {
       return;
     }
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const version = ++requestVersion.current;
     setIsAnalyzing(true);
     setAnalysisError(null);
     setPathError(null);
     setReconciliationPaths(null);
+    setGraphSnapshot(null);
+    setResult(null);
+    setSelectedNode(null);
+    setSelectedGraphNodeId(null);
+    setHighlightedNodeIds(new Set());
+    setHighlightedEdgeIds(new Set());
 
-    const targets = targetProducts
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-
+    let receivedGraph = false;
     try {
-      // Concurrently fetch actual production trace and standard BOM
-      const [actualRes, bomRes] = await Promise.all([
-        fetch('/api/v1/analysis/trace', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            startDate: periodFrom,
-            endDate: periodTo,
-            company: plantContext,
-            targets,
-          }),
+      const response = await fetch('/api/v1/analysis/reconcile-periods/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          actualStartDate: periodFrom,
+          actualEndDate: periodTo,
+          comparableStartDate: comparablePeriodFrom,
+          comparableEndDate: comparablePeriodTo,
+          leafThreshold,
+          stopThreshold: threshold,
         }),
-        fetch('/api/v1/analysis/bom', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            startDate: periodFrom,
-            endDate: periodTo,
-            targets: targets.length > 0 ? targets : ['EBOM-SYS-00'],
-          }),
-        }),
-      ]);
+      });
+      if (!response.ok) throw new Error(`Analysis failed (${response.status})`);
 
-      let actualEntries: AnalysisAdjacencyEntry[] = [];
-      let bomEntries: AnalysisAdjacencyEntry[] = [];
-
-      if (actualRes.ok) {
-        const actualData: AnalysisResponse = await actualRes.json();
-        actualEntries = actualData.results || [];
-      }
-      if (bomRes.ok) {
-        const bomData: AnalysisResponse = await bomRes.json();
-        bomEntries = bomData.results || [];
-      }
-
-      // If backend returns empty (e.g. database not populated with mock items yet), generate baseline sample items
-      if (actualEntries.length === 0 && bomEntries.length === 0) {
-        actualEntries = getSampleActualEntries();
-        bomEntries = getSampleBomEntries();
-      }
-
-      const reconciled = reconcileDualBom(actualEntries, bomEntries, threshold);
-      setResult(reconciled);
-
-      // Select top overrun node by default, or root
-      const topOverrun = reconciled.nodes.find((n) => n.severity === 'major') || reconciled.nodes[0];
-      if (topOverrun) {
-        setSelectedNode(topOverrun);
-      }
-
-      if (comparablePeriodFrom && comparablePeriodTo) {
-        try {
-          const pathResponse = await fetch('/api/v1/analysis/reconcile-periods', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              actualStartDate: periodFrom,
-              actualEndDate: periodTo,
-              comparableStartDate: comparablePeriodFrom,
-              comparableEndDate: comparablePeriodTo,
-              leafThreshold,
-              stopThreshold: threshold,
-            }),
-          });
-          if (!pathResponse.ok) {
-            const body = await pathResponse.json().catch(() => null) as { message?: string } | null;
-            throw new Error(body?.message || `Cost path analysis failed (${pathResponse.status})`);
-          }
-          const pathData: ReconciliationResponse = await pathResponse.json();
-          if (!Array.isArray(pathData.paths)) {
-            throw new Error('Cost path response did not contain paths.');
-          }
-          setReconciliationPaths(pathData.paths);
-        } catch (pathFailure) {
-          setPathError(pathFailure instanceof Error ? pathFailure.message : 'Cost path analysis failed.');
+      let snapshot: {
+        analysisId: string; actual: StreamCsrGraph; comparable: StreamCsrGraph;
+        actualLabel: string; comparableLabel: string;
+      } | null = null;
+      let receivedDiff = false;
+      let streamError: string | null = null;
+      await readAnalysisStream(response, (event) => {
+        if (version !== requestVersion.current) return;
+        if (event.type === 'graph') {
+          receivedGraph = true;
+          snapshot = {
+            analysisId: event.analysisId,
+            actual: event.actualGraph,
+            comparable: event.comparableGraph,
+            actualLabel: `Actual ${periodFrom} to ${periodTo}`,
+            comparableLabel: `Comparable ${comparablePeriodFrom} to ${comparablePeriodTo}`,
+          };
+          setGraphSnapshot(snapshot);
+          const reconciled = reconcileDualBom(
+            csrToAdjacency(event.actualGraph), csrToAdjacency(event.comparableGraph), threshold,
+          );
+          setResult(reconciled);
+          const first = reconciled.nodes.find((node) => node.severity === 'major') ?? reconciled.nodes[0];
+          setSelectedNode(first ?? null);
+          setSelectedGraphNodeId(event.actualGraph.nodes.find((node) => node.inventoryId === first?.id)?.id ?? null);
+        } else if (event.type === 'diff') {
+          if (!snapshot || snapshot.analysisId !== event.analysisId) return;
+          receivedDiff = true;
+          setHighlightedNodeIds(new Set(event.paths.flatMap((path) => path.nodeIds)));
+          setHighlightedEdgeIds(new Set(event.paths.flatMap((path) => path.edgeIds)));
+          setReconciliationPaths(event.paths.map((path) => ({
+            nodes: path.positions.map((position) => snapshot!.actual.nodes[position]),
+            edges: path.edgeIndexes.map((edgeIndex, index) => ({
+              edgeIndex,
+              fromPosition: path.positions[index],
+              toPosition: path.positions[index + 1],
+            })),
+            endReason: path.endReason,
+            endingCostDifference: path.endingCostDifference,
+          })));
+        } else if (event.type === 'error' && (!snapshot || snapshot.analysisId === event.analysisId)) {
+          streamError = event.message;
         }
-      }
+      });
+      if (streamError) throw new Error(streamError);
+      if (!snapshot) throw new Error('Analysis returned no graph.');
+      if (!receivedDiff) throw new Error('Analysis returned no diff result.');
     } catch (err) {
-      // Graceful fallback to sample workbench so UI is fully functional and interactive
-      console.warn('Backend trace failed, falling back to workbench baseline:', err);
-      const actualEntries = getSampleActualEntries();
-      const bomEntries = getSampleBomEntries();
-      const reconciled = reconcileDualBom(actualEntries, bomEntries, threshold);
-      setResult(reconciled);
-      const topOverrun = reconciled.nodes.find((n) => n.severity === 'major') || reconciled.nodes[0];
-      if (topOverrun) {
-        setSelectedNode(topOverrun);
+      if (version === requestVersion.current && !controller.signal.aborted) {
+        const message = err instanceof Error ? err.message : 'Analysis failed.';
+        if (receivedGraph) setPathError(message);
+        else setAnalysisError(message);
       }
     } finally {
-      setIsAnalyzing(false);
+      if (version === requestVersion.current) setIsAnalyzing(false);
     }
   };
 
   // Run initial trace on mount to immediately display the workbench
   useEffect(() => {
     handleRunAnalysis();
+    return () => {
+      requestVersion.current++;
+      abortRef.current?.abort();
+    };
   }, []);
 
   const topOverrunNode = result?.nodes.find((n) => n.severity === 'major');
@@ -212,14 +207,10 @@ export const DualBomAnalysisPage: React.FC = () => {
 
       {/* 2. Full-Width Scope Parameters Bar */}
       <ScopeControlsBar
-        plantContext={plantContext}
-        setPlantContext={setPlantContext}
         periodFrom={periodFrom}
         setPeriodFrom={setPeriodFrom}
         periodTo={periodTo}
         setPeriodTo={setPeriodTo}
-        targetProducts={targetProducts}
-        setTargetProducts={setTargetProducts}
         threshold={threshold}
         setThreshold={setThreshold}
         comparablePeriodFrom={comparablePeriodFrom}
@@ -263,7 +254,7 @@ export const DualBomAnalysisPage: React.FC = () => {
             </div>
           )}
 
-          {result && (
+          {result && graphSnapshot && (
             <>
               {/* SECTION 1: Dual-BOM True Tree Canvas (Default 70% Vertical Height Space, adjustable) */}
               <div
@@ -271,9 +262,14 @@ export const DualBomAnalysisPage: React.FC = () => {
                 className="min-h-0 overflow-y-auto overflow-x-auto border-b border-slate-200 flex flex-col shrink-0"
               >
                 <DualBomTreeCanvas
-                  nodes={result.nodes}
-                  selectedNodeId={selectedNode?.id ?? null}
-                  onSelectNode={handleInspectNode}
+                  actualGraph={graphSnapshot.actual}
+                  comparableGraph={graphSnapshot.comparable}
+                  actualLabel={graphSnapshot.actualLabel}
+                  comparableLabel={graphSnapshot.comparableLabel}
+                  highlightedNodeIds={highlightedNodeIds}
+                  highlightedEdgeIds={highlightedEdgeIds}
+                  selectedNodeId={selectedGraphNodeId}
+                  onSelectNode={handleSelectGraphNode}
                 />
               </div>
 
@@ -325,62 +321,3 @@ export const DualBomAnalysisPage: React.FC = () => {
     </div>
   );
 };
-
-// ================= Sample Baseline Data for Initial Load =================
-function getSampleBomEntries(): AnalysisAdjacencyEntry[] {
-  return [
-    {
-      upstream: { inventoryId: 'EBOM-PWR-01', quantity: 1.0, cost: 14200.0 },
-      downstream: [{ inventoryId: 'EBOM-SYS-00', quantity: 1.0, cost: 27480.0 }],
-    },
-    {
-      upstream: { inventoryId: 'EBOM-ROT-04', quantity: 1.0, cost: 8900.0 },
-      downstream: [{ inventoryId: 'EBOM-SYS-00', quantity: 1.0, cost: 27480.0 }],
-    },
-    {
-      upstream: { inventoryId: 'EBOM-TC-88', quantity: 1.0, cost: 4380.0 },
-      downstream: [{ inventoryId: 'EBOM-PWR-01', quantity: 1.0, cost: 14200.0 }],
-    },
-    {
-      upstream: { inventoryId: 'EBOM-FAST-M12', quantity: 40.0, cost: 520.0 },
-      downstream: [{ inventoryId: 'EBOM-PWR-01', quantity: 1.0, cost: 14200.0 }],
-    },
-    {
-      upstream: { inventoryId: 'EBOM-EL-300', quantity: 2.0, cost: 1700.0 },
-      downstream: [{ inventoryId: 'EBOM-SYS-00', quantity: 1.0, cost: 27480.0 }],
-    },
-    {
-      upstream: { inventoryId: 'EBOM-BRG-22', quantity: 4.0, cost: 2110.0 },
-      downstream: [{ inventoryId: 'EBOM-ROT-04', quantity: 1.0, cost: 8900.0 }],
-    },
-  ];
-}
-
-function getSampleActualEntries(): AnalysisAdjacencyEntry[] {
-  return [
-    {
-      upstream: { inventoryId: 'PBOM-PWR-01-ACT', quantity: 1.0, cost: 14650.0 },
-      downstream: [{ inventoryId: 'PBOM-SYS-00-ACT', quantity: 1.0, cost: 29230.0 }],
-    },
-    {
-      upstream: { inventoryId: 'PBOM-ROT-04-BLK', quantity: 1.0, cost: 5700.0 },
-      downstream: [{ inventoryId: 'PBOM-SYS-00-ACT', quantity: 1.0, cost: 29230.0 }],
-    },
-    {
-      upstream: { inventoryId: 'PBOM-TC-88-M', quantity: 1.4, cost: 5500.0 },
-      downstream: [{ inventoryId: 'PBOM-PWR-01-ACT', quantity: 1.0, cost: 14650.0 }],
-    },
-    {
-      upstream: { inventoryId: 'PBOM-FAST-LOT', quantity: 52.0, cost: 700.0 },
-      downstream: [{ inventoryId: 'PBOM-PWR-01-ACT', quantity: 1.0, cost: 14650.0 }],
-    },
-    {
-      upstream: { inventoryId: 'PBOM-EL-300', quantity: 2.0, cost: 1700.0 },
-      downstream: [{ inventoryId: 'PBOM-SYS-00-ACT', quantity: 1.0, cost: 29230.0 }],
-    },
-    {
-      upstream: { inventoryId: 'PBOM-BRG-22', quantity: 4.0, cost: 2560.0 },
-      downstream: [{ inventoryId: 'PBOM-ROT-04-BLK', quantity: 1.0, cost: 5700.0 }],
-    },
-  ];
-}

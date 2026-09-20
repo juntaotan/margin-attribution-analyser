@@ -8,6 +8,9 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacency
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPathEntry;
+import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamEvent;
+import dev.margintrace.margin_attribution_backend.analysis.dto.StreamCsrGraph;
+import tools.jackson.databind.ObjectMapper;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +25,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,6 +43,37 @@ class AnalysisControllerTests {
 
     @InjectMocks
     private AnalysisController analysisController;
+
+    @Test
+    void streamingEndpointWritesGraphAndDiffAsSeparateJsonLines() throws Exception {
+        Node material = new Node("M", BigDecimal.ONE, BigDecimal.TEN);
+        var graph = StreamCsrGraph.from(new dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph(
+                new Node[] {material}, new int[] {0, 0}, new int[] {}), UUID.randomUUID(), "actual");
+        doAnswer(invocation -> {
+            UUID id = invocation.getArgument(6);
+            java.util.function.Consumer<ReconciliationStreamEvent> emit = invocation.getArgument(7);
+            emit.accept(ReconciliationStreamEvent.graph(id, graph, graph));
+            emit.accept(ReconciliationStreamEvent.diff(id, List.of()));
+            return null;
+        }).when(analyser).streamReconciliation(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        AnalysisController controller = new AnalysisController(analyser, new ObjectMapper());
+        var request = new dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPeriodRequest(
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31),
+                LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31),
+                BigDecimal.ZERO, BigDecimal.TEN);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        controller.streamReconcilePeriods(request).getBody().writeTo(output);
+
+        String[] lines = output.toString(StandardCharsets.UTF_8).trim().split("\\n");
+        assertThat(lines).hasSize(2);
+        assertThat(new ObjectMapper().readTree(lines[0]).get("type").asText()).isEqualTo("graph");
+        assertThat(new ObjectMapper().readTree(lines[1]).get("type").asText()).isEqualTo("diff");
+    }
 
     @Test
     void reconcilePeriodsSerializesCompleteThresholdPath() throws Exception {
