@@ -57,6 +57,7 @@ buildNumber.properties
 *.md
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
+!cuda/README.md
 
 # environment variables
 .env
