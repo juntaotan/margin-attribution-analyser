@@ -27,6 +27,8 @@ export const DualBomAnalysisPage: React.FC = () => {
   const [graphSnapshot, setGraphSnapshot] = useState<{
     analysisId: string; actual: StreamCsrGraph; comparable: StreamCsrGraph;
     actualLabel: string; comparableLabel: string;
+    actualStartDate: string; actualEndDate: string;
+    comparableStartDate: string; comparableEndDate: string;
   } | null>(null);
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<ReadonlySet<string>>(new Set());
   const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
@@ -134,6 +136,8 @@ export const DualBomAnalysisPage: React.FC = () => {
       let snapshot: {
         analysisId: string; actual: StreamCsrGraph; comparable: StreamCsrGraph;
         actualLabel: string; comparableLabel: string;
+        actualStartDate: string; actualEndDate: string;
+        comparableStartDate: string; comparableEndDate: string;
       } | null = null;
       let receivedDiff = false;
       let streamError: string | null = null;
@@ -147,13 +151,20 @@ export const DualBomAnalysisPage: React.FC = () => {
             comparable: event.comparableGraph,
             actualLabel: `Actual ${periodFrom} to ${periodTo}`,
             comparableLabel: `Comparable ${comparablePeriodFrom} to ${comparablePeriodTo}`,
+            actualStartDate: periodFrom,
+            actualEndDate: periodTo,
+            comparableStartDate: comparablePeriodFrom,
+            comparableEndDate: comparablePeriodTo,
           };
           setGraphSnapshot(snapshot);
           const reconciled = reconcileDualBom(
             csrToAdjacency(event.actualGraph), csrToAdjacency(event.comparableGraph), threshold,
           );
           setResult(reconciled);
-          const first = reconciled.nodes.find((node) => node.severity === 'major') ?? reconciled.nodes[0];
+          const first = reconciled.nodes
+            .filter((node) => (node.costDelta ?? 0) > 0)
+            .sort((left, right) => (right.costDelta ?? 0) - (left.costDelta ?? 0))[0]
+            ?? reconciled.nodes[0];
           setSelectedNode(first ?? null);
           setSelectedGraphNodeId(event.actualGraph.nodes.find((node) => node.inventoryId === first?.id)?.id ?? null);
         } else if (event.type === 'diff') {
@@ -198,7 +209,9 @@ export const DualBomAnalysisPage: React.FC = () => {
     };
   }, []);
 
-  const topOverrunNode = result?.nodes.find((n) => n.severity === 'major');
+  const topOverrunNode = result?.nodes
+    .filter((node) => (node.costDelta ?? 0) > 0)
+    .sort((left, right) => (right.costDelta ?? 0) - (left.costDelta ?? 0))[0];
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 text-slate-800 font-sans overflow-hidden select-none">
@@ -315,7 +328,10 @@ export const DualBomAnalysisPage: React.FC = () => {
         {/* Right Fixed Sidebar (50/50 Split) */}
         <AuditSidebar
           selectedNode={selectedNode}
-          allNodes={result?.nodes ?? []}
+          actualStartDate={graphSnapshot?.actualStartDate ?? periodFrom}
+          actualEndDate={graphSnapshot?.actualEndDate ?? periodTo}
+          comparableStartDate={graphSnapshot?.comparableStartDate ?? comparablePeriodFrom}
+          comparableEndDate={graphSnapshot?.comparableEndDate ?? comparablePeriodTo}
         />
       </div>
     </div>

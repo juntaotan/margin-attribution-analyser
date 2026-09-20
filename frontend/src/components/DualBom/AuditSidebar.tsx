@@ -1,28 +1,77 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Crosshair,
-  AlertTriangle,
   Sparkles,
-  ArrowUp,
+  RefreshCw,
 } from 'lucide-react';
 import {
   DualBomNode,
-  AuditDossier,
-  buildAuditDossier,
   formatCurrency,
   formatQty,
 } from '../../varianceEngine';
 
 interface AuditSidebarProps {
   selectedNode: DualBomNode | null;
-  allNodes: DualBomNode[];
+  actualStartDate: string;
+  actualEndDate: string;
+  comparableStartDate: string;
+  comparableEndDate: string;
+}
+
+interface RootCauseReport {
+  inventoryId: string;
+  category: string;
+  categoryLabel: string;
+  certainty: string;
+  evidence: string[];
+  summary: string | null;
+  aiGenerated: boolean;
+  aiMessage: string | null;
 }
 
 export const AuditSidebar: React.FC<AuditSidebarProps> = ({
   selectedNode,
-  allNodes,
+  actualStartDate,
+  actualEndDate,
+  comparableStartDate,
+  comparableEndDate,
 }) => {
-  const [commandInput, setCommandInput] = useState<string>('');
+  const [report, setReport] = useState<RootCauseReport | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const selectedId = selectedNode?.id;
+
+  useEffect(() => {
+    if (!selectedId) {
+      setReport(null);
+      return;
+    }
+    const controller = new AbortController();
+    setReport(null);
+    setReportError(null);
+    setLoadingReport(true);
+    fetch('/api/v1/analysis/root-cause-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        actualStartDate, actualEndDate, comparableStartDate, comparableEndDate,
+        inventoryId: selectedId,
+      }),
+    }).then(async (response) => {
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message ?? `Report failed (${response.status})`);
+      }
+      return response.json() as Promise<RootCauseReport>;
+    }).then(setReport).catch((error) => {
+      if (!controller.signal.aborted) setReportError(error instanceof Error ? error.message : 'Report failed');
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoadingReport(false);
+    });
+    return () => controller.abort();
+  }, [selectedId, actualStartDate, actualEndDate, comparableStartDate, comparableEndDate, retryCount]);
 
   if (!selectedNode) {
     return (
@@ -36,12 +85,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
     );
   }
 
-  const dossier: AuditDossier = buildAuditDossier(selectedNode, allNodes);
   const isOverrun = (selectedNode.costDelta ?? 0) > 0;
-
-  const handleQuickCommand = (text: string) => {
-    setCommandInput(text);
-  };
 
   return (
     <aside className="w-full lg:w-96 xl:w-96 bg-white flex flex-col shrink-0 border-t lg:border-t-0 border-slate-200 overflow-y-auto">
@@ -134,141 +178,43 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
           </div>
         </div>
 
-        {/* Deviation Concession Callout */}
-        {dossier.deviationConcession && (
-          <div className="p-2 bg-amber-50/80 border border-amber-300 rounded text-xs text-slate-800 mb-2.5">
-            <div className="flex items-center gap-1 font-bold text-amber-800 uppercase text-[10px] mb-0.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-              Deviation Concession {dossier.deviationConcession.code}:
-            </div>
-            <p className="text-slate-600 text-[11px] leading-tight">
-              {dossier.deviationConcession.note}
-            </p>
-          </div>
-        )}
-
       </div>
 
-      {/* ================= Lower 50%: MAS Root-Cause Audit Report & AI Assistant ================= */}
-      <div className="p-3.5 flex-1 flex flex-col justify-between bg-slate-50/60">
-        <div className="flex flex-col gap-2.5">
+      <div className="p-3.5 flex-1 flex flex-col bg-slate-50/60">
           <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               AI Root-Cause Audit Report
             </span>
-            <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">
-              {dossier.confidence}% Conf
-            </span>
+            {loadingReport && <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />}
           </div>
-
-          {/* Root-cause cards */}
-          <div className="space-y-1.5">
-            {dossier.rootCauses.map((rc) => (
-              <div
-                key={rc.id}
-                className={`p-2 rounded border-l-2 bg-white border border-slate-200 shadow-2xs ${
-                  rc.severity === 'error' ? 'border-l-rose-600' : 'border-l-amber-500'
-                }`}
-              >
-                <div className="flex items-center justify-between font-mono text-xs">
-                  <span
-                    className={`font-bold ${
-                      rc.severity === 'error' ? 'text-rose-600' : 'text-slate-800'
-                    }`}
-                  >
-                    {rc.id}: {rc.title}
-                  </span>
-                  <span className="font-bold text-rose-600">
-                    {formatCurrency(rc.amount)}
-                  </span>
-                </div>
-                <p className="text-slate-500 text-[11px] mt-0.5 leading-snug">
-                  {rc.description}
-                </p>
-              </div>
-            ))}
+          <div className="bg-white border border-slate-200 rounded p-3 mt-3 text-xs">
+            <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+              Analysis report summary
+            </h5>
+            {loadingReport && <p className="text-slate-500">Analyzing the selected material…</p>}
+            {reportError && <p className="text-rose-700">{reportError}</p>}
+            {report && (
+              <>
+                <p className="font-semibold text-slate-900">{report.categoryLabel} · {report.certainty}</p>
+                <ul className="mt-2 list-disc pl-4 space-y-1 text-slate-600">
+                  {report.evidence.map((item, index) => <li key={index}>{item}</li>)}
+                </ul>
+                {report.aiGenerated && report.summary && (
+                  <p className="mt-3 rounded bg-blue-50 border border-blue-100 p-2 text-blue-900 leading-relaxed">
+                    <span className="font-bold">llama.cpp summary: </span>{report.summary}
+                  </p>
+                )}
+                {!report.aiGenerated && <p className="mt-3 text-amber-700">AI summary unavailable: {report.aiMessage}</p>}
+              </>
+            )}
+            {!loadingReport && (reportError || (report && !report.aiGenerated)) && (
+              <button type="button" onClick={() => setRetryCount((count) => count + 1)}
+                className="mt-2 text-blue-700 hover:underline font-semibold">
+                Retry AI summary
+              </button>
+            )}
           </div>
-
-          {/* Impact Echelon Box */}
-          <div className="bg-white border border-slate-200 rounded p-2 text-xs font-mono">
-            <div className="text-[10px] uppercase text-slate-500 font-bold mb-1 font-sans flex justify-between">
-              <span>Impact Echelon:</span>
-              <span className="text-rose-600 font-semibold">{dossier.impactEchelon}</span>
-            </div>
-            <div className="text-slate-500 flex justify-between">
-              <span>Lead Time Slippage:</span>
-              <span className="text-slate-800 font-semibold">{dossier.leadTimeSlippage}</span>
-            </div>
-            <div className="text-slate-500 flex justify-between">
-              <span>Affected Assemblies:</span>
-              <span className="text-slate-800 font-semibold">
-                {dossier.affectedAssembliesCount} nodes in branch
-              </span>
-            </div>
-          </div>
-
-          {/* Prescriptive Actions */}
-          <div className="bg-white border border-slate-200 rounded p-2">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Prescriptive Actions:
-            </span>
-            <ul className="text-[11px] font-mono text-slate-700 space-y-1 list-disc pl-3">
-              {dossier.prescriptiveActions.map((action, idx) => (
-                <li key={idx}>{action}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Command Bar Footer */}
-        <div className="pt-3 border-t border-slate-200 mt-3">
-          <div className="flex flex-wrap gap-1 mb-2">
-            <button
-              type="button"
-              onClick={() => handleQuickCommand(`Break down root-cause attribution for ${selectedNode.id}`)}
-              className="text-[10px] font-mono bg-white hover:bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 shadow-2xs"
-            >
-              + Root-Cause Breakdown
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickCommand(`Locate OP-102 Process Route for ${selectedNode.id}`)}
-              className="text-[10px] font-mono bg-white hover:bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 shadow-2xs"
-            >
-              + Locate OP-102
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickCommand(`Audit ${selectedNode.station.split(' ')[0]} station metrics`)}
-              className="text-[10px] font-mono bg-white hover:bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 shadow-2xs"
-            >
-              + Station Audit
-            </button>
-          </div>
-
-          <div className="relative flex items-center">
-            <input
-              type="text"
-              value={commandInput}
-              onChange={(e) => setCommandInput(e.target.value)}
-              placeholder="Ask engineering assistant or enter command..."
-              className="w-full h-8 pl-2 pr-8 text-xs bg-white border border-slate-200 rounded text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 shadow-xs"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (commandInput.trim()) {
-                  alert(`AI Command Dispatched: "${commandInput}"`);
-                  setCommandInput('');
-                }
-              }}
-              className="absolute right-1 w-6 h-6 bg-blue-600 text-white rounded flex items-center justify-center hover:bg-blue-700 transition-colors shadow-2xs"
-            >
-              <ArrowUp className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
       </div>
     </aside>
   );

@@ -12,6 +12,7 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStr
 import dev.margintrace.margin_attribution_backend.analysis.dto.StreamCsrGraph;
 import tools.jackson.databind.ObjectMapper;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
+import dev.margintrace.margin_attribution_backend.analysis.service.RootCauseReportService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +42,9 @@ class AnalysisControllerTests {
     @Mock
     private Analyser analyser;
 
+    @Mock
+    private RootCauseReportService rootCauseReportService;
+
     @InjectMocks
     private AnalysisController analysisController;
 
@@ -60,7 +64,7 @@ class AnalysisControllerTests {
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
-        AnalysisController controller = new AnalysisController(analyser, new ObjectMapper());
+        AnalysisController controller = new AnalysisController(analyser, new ObjectMapper(), rootCauseReportService);
         var request = new dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPeriodRequest(
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31),
                 LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31),

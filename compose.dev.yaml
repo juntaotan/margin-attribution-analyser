@@ -48,11 +48,15 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
       MINIO_RAW_BUCKET: ${MINIO_RAW_BUCKET:-margin-raw}
+      LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://host.docker.internal:8081}
+      LLAMA_MODEL: ${LLAMA_MODEL:-local}
     ports:
       - "${DEV_BACKEND_PORT:-18080}:8080"
     volumes:
       - ./backend:/workspace:Z
       - margin_dev_maven_cache:/root/.m2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

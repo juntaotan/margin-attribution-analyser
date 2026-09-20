@@ -39,8 +39,12 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env.deploy}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env.deploy}
       MINIO_RAW_BUCKET: ${MINIO_RAW_BUCKET:-margin-raw}
+      LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://host.docker.internal:8081}
+      LLAMA_MODEL: ${LLAMA_MODEL:-local}
       SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
       SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 50MB
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

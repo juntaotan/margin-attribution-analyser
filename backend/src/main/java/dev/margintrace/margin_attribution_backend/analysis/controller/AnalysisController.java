@@ -6,7 +6,10 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAna
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationPeriodRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamEvent;
+import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportRequest;
+import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportResponse;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
+import dev.margintrace.margin_attribution_backend.analysis.service.RootCauseReportService;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,12 @@ public class AnalysisController {
 
     private final Analyser analyser;
     private final ObjectMapper objectMapper;
+    private final RootCauseReportService rootCauseReportService;
+
+    @PostMapping("/root-cause-report")
+    public RootCauseReportResponse rootCauseReport(@RequestBody RootCauseReportRequest request) {
+        return rootCauseReportService.report(request);
+    }
 
     /** Sends the CSR snapshots first, then threshold paths from those same snapshots. */
     @PostMapping(value = "/reconcile-periods/stream", produces = "application/x-ndjson")

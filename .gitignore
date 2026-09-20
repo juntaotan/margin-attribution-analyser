@@ -58,6 +58,7 @@ buildNumber.properties
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
 !cuda/README.md
+!docs/LOCAL_AI_REPORT.md
 
 # environment variables
 .env
