@@ -2,9 +2,12 @@ package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
+import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
+import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
@@ -77,6 +80,15 @@ class AttributionWorkflowTests {
         assertThat(graph.offset()).containsExactly(
                 0, 0, 0, 1, 2, 3, 4, 5, 6, 8, 9);
         assertThat(graph.successors()).containsExactly(0, 0, 1, 1, 2, 2, 4, 5, 5);
+
+        BillOfMaterialRepository bom = repository(BillOfMaterialRepository.class,
+                "findAllByProductNoIn", arguments -> List.of());
+        AnalysisResults analysis = new Analyser(workflow, bom, production, sales).analyser(DATE, DATE);
+        assertThat(analysis.getResults()).hasSize(10);
+        assertThat(analysis.getResults().stream()
+                .flatMap(entry -> entry.downstream().stream()
+                        .map(downstream -> downstream.inventoryId() + "-" + entry.upstream().inventoryId())))
+                .containsExactlyInAnyOrderElementsOf(productRelationships);
 
         System.out.println("offset = " + Arrays.toString(graph.offset()));
         System.out.println("successors = " + Arrays.toString(graph.successors()));

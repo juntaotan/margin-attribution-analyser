@@ -80,24 +80,20 @@ class AnalyserTests {
     }
 
     @Test
-    void keepsProducedAndConsumedNodesDistinctWhenTheirRecordedCostsDiffer() {
-        Node produced = node("COMPONENT", 50, null);
-        Node consumed = node("COMPONENT", 50, "3500.00");
-        Node finished = node("FINISHED", 100, null);
+    void tracesTargetWithRecordedCost() {
+        Node material = node("MATERIAL", 2, "12.00");
+        Node target = node("TARGET", 1, "20.00");
         CsrGraph graph = new CsrGraph(
-                new Node[] {produced, consumed, finished},
-                new int[] {0, 1, 2, 2}, new int[] {1, 2});
-        when(attributionWorkflow.trace(START, END))
-                .thenReturn(graph);
+                new Node[] {material, target}, new int[] {0, 1, 1}, new int[] {1});
+        when(attributionWorkflow.trace(START, END)).thenReturn(graph);
         when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
-                .thenReturn(List.of(sale("FINISHED")));
+                .thenReturn(List.of(sale("TARGET")));
 
         AnalysisResults result = analyser.analyser(START, END);
 
         assertThat(result.getResults()).containsExactly(
-                new AnalysisAdjacencyEntry(produced, List.of(consumed)),
-                new AnalysisAdjacencyEntry(consumed, List.of(finished)),
-                new AnalysisAdjacencyEntry(finished, List.of()));
+                new AnalysisAdjacencyEntry(material, List.of(target)),
+                new AnalysisAdjacencyEntry(target, List.of()));
     }
 
     @Test

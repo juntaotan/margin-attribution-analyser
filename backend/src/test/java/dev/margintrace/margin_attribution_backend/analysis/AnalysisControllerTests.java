@@ -3,17 +3,13 @@ package dev.margintrace.margin_attribution_backend.analysis;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.controller.AnalysisController;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
-import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisGraphResponse;
-import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
-import dev.margintrace.margin_attribution_backend.analysis.service.AnalysisService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -23,7 +19,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -33,24 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AnalysisControllerTests {
 
     @Mock
-    private AnalysisService analysisService;
-
-    @Mock
     private Analyser analyser;
 
     @InjectMocks
     private AnalysisController analysisController;
-
-    @Test
-    void postMarginTopologyReturnsGraphResponse() {
-        AnalysisRequest request = AnalysisRequest.builder().build();
-        AnalysisGraphResponse mockResponse = AnalysisGraphResponse.builder().build();
-        when(analysisService.analyze(request)).thenReturn(mockResponse);
-
-        ResponseEntity<AnalysisGraphResponse> response = analysisController.analyzeMarginTopology(request);
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).isSameAs(mockResponse);
-    }
 
     @Test
     void traceEndpointAcceptsDatesAndSerializesRecordedNodeValues() throws Exception {

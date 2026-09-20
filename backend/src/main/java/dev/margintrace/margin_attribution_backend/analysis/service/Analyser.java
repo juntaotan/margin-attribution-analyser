@@ -49,12 +49,10 @@ public class Analyser {
         Node[] graphNodes = graph.nodes();
         Map<Node, LinkedHashSet<Node>> adjacency = new LinkedHashMap<>();
 
-        Map<String, Integer> producedPositions = new HashMap<>();
+        Map<String, Integer> positionsByInventoryId = new HashMap<>();
         for (int position = 0; position < graphNodes.length; position++) {
             Node node = graphNodes[position];
-            if (node.cost() == null) {
-                producedPositions.put(node.inventoryId(), position);
-            }
+            positionsByInventoryId.put(node.inventoryId(), position);
         }
 
         Set<String> targets = new LinkedHashSet<>();
@@ -63,7 +61,7 @@ public class Analyser {
 
         // LinkedHashMap retains first-seen order; LinkedHashSet removes repeated edges.
         for (String target : targets) {
-            int[][] targetPaths = pathFinder.reverseTracing(graph, producedPositions.get(target));
+            int[][] targetPaths = pathFinder.reverseTracing(graph, positionsByInventoryId.get(target));
             for (int[] path : targetPaths) {
                 // Add every visited node as a key, including a one-node path and the
                 // terminal target; these nodes have an empty downstream list if needed.
