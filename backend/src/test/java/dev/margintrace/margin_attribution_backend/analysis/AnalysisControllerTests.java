@@ -64,13 +64,13 @@ class AnalysisControllerTests {
                         new AnalysisAdjacencyEntry(material, List.of(product)),
                         new AnalysisAdjacencyEntry(product, List.of())))
                 .build();
-        when(analyser.analyser(List.of("PROD-A"), startDate, endDate)).thenReturn(expected);
+        when(analyser.analyser(startDate, endDate)).thenReturn(expected);
         MockMvc mvc = MockMvcBuilders.standaloneSetup(analysisController).build();
 
         mvc.perform(post("/api/v1/analysis/trace")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"startDate":"2026-01-01","endDate":"2026-01-31","targets":["PROD-A"]}
+                                {"startDate":"2026-01-01","endDate":"2026-01-31"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[0].upstream.inventoryId").value("MAT-1"))
@@ -85,14 +85,14 @@ class AnalysisControllerTests {
     void traceEndpointReturnsReadableBadRequestForMissingTarget() throws Exception {
         LocalDate startDate = LocalDate.of(2026, 1, 1);
         LocalDate endDate = LocalDate.of(2026, 1, 31);
-        when(analyser.analyser(List.of("MISSING"), startDate, endDate))
+        when(analyser.analyser(startDate, endDate))
                 .thenThrow(new IllegalArgumentException("Target not found in period: MISSING"));
         MockMvc mvc = MockMvcBuilders.standaloneSetup(analysisController).build();
 
         mvc.perform(post("/api/v1/analysis/trace")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"startDate":"2026-01-01","endDate":"2026-01-31","targets":["MISSING"]}
+                                {"startDate":"2026-01-01","endDate":"2026-01-31"}
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Target not found in period: MISSING"));

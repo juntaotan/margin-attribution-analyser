@@ -15,6 +15,6 @@ public class AnalysisRequest {
     private String company;
     private LocalDate startDate;
     private LocalDate endDate;
-    /** Empty or omitted means every product produced in the requested period. */
+    /** Used by BOM tracing; /trace derives its targets from sales in the requested period. */
     private List<String> targets;
 }

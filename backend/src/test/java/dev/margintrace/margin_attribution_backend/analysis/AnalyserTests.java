@@ -1,6 +1,6 @@
 package dev.margintrace.margin_attribution_backend.analysis;
 
-import dev.margintrace.margin_attribution_backend.algorithm.AttributionWorkflow;
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
@@ -51,10 +51,10 @@ class AnalyserTests {
         Map<String, int[][]> paths = new LinkedHashMap<>();
         paths.put("TARGET-A", new int[][] {{0, 1, 2}, {3, 2}, {0, 1, 2}});
         paths.put("TARGET-B", new int[][] {{0, 1, 4}});
-        when(attributionWorkflow.trace(START, END, List.of("TARGET-A", "TARGET-B")))
+        when(attributionWorkflow.trace(START, END))
                 .thenReturn(new CsrResult(graph, paths));
 
-        AnalysisResults result = analyser.analyser(List.of("TARGET-A", "TARGET-B"), START, END);
+        AnalysisResults result = analyser.analyser(START, END);
 
         assertThat(result.getAnalysisId()).isNotNull();
         assertThat(result.getResults()).containsExactly(
@@ -69,10 +69,10 @@ class AnalyserTests {
     void preservesAStandaloneTargetWithNoEdges() {
         Node target = node("TARGET", 1, null);
         CsrGraph graph = new CsrGraph(new Node[] {target}, new int[] {0, 0}, new int[] {});
-        when(attributionWorkflow.trace(START, END, null))
+        when(attributionWorkflow.trace(START, END))
                 .thenReturn(new CsrResult(graph, Map.of("TARGET", new int[][] {{0}})));
 
-        AnalysisResults result = analyser.analyser(null, START, END);
+        AnalysisResults result = analyser.analyser(START, END);
 
         assertThat(result.getResults()).containsExactly(
                 new AnalysisAdjacencyEntry(target, List.of()));
@@ -86,10 +86,10 @@ class AnalyserTests {
         CsrGraph graph = new CsrGraph(
                 new Node[] {produced, consumed, finished},
                 new int[] {0, 1, 2, 2}, new int[] {1, 2});
-        when(attributionWorkflow.trace(START, END, List.of("FINISHED")))
+        when(attributionWorkflow.trace(START, END))
                 .thenReturn(new CsrResult(graph, Map.of("FINISHED", new int[][] {{0, 1, 2}})));
 
-        AnalysisResults result = analyser.analyser(List.of("FINISHED"), START, END);
+        AnalysisResults result = analyser.analyser(START, END);
 
         assertThat(result.getResults()).containsExactly(
                 new AnalysisAdjacencyEntry(produced, List.of(consumed)),

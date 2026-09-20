@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -84,7 +85,7 @@ class AnalysisServiceImplTests {
                 "Machining",
                 "BOM-001"
         );
-        // Note: Production ID will be null unless simulated or handled, or let's test id or mock
+        ReflectionTestUtils.setField(prod, "id", 1L);
         when(productionRepository.findAllByDateBetweenOrderByDateAsc(from, to))
                 .thenReturn(List.of(prod));
 
@@ -92,7 +93,7 @@ class AnalysisServiceImplTests {
         Node prodNode = new Node("PROD-A", new BigDecimal("100"));
         Map<Node, List<Node>> usage = Map.of(matNode, List.of(prodNode));
 
-        when(reader.readMaterialUsage(0L, 0L)).thenReturn(usage);
+        when(reader.readMaterialUsageForProductionIds(List.of(1L))).thenReturn(usage);
 
         CsrGraph csrGraph = new CsrGraph(
                 new Node[]{matNode, prodNode},
@@ -110,5 +111,28 @@ class AnalysisServiceImplTests {
         assertThat(response.getEdges().get(0).getCost()).isEqualByComparingTo("123.45");
         assertThat(response.getEdges().get(0).getSource()).isEqualTo("MAT-1");
         assertThat(response.getEdges().get(0).getTarget()).isEqualTo("PROD-A");
+    }
+
+    @Test
+    void returnsEmptyResponseWhenSelectedProductionHasNoConsumption() {
+        LocalDate date = LocalDate.of(2026, 1, 1);
+        AnalysisRequest request = AnalysisRequest.builder()
+                .startDate(date)
+                .endDate(date)
+                .build();
+        Production production = Production.of(
+                "PO-001", date, "PROD-A", new BigDecimal("100"), "Machining", "BOM-001");
+        ReflectionTestUtils.setField(production, "id", 1L);
+        when(productionRepository.findAllByDateBetweenOrderByDateAsc(date, date))
+                .thenReturn(List.of(production));
+        when(reader.readMaterialUsageForProductionIds(List.of(1L)))
+                .thenReturn(Map.of(new Node("PROD-A", new BigDecimal("100")), List.of()));
+
+        AnalysisGraphResponse response = analysisService.analyze(request);
+
+        assertThat(response.getNodes()).isEmpty();
+        assertThat(response.getEdges()).isEmpty();
+        assertThat(response.getSummary().get("message"))
+                .isEqualTo("No material consumption found for the given period");
     }
 }

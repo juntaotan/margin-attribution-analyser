@@ -1,6 +1,6 @@
 package dev.margintrace.margin_attribution_backend.analysis.service;
 
-import dev.margintrace.margin_attribution_backend.algorithm.AttributionWorkflow;
+import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrResult;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
@@ -37,13 +37,12 @@ public class Analyser {
      * resolve path indexes; nodes and edges outside the traced paths are excluded.
      * Repeated nodes and edges from converging paths or multiple targets are merged.
      *
-     * @param targets target inventory IDs; empty or null requests every product in the period
-     * @param startDate inclusive start of the production period
-     * @param endDate inclusive end of the production period
+     * @param startDate inclusive start of the sales and production period
+     * @param endDate inclusive end of the sales and production period
      * @return one entry per traced Node, including terminal nodes with no downstream nodes
      */
-    public AnalysisResults analyser(List<String> targets, LocalDate startDate, LocalDate endDate) {
-        CsrResult csrResult = attributionWorkflow.trace(startDate, endDate, targets);
+    public AnalysisResults analyser(LocalDate startDate, LocalDate endDate) {
+        CsrResult csrResult = attributionWorkflow.trace(startDate, endDate);
         Node[] graphNodes = csrResult.csrGraph().nodes();
         Map<Node, LinkedHashSet<Node>> adjacency = new LinkedHashMap<>();
 

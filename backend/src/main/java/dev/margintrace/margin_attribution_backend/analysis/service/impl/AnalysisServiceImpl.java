@@ -43,34 +43,36 @@ public class AnalysisServiceImpl implements AnalysisService {
             return emptyResponse("No production records found for the given period");
         }
 
-        long minId = productions.stream()
+        List<Long> productionIds = productions.stream()
                 .map(Production::getId)
-                .filter(Objects::nonNull)
-                .mapToLong(Long::longValue)
-                .min()
-                .orElse(0L);
-
-        long maxId = productions.stream()
-                .map(Production::getId)
-                .filter(Objects::nonNull)
-                .mapToLong(Long::longValue)
-                .max()
-                .orElse(0L);
+                .toList();
 
         Map<Node, List<Node>> materialUsage;
         try {
-            materialUsage = reader.readMaterialUsage(minId, maxId);
+            materialUsage = reader.readMaterialUsageForProductionIds(productionIds);
         } catch (Exception e) {
-            log.error("Failed to read material usage for id range [{}, {}]", minId, maxId, e);
+            log.error("Failed to read material usage for production IDs {}", productionIds, e);
             return emptyResponse("Error reading material usage: " + e.getMessage());
         }
 
-        if (materialUsage == null || materialUsage.isEmpty()) {
+        if (materialUsage == null) {
             return emptyResponse("No material consumption found for the given period");
         }
 
-        CsrGraph csrGraph = topologicalSort.offsetDependencies(materialUsage);
-        return mapToGraphResponse(csrGraph, materialUsage, productions);
+        // This endpoint displays consumption edges; the shared reader also returns
+        // empty entries for products without materials so trace can retain them.
+        Map<Node, List<Node>> consumedEdges = new LinkedHashMap<>();
+        materialUsage.forEach((node, downstream) -> {
+            if (!downstream.isEmpty()) {
+                consumedEdges.put(node, downstream);
+            }
+        });
+        if (consumedEdges.isEmpty()) {
+            return emptyResponse("No material consumption found for the given period");
+        }
+
+        CsrGraph csrGraph = topologicalSort.offsetDependencies(consumedEdges);
+        return mapToGraphResponse(csrGraph, consumedEdges, productions);
     }
 
     private AnalysisGraphResponse mapToGraphResponse(
