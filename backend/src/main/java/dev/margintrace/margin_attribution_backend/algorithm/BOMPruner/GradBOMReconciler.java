@@ -1,56 +1,70 @@
 package dev.margintrace.margin_attribution_backend.algorithm.BOMPruner;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
+import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.algorithm.model.ReconciliationResult;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
-/** Reconciles an actual production graph with a comparable graph. */
+/** Entry point for edge scoring, material leaf selection, and cost propagation. */
 public class GradBOMReconciler {
-    private final NodeSimilarityScorer nodeSimilarityScorer = new NodeSimilarityScorer();
+    private final PruningHandler chain = new EdgeSimilarityHandler(
+            new MaterialLeafSelector(new CostPropagationHandler()));
 
-    /**
-     * Maps every node position to its similarity embedding relative to the other graph.
-     *
-     * @param actualGraph graph built from actual production and consumption data
-     * @param comparableGraph graph against which the actual graph will be compared
-     * @param variance variance amount reserved for the reconciliation calculation
-     * @return the position-to-embedding maps for both graphs
-     */
-    public ReconciliationResult gradBOMReconciler(CsrGraph actualGraph, CsrGraph comparableGraph, BigDecimal variance) {
-        // Create two collections to contain analysis result
-        Map<Integer, Integer> actualGraphDiff = new LinkedHashMap<>();
-        Map<Integer, Integer> comparableGraphDiff = new LinkedHashMap<>();
+    public ReconciliationResult reconcile(CsrGraph actualGraph, CsrGraph comparableGraph,
+                                          BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        validateGraph(actualGraph, "actualGraph");
+        validateGraph(comparableGraph, "comparableGraph");
+        validateThreshold(leafThreshold, "leafThreshold");
+        validateThreshold(stopThreshold, "stopThreshold");
 
-        for (int position = 0; position < actualGraph.nodes().length; position++) {
-            int score = nodeSimilarityScorer.score(
-                    actualGraph.nodes()[position],
-                    comparableGraph.nodes()
-            );
-            actualGraphDiff.put(position, score);
-        }
-
-        // Get all nodes and its embedding value
-        Map<Integer, NodeSimilarityScorer.Embedding> comparablePoints = new HashMap<>();
-        for (int position = 0; position < comparableGraph.nodes().length; position++) {
-            NodeSimilarityScorer.Embedding embedding =
-                    nodeSimilarityScorer.buildEmbedding(comparableGraph.nodes()[position]);
-            comparablePoints.put(position, embedding);
-
-            int score = nodeSimilarityScorer.score(
-                    comparableGraph.nodes()[position],
-                    actualGraph.nodes()
-            );
-            comparableGraphDiff.put(position, score);
-        }
-
-        return new ReconciliationResult(actualGraphDiff, comparableGraphDiff);
+        Map<String, Integer> comparablePositions = positionsById(comparableGraph, "comparableGraph");
+        positionsById(actualGraph, "actualGraph");
+        PruningContext context = new PruningContext(actualGraph, comparableGraph,
+                leafThreshold, stopThreshold, comparablePositions);
+        chain.handle(context);
+        return context.result();
     }
 
-    private void findDiffRange(CsrGraph graph, Map<Integer, Integer> comparablePoints){
+    private void validateThreshold(BigDecimal threshold, String name) {
+        Objects.requireNonNull(threshold, name + " must not be null");
+        if (threshold.signum() < 0) {
+            throw new IllegalArgumentException(name + " must not be negative");
+        }
+    }
 
+    private void validateGraph(CsrGraph graph, String name) {
+        Objects.requireNonNull(graph, name + " must not be null");
+        Node[] nodes = Objects.requireNonNull(graph.nodes(), name + " nodes must not be null");
+        int[] offset = Objects.requireNonNull(graph.offset(), name + " offset must not be null");
+        int[] successors = Objects.requireNonNull(graph.successors(), name + " successors must not be null");
+        if (offset.length != nodes.length + 1 || offset[0] != 0 || offset[nodes.length] != successors.length) {
+            throw new IllegalArgumentException(name + " has invalid CSR offsets");
+        }
+        for (int position = 0; position < nodes.length; position++) {
+            Objects.requireNonNull(nodes[position], name + " contains a null node at " + position);
+            if (offset[position] > offset[position + 1]) {
+                throw new IllegalArgumentException(name + " offsets must be non-decreasing");
+            }
+        }
+        for (int successor : successors) {
+            if (successor < 0 || successor >= nodes.length) {
+                throw new IllegalArgumentException(name + " contains invalid successor: " + successor);
+            }
+        }
+    }
+
+    private Map<String, Integer> positionsById(CsrGraph graph, String name) {
+        Map<String, Integer> positions = new HashMap<>();
+        for (int position = 0; position < graph.nodes().length; position++) {
+            String id = graph.nodes()[position].inventoryId();
+            if (positions.putIfAbsent(id, position) != null) {
+                throw new IllegalArgumentException(name + " contains duplicate inventoryId: " + id);
+            }
+        }
+        return positions;
     }
 }
