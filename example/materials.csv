@@ -1,0 +1,1601 @@
+material_id,material_name,specification,unit,material_type
+M0001,PTFE Thread Seal Tape #0001,12mm*0.1mm*10m,roll,Raw Material
+M0002,304 Stainless Steel Sheet #0002,3.0mm*1500*3000,PCS,Raw Material
+M0003,Power N-Channel MOSFET #0003,TO-220 60V 50A,PCS,Raw Material
+M0004,Precision Thick Film Resistor #0004,0603 10k Ohm 1%,PCS,Raw Material
+M0005,H59-1 Brass Round Bar #0005,D12*2000mm,PCS,Raw Material
+M0006,Protective Conformal Coating #0006,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0007,6061-T6 Aluminum Alloy Rod #0007,D20*2500mm,PCS,Raw Material
+M0008,Cold Rolled Steel Strip Coil #0008,0.8mm*150mm*Coil,kg,Raw Material
+M0009,Precision Thick Film Resistor #0009,1206 1k Ohm 1%,PCS,Raw Material
+M0010,Flame Retardant ABS Granules #0010,UL94-V0 Black 25kg,bag,Raw Material
+M0011,Thermal Conductive Grease #0011,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0012,PTFE Thread Seal Tape #0012,19mm*0.2mm*15m,roll,Raw Material
+M0013,Precision Thick Film Resistor #0013,0805 100 Ohm 0.5%,PCS,Raw Material
+M0014,Protective Conformal Coating #0014,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0015,304 Stainless Steel Sheet #0015,1.5mm*1219*2438,PCS,Raw Material
+M0016,Pan Head Cross Tapping Screw #0016,ST3.5*12 Carbon Steel,pack,Raw Material
+M0017,Power N-Channel MOSFET #0017,TO-220 60V 50A,PCS,Raw Material
+M0018,SMD Ceramic Chip Capacitor #0018,0805 100nF 50V,PCS,Raw Material
+M0019,H59-1 Brass Round Bar #0019,D12*2000mm,PCS,Raw Material
+M0020,Hex Socket Head Cap Screw #0020,M3*12 Grade 12.9,pack,Raw Material
+M0021,High-Speed Optocoupler Isolator #0021,DIP-8 2500Vrms,PCS,Raw Material
+M0022,Flame Retardant ABS Granules #0022,UL94-V0 Natural 25kg,bag,Raw Material
+M0023,6061-T6 Aluminum Alloy Rod #0023,D50*3000mm,PCS,Raw Material
+M0024,Spring Lock Washer #0024,M6 Galvanized,pack,Raw Material
+M0025,H59-1 Brass Round Bar #0025,D25*2500mm,PCS,Raw Material
+M0026,Cold Rolled Steel Strip Coil #0026,1.2mm*200mm*Coil,kg,Raw Material
+M0027,PTFE Thread Seal Tape #0027,19mm*0.2mm*15m,roll,Raw Material
+M0028,Protective Conformal Coating #0028,Fast-Drying Acrylic 5L,drum,Raw Material
+M0029,Cold Rolled Steel Strip Coil #0029,0.8mm*150mm*Coil,kg,Raw Material
+M0030,Epoxy Resin Potting Compound #0030,EP-101 2-Part 20kg,set,Raw Material
+M0031,32-bit ARM Cortex Microcontroller #0031,LQFP-64 72MHz,PCS,Raw Material
+M0032,Precision Thick Film Resistor #0032,0603 10k Ohm 1%,PCS,Raw Material
+M0033,Hex Socket Head Cap Screw #0033,M4*16 Stainless 304,pack,Raw Material
+M0034,Spring Lock Washer #0034,M6 Galvanized,pack,Raw Material
+M0035,High-Speed Optocoupler Isolator #0035,SOP-4 5000Vrms,PCS,Raw Material
+M0036,High-Speed Optocoupler Isolator #0036,DIP-8 2500Vrms,PCS,Raw Material
+M0037,SMD Ceramic Chip Capacitor #0037,1206 22uF 16V,PCS,Raw Material
+M0038,Power N-Channel MOSFET #0038,PDFN5*6 40V 100A,PCS,Raw Material
+M0039,Epoxy Resin Potting Compound #0039,EP-101 2-Part 20kg,set,Raw Material
+M0040,Flame Retardant ABS Granules #0040,UL94-V0 Black 25kg,bag,Raw Material
+M0041,Thermal Conductive Grease #0041,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0042,TC4 Titanium Alloy Plate #0042,2.5mm*500*1000,PCS,Raw Material
+M0043,Hex Socket Head Cap Screw #0043,M4*16 Stainless 304,pack,Raw Material
+M0044,PTFE Thread Seal Tape #0044,12mm*0.1mm*10m,roll,Raw Material
+M0045,Epoxy Resin Potting Compound #0045,EP-202 Thermal 10kg,set,Raw Material
+M0046,6061-T6 Aluminum Alloy Rod #0046,D20*2500mm,PCS,Raw Material
+M0047,6061-T6 Aluminum Alloy Rod #0047,D35*3000mm,PCS,Raw Material
+M0048,Hex Socket Head Cap Screw #0048,M4*16 Stainless 304,pack,Raw Material
+M0049,Cold Rolled Steel Strip Coil #0049,0.8mm*150mm*Coil,kg,Raw Material
+M0050,Protective Conformal Coating #0050,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0051,SMD Ceramic Chip Capacitor #0051,1206 22uF 16V,PCS,Raw Material
+M0052,Nylon Insert Lock Nut #0052,M5 Zinc Plated,pack,Raw Material
+M0053,PTFE Thread Seal Tape #0053,19mm*0.2mm*15m,roll,Raw Material
+M0054,Galvanized Seamless Steel Pipe #0054,DN50*3.5*6000mm,PCS,Raw Material
+M0055,Galvanized Seamless Steel Pipe #0055,DN25*3.2*6000mm,PCS,Raw Material
+M0056,Thermal Conductive Grease #0056,TG-500 5.0W/mK 500g,pot,Raw Material
+M0057,Protective Conformal Coating #0057,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0058,Protective Conformal Coating #0058,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0059,High-Speed Optocoupler Isolator #0059,SOP-4 5000Vrms,PCS,Raw Material
+M0060,Galvanized Seamless Steel Pipe #0060,DN50*3.5*6000mm,PCS,Raw Material
+M0061,Cold Rolled Steel Strip Coil #0061,0.8mm*150mm*Coil,kg,Raw Material
+M0062,H59-1 Brass Round Bar #0062,D12*2000mm,PCS,Raw Material
+M0063,PTFE Thread Seal Tape #0063,12mm*0.1mm*10m,roll,Raw Material
+M0064,Epoxy Resin Potting Compound #0064,EP-202 Thermal 10kg,set,Raw Material
+M0065,Flame Retardant ABS Granules #0065,UL94-V0 Black 25kg,bag,Raw Material
+M0066,Hex Socket Head Cap Screw #0066,M4*16 Stainless 304,pack,Raw Material
+M0067,Flame Retardant ABS Granules #0067,UL94-V0 Natural 25kg,bag,Raw Material
+M0068,Lead-Free Solder Wire #0068,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0069,Thermal Conductive Grease #0069,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0070,Epoxy Resin Potting Compound #0070,EP-101 2-Part 20kg,set,Raw Material
+M0071,Epoxy Resin Potting Compound #0071,EP-202 Thermal 10kg,set,Raw Material
+M0072,PTFE Thread Seal Tape #0072,19mm*0.2mm*15m,roll,Raw Material
+M0073,H59-1 Brass Round Bar #0073,D25*2500mm,PCS,Raw Material
+M0074,Pan Head Cross Tapping Screw #0074,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0075,Spring Lock Washer #0075,M4 65Mn Blued,pack,Raw Material
+M0076,Power N-Channel MOSFET #0076,PDFN5*6 40V 100A,PCS,Raw Material
+M0077,TC4 Titanium Alloy Plate #0077,1.0mm*500*1000,PCS,Raw Material
+M0078,PTFE Thread Seal Tape #0078,19mm*0.2mm*15m,roll,Raw Material
+M0079,PTFE Thread Seal Tape #0079,12mm*0.1mm*10m,roll,Raw Material
+M0080,Galvanized Seamless Steel Pipe #0080,DN50*3.5*6000mm,PCS,Raw Material
+M0081,TC4 Titanium Alloy Plate #0081,1.0mm*500*1000,PCS,Raw Material
+M0082,Flame Retardant ABS Granules #0082,UL94-V0 Natural 25kg,bag,Raw Material
+M0083,Nylon Insert Lock Nut #0083,M4 Stainless 304,pack,Raw Material
+M0084,H59-1 Brass Round Bar #0084,D25*2500mm,PCS,Raw Material
+M0085,32-bit ARM Cortex Microcontroller #0085,LQFP-64 72MHz,PCS,Raw Material
+M0086,6061-T6 Aluminum Alloy Rod #0086,D20*2500mm,PCS,Raw Material
+M0087,Protective Conformal Coating #0087,Fast-Drying Acrylic 5L,drum,Raw Material
+M0088,Cold Rolled Steel Strip Coil #0088,1.2mm*200mm*Coil,kg,Raw Material
+M0089,Cold Rolled Steel Strip Coil #0089,0.8mm*150mm*Coil,kg,Raw Material
+M0090,Galvanized Seamless Steel Pipe #0090,DN50*3.5*6000mm,PCS,Raw Material
+M0091,Thermal Conductive Grease #0091,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0092,Power N-Channel MOSFET #0092,PDFN5*6 40V 100A,PCS,Raw Material
+M0093,Flame Retardant ABS Granules #0093,UL94-V0 Natural 25kg,bag,Raw Material
+M0094,SMD Ceramic Chip Capacitor #0094,1206 22uF 16V,PCS,Raw Material
+M0095,SMD Ceramic Chip Capacitor #0095,1206 22uF 16V,PCS,Raw Material
+M0096,32-bit ARM Cortex Microcontroller #0096,QFN-48 120MHz,PCS,Raw Material
+M0097,Epoxy Resin Potting Compound #0097,EP-202 Thermal 10kg,set,Raw Material
+M0098,Spring Lock Washer #0098,M6 Galvanized,pack,Raw Material
+M0099,Spring Lock Washer #0099,M4 65Mn Blued,pack,Raw Material
+M0100,Precision Thick Film Resistor #0100,0603 10k Ohm 1%,PCS,Raw Material
+M0101,Cold Rolled Steel Strip Coil #0101,1.2mm*200mm*Coil,kg,Raw Material
+M0102,304 Stainless Steel Sheet #0102,3.0mm*1500*3000,PCS,Raw Material
+M0103,Thermal Conductive Grease #0103,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0104,Protective Conformal Coating #0104,Fast-Drying Acrylic 5L,drum,Raw Material
+M0105,304 Stainless Steel Sheet #0105,1.5mm*1219*2438,PCS,Raw Material
+M0106,PTFE Thread Seal Tape #0106,12mm*0.1mm*10m,roll,Raw Material
+M0107,Precision Thick Film Resistor #0107,0603 10k Ohm 1%,PCS,Raw Material
+M0108,6061-T6 Aluminum Alloy Rod #0108,D35*3000mm,PCS,Raw Material
+M0109,Cold Rolled Steel Strip Coil #0109,0.8mm*150mm*Coil,kg,Raw Material
+M0110,Power N-Channel MOSFET #0110,PDFN5*6 40V 100A,PCS,Raw Material
+M0111,Nylon Insert Lock Nut #0111,M4 Stainless 304,pack,Raw Material
+M0112,Thermal Conductive Grease #0112,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0113,Protective Conformal Coating #0113,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0114,Precision Thick Film Resistor #0114,0805 100 Ohm 0.5%,PCS,Raw Material
+M0115,Pan Head Cross Tapping Screw #0115,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0116,H59-1 Brass Round Bar #0116,D12*2000mm,PCS,Raw Material
+M0117,Epoxy Resin Potting Compound #0117,EP-202 Thermal 10kg,set,Raw Material
+M0118,High-Speed Optocoupler Isolator #0118,DIP-8 2500Vrms,PCS,Raw Material
+M0119,Pan Head Cross Tapping Screw #0119,ST3.5*12 Carbon Steel,pack,Raw Material
+M0120,6061-T6 Aluminum Alloy Rod #0120,D50*3000mm,PCS,Raw Material
+M0121,PTFE Thread Seal Tape #0121,12mm*0.1mm*10m,roll,Raw Material
+M0122,6061-T6 Aluminum Alloy Rod #0122,D35*3000mm,PCS,Raw Material
+M0123,Ferrite Core Transformer Set #0123,EE19 PC40 Core,set,Raw Material
+M0124,Precision Thick Film Resistor #0124,0603 10k Ohm 1%,PCS,Raw Material
+M0125,SMD Ceramic Chip Capacitor #0125,1206 22uF 16V,PCS,Raw Material
+M0126,Spring Lock Washer #0126,M4 65Mn Blued,pack,Raw Material
+M0127,Pan Head Cross Tapping Screw #0127,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0128,Power N-Channel MOSFET #0128,TO-252 100V 30A,PCS,Raw Material
+M0129,Precision Thick Film Resistor #0129,0603 10k Ohm 1%,PCS,Raw Material
+M0130,Spring Lock Washer #0130,M6 Galvanized,pack,Raw Material
+M0131,H59-1 Brass Round Bar #0131,D12*2000mm,PCS,Raw Material
+M0132,PTFE Thread Seal Tape #0132,12mm*0.1mm*10m,roll,Raw Material
+M0133,Cold Rolled Steel Strip Coil #0133,0.8mm*150mm*Coil,kg,Raw Material
+M0134,TC4 Titanium Alloy Plate #0134,2.5mm*500*1000,PCS,Raw Material
+M0135,Nylon Insert Lock Nut #0135,M5 Zinc Plated,pack,Raw Material
+M0136,SMD Ceramic Chip Capacitor #0136,0805 100nF 50V,PCS,Raw Material
+M0137,6061-T6 Aluminum Alloy Rod #0137,D20*2500mm,PCS,Raw Material
+M0138,Hex Socket Head Cap Screw #0138,M3*12 Grade 12.9,pack,Raw Material
+M0139,Hex Socket Head Cap Screw #0139,M4*16 Stainless 304,pack,Raw Material
+M0140,Spring Lock Washer #0140,M5 304 Stainless,pack,Raw Material
+M0141,Pan Head Cross Tapping Screw #0141,ST3.5*12 Carbon Steel,pack,Raw Material
+M0142,Galvanized Seamless Steel Pipe #0142,DN25*3.2*6000mm,PCS,Raw Material
+M0143,32-bit ARM Cortex Microcontroller #0143,LQFP-64 72MHz,PCS,Raw Material
+M0144,6061-T6 Aluminum Alloy Rod #0144,D50*3000mm,PCS,Raw Material
+M0145,Thermal Conductive Grease #0145,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0146,Ferrite Core Transformer Set #0146,EE19 PC40 Core,set,Raw Material
+M0147,6061-T6 Aluminum Alloy Rod #0147,D50*3000mm,PCS,Raw Material
+M0148,Nylon Insert Lock Nut #0148,M6 Black Oxide,pack,Raw Material
+M0149,Lead-Free Solder Wire #0149,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0150,6061-T6 Aluminum Alloy Rod #0150,D50*3000mm,PCS,Raw Material
+M0151,Cold Rolled Steel Strip Coil #0151,0.8mm*150mm*Coil,kg,Raw Material
+M0152,Cold Rolled Steel Strip Coil #0152,0.8mm*150mm*Coil,kg,Raw Material
+M0153,Epoxy Resin Potting Compound #0153,EP-101 2-Part 20kg,set,Raw Material
+M0154,Hex Socket Head Cap Screw #0154,M3*12 Grade 12.9,pack,Raw Material
+M0155,Protective Conformal Coating #0155,Fast-Drying Acrylic 5L,drum,Raw Material
+M0156,Protective Conformal Coating #0156,Fast-Drying Acrylic 5L,drum,Raw Material
+M0157,Flame Retardant ABS Granules #0157,UL94-V0 Black 25kg,bag,Raw Material
+M0158,Pan Head Cross Tapping Screw #0158,ST3.5*12 Carbon Steel,pack,Raw Material
+M0159,Power N-Channel MOSFET #0159,TO-220 60V 50A,PCS,Raw Material
+M0160,Epoxy Resin Potting Compound #0160,EP-202 Thermal 10kg,set,Raw Material
+M0161,Precision Thick Film Resistor #0161,0805 100 Ohm 0.5%,PCS,Raw Material
+M0162,Hex Socket Head Cap Screw #0162,M3*12 Grade 12.9,pack,Raw Material
+M0163,Epoxy Resin Potting Compound #0163,EP-202 Thermal 10kg,set,Raw Material
+M0164,Spring Lock Washer #0164,M5 304 Stainless,pack,Raw Material
+M0165,Cold Rolled Steel Strip Coil #0165,0.8mm*150mm*Coil,kg,Raw Material
+M0166,Spring Lock Washer #0166,M6 Galvanized,pack,Raw Material
+M0167,Protective Conformal Coating #0167,Fast-Drying Acrylic 5L,drum,Raw Material
+M0168,Cold Rolled Steel Strip Coil #0168,0.8mm*150mm*Coil,kg,Raw Material
+M0169,Lead-Free Solder Wire #0169,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0170,Galvanized Seamless Steel Pipe #0170,DN50*3.5*6000mm,PCS,Raw Material
+M0171,Cold Rolled Steel Strip Coil #0171,0.8mm*150mm*Coil,kg,Raw Material
+M0172,High-Speed Optocoupler Isolator #0172,DIP-8 2500Vrms,PCS,Raw Material
+M0173,TC4 Titanium Alloy Plate #0173,2.5mm*500*1000,PCS,Raw Material
+M0174,Thermal Conductive Grease #0174,TG-500 5.0W/mK 500g,pot,Raw Material
+M0175,Flame Retardant ABS Granules #0175,UL94-V0 Black 25kg,bag,Raw Material
+M0176,Epoxy Resin Potting Compound #0176,EP-202 Thermal 10kg,set,Raw Material
+M0177,Epoxy Resin Potting Compound #0177,EP-101 2-Part 20kg,set,Raw Material
+M0178,Galvanized Seamless Steel Pipe #0178,DN50*3.5*6000mm,PCS,Raw Material
+M0179,H59-1 Brass Round Bar #0179,D12*2000mm,PCS,Raw Material
+M0180,Thermal Conductive Grease #0180,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0181,Power N-Channel MOSFET #0181,TO-252 100V 30A,PCS,Raw Material
+M0182,Flame Retardant ABS Granules #0182,UL94-V0 Black 25kg,bag,Raw Material
+M0183,Ferrite Core Transformer Set #0183,EE19 PC40 Core,set,Raw Material
+M0184,Epoxy Resin Potting Compound #0184,EP-202 Thermal 10kg,set,Raw Material
+M0185,Lead-Free Solder Wire #0185,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0186,Power N-Channel MOSFET #0186,TO-220 60V 50A,PCS,Raw Material
+M0187,Cold Rolled Steel Strip Coil #0187,1.2mm*200mm*Coil,kg,Raw Material
+M0188,Power N-Channel MOSFET #0188,TO-220 60V 50A,PCS,Raw Material
+M0189,304 Stainless Steel Sheet #0189,2.0mm*1000*2000,PCS,Raw Material
+M0190,Galvanized Seamless Steel Pipe #0190,DN50*3.5*6000mm,PCS,Raw Material
+M0191,TC4 Titanium Alloy Plate #0191,2.5mm*500*1000,PCS,Raw Material
+M0192,Thermal Conductive Grease #0192,TG-500 5.0W/mK 500g,pot,Raw Material
+M0193,Thermal Conductive Grease #0193,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0194,H59-1 Brass Round Bar #0194,D12*2000mm,PCS,Raw Material
+M0195,Galvanized Seamless Steel Pipe #0195,DN25*3.2*6000mm,PCS,Raw Material
+M0196,High-Speed Optocoupler Isolator #0196,SOP-4 5000Vrms,PCS,Raw Material
+M0197,Pan Head Cross Tapping Screw #0197,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0198,6061-T6 Aluminum Alloy Rod #0198,D35*3000mm,PCS,Raw Material
+M0199,High-Speed Optocoupler Isolator #0199,SOP-4 5000Vrms,PCS,Raw Material
+M0200,High-Speed Optocoupler Isolator #0200,SOP-4 5000Vrms,PCS,Raw Material
+M0201,Epoxy Resin Potting Compound #0201,EP-101 2-Part 20kg,set,Raw Material
+M0202,Epoxy Resin Potting Compound #0202,EP-101 2-Part 20kg,set,Raw Material
+M0203,High-Speed Optocoupler Isolator #0203,DIP-8 2500Vrms,PCS,Raw Material
+M0204,Flame Retardant ABS Granules #0204,UL94-V0 Black 25kg,bag,Raw Material
+M0205,Precision Thick Film Resistor #0205,0603 10k Ohm 1%,PCS,Raw Material
+M0206,TC4 Titanium Alloy Plate #0206,2.5mm*500*1000,PCS,Raw Material
+M0207,304 Stainless Steel Sheet #0207,1.5mm*1219*2438,PCS,Raw Material
+M0208,Ferrite Core Transformer Set #0208,PQ2625 Ferrite,set,Raw Material
+M0209,Epoxy Resin Potting Compound #0209,EP-101 2-Part 20kg,set,Raw Material
+M0210,Power N-Channel MOSFET #0210,TO-220 60V 50A,PCS,Raw Material
+M0211,H59-1 Brass Round Bar #0211,D25*2500mm,PCS,Raw Material
+M0212,6061-T6 Aluminum Alloy Rod #0212,D35*3000mm,PCS,Raw Material
+M0213,Precision Thick Film Resistor #0213,0603 10k Ohm 1%,PCS,Raw Material
+M0214,Spring Lock Washer #0214,M5 304 Stainless,pack,Raw Material
+M0215,32-bit ARM Cortex Microcontroller #0215,LQFP-64 72MHz,PCS,Raw Material
+M0216,Precision Thick Film Resistor #0216,0603 10k Ohm 1%,PCS,Raw Material
+M0217,Epoxy Resin Potting Compound #0217,EP-101 2-Part 20kg,set,Raw Material
+M0218,Hex Socket Head Cap Screw #0218,M4*16 Stainless 304,pack,Raw Material
+M0219,Power N-Channel MOSFET #0219,TO-220 60V 50A,PCS,Raw Material
+M0220,Power N-Channel MOSFET #0220,TO-252 100V 30A,PCS,Raw Material
+M0221,PTFE Thread Seal Tape #0221,19mm*0.2mm*15m,roll,Raw Material
+M0222,Epoxy Resin Potting Compound #0222,EP-202 Thermal 10kg,set,Raw Material
+M0223,304 Stainless Steel Sheet #0223,1.5mm*1219*2438,PCS,Raw Material
+M0224,Power N-Channel MOSFET #0224,TO-220 60V 50A,PCS,Raw Material
+M0225,Protective Conformal Coating #0225,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0226,6061-T6 Aluminum Alloy Rod #0226,D20*2500mm,PCS,Raw Material
+M0227,Flame Retardant ABS Granules #0227,UL94-V0 Natural 25kg,bag,Raw Material
+M0228,High-Speed Optocoupler Isolator #0228,DIP-8 2500Vrms,PCS,Raw Material
+M0229,Pan Head Cross Tapping Screw #0229,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0230,Hex Socket Head Cap Screw #0230,M5*20 Zinc Plated,pack,Raw Material
+M0231,SMD Ceramic Chip Capacitor #0231,0805 100nF 50V,PCS,Raw Material
+M0232,6061-T6 Aluminum Alloy Rod #0232,D50*3000mm,PCS,Raw Material
+M0233,Pan Head Cross Tapping Screw #0233,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0234,Lead-Free Solder Wire #0234,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0235,High-Speed Optocoupler Isolator #0235,DIP-8 2500Vrms,PCS,Raw Material
+M0236,Cold Rolled Steel Strip Coil #0236,1.2mm*200mm*Coil,kg,Raw Material
+M0237,Flame Retardant ABS Granules #0237,UL94-V0 Natural 25kg,bag,Raw Material
+M0238,Epoxy Resin Potting Compound #0238,EP-101 2-Part 20kg,set,Raw Material
+M0239,32-bit ARM Cortex Microcontroller #0239,LQFP-100 168MHz,PCS,Raw Material
+M0240,32-bit ARM Cortex Microcontroller #0240,LQFP-100 168MHz,PCS,Raw Material
+M0241,Pan Head Cross Tapping Screw #0241,ST3.5*12 Carbon Steel,pack,Raw Material
+M0242,Hex Socket Head Cap Screw #0242,M5*20 Zinc Plated,pack,Raw Material
+M0243,32-bit ARM Cortex Microcontroller #0243,LQFP-100 168MHz,PCS,Raw Material
+M0244,Galvanized Seamless Steel Pipe #0244,DN25*3.2*6000mm,PCS,Raw Material
+M0245,Pan Head Cross Tapping Screw #0245,ST3.5*12 Carbon Steel,pack,Raw Material
+M0246,Epoxy Resin Potting Compound #0246,EP-101 2-Part 20kg,set,Raw Material
+M0247,Flame Retardant ABS Granules #0247,UL94-V0 Natural 25kg,bag,Raw Material
+M0248,Hex Socket Head Cap Screw #0248,M5*20 Zinc Plated,pack,Raw Material
+M0249,304 Stainless Steel Sheet #0249,2.0mm*1000*2000,PCS,Raw Material
+M0250,32-bit ARM Cortex Microcontroller #0250,LQFP-64 72MHz,PCS,Raw Material
+M0251,Pan Head Cross Tapping Screw #0251,ST3.5*12 Carbon Steel,pack,Raw Material
+M0252,Spring Lock Washer #0252,M5 304 Stainless,pack,Raw Material
+M0253,Spring Lock Washer #0253,M6 Galvanized,pack,Raw Material
+M0254,SMD Ceramic Chip Capacitor #0254,1206 22uF 16V,PCS,Raw Material
+M0255,Nylon Insert Lock Nut #0255,M6 Black Oxide,pack,Raw Material
+M0256,TC4 Titanium Alloy Plate #0256,1.0mm*500*1000,PCS,Raw Material
+M0257,32-bit ARM Cortex Microcontroller #0257,LQFP-100 168MHz,PCS,Raw Material
+M0258,Epoxy Resin Potting Compound #0258,EP-202 Thermal 10kg,set,Raw Material
+M0259,Cold Rolled Steel Strip Coil #0259,0.8mm*150mm*Coil,kg,Raw Material
+M0260,Epoxy Resin Potting Compound #0260,EP-202 Thermal 10kg,set,Raw Material
+M0261,Precision Thick Film Resistor #0261,0603 10k Ohm 1%,PCS,Raw Material
+M0262,Galvanized Seamless Steel Pipe #0262,DN25*3.2*6000mm,PCS,Raw Material
+M0263,6061-T6 Aluminum Alloy Rod #0263,D20*2500mm,PCS,Raw Material
+M0264,Nylon Insert Lock Nut #0264,M6 Black Oxide,pack,Raw Material
+M0265,Cold Rolled Steel Strip Coil #0265,1.2mm*200mm*Coil,kg,Raw Material
+M0266,Pan Head Cross Tapping Screw #0266,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0267,Hex Socket Head Cap Screw #0267,M4*16 Stainless 304,pack,Raw Material
+M0268,Hex Socket Head Cap Screw #0268,M3*12 Grade 12.9,pack,Raw Material
+M0269,Galvanized Seamless Steel Pipe #0269,DN25*3.2*6000mm,PCS,Raw Material
+M0270,H59-1 Brass Round Bar #0270,D25*2500mm,PCS,Raw Material
+M0271,Precision Thick Film Resistor #0271,0603 10k Ohm 1%,PCS,Raw Material
+M0272,Lead-Free Solder Wire #0272,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0273,6061-T6 Aluminum Alloy Rod #0273,D50*3000mm,PCS,Raw Material
+M0274,Precision Thick Film Resistor #0274,0603 10k Ohm 1%,PCS,Raw Material
+M0275,Spring Lock Washer #0275,M4 65Mn Blued,pack,Raw Material
+M0276,Spring Lock Washer #0276,M6 Galvanized,pack,Raw Material
+M0277,Lead-Free Solder Wire #0277,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0278,Spring Lock Washer #0278,M6 Galvanized,pack,Raw Material
+M0279,Lead-Free Solder Wire #0279,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0280,Thermal Conductive Grease #0280,TG-500 5.0W/mK 500g,pot,Raw Material
+M0281,TC4 Titanium Alloy Plate #0281,2.5mm*500*1000,PCS,Raw Material
+M0282,Spring Lock Washer #0282,M5 304 Stainless,pack,Raw Material
+M0283,Precision Thick Film Resistor #0283,1206 1k Ohm 1%,PCS,Raw Material
+M0284,Power N-Channel MOSFET #0284,PDFN5*6 40V 100A,PCS,Raw Material
+M0285,Nylon Insert Lock Nut #0285,M6 Black Oxide,pack,Raw Material
+M0286,Precision Thick Film Resistor #0286,0805 100 Ohm 0.5%,PCS,Raw Material
+M0287,Spring Lock Washer #0287,M4 65Mn Blued,pack,Raw Material
+M0288,32-bit ARM Cortex Microcontroller #0288,LQFP-64 72MHz,PCS,Raw Material
+M0289,Power N-Channel MOSFET #0289,TO-252 100V 30A,PCS,Raw Material
+M0290,Ferrite Core Transformer Set #0290,ETD39 MnZn,set,Raw Material
+M0291,Cold Rolled Steel Strip Coil #0291,0.8mm*150mm*Coil,kg,Raw Material
+M0292,Galvanized Seamless Steel Pipe #0292,DN25*3.2*6000mm,PCS,Raw Material
+M0293,Hex Socket Head Cap Screw #0293,M5*20 Zinc Plated,pack,Raw Material
+M0294,Galvanized Seamless Steel Pipe #0294,DN25*3.2*6000mm,PCS,Raw Material
+M0295,Cold Rolled Steel Strip Coil #0295,1.2mm*200mm*Coil,kg,Raw Material
+M0296,Pan Head Cross Tapping Screw #0296,ST3.5*12 Carbon Steel,pack,Raw Material
+M0297,Thermal Conductive Grease #0297,TG-500 5.0W/mK 500g,pot,Raw Material
+M0298,Pan Head Cross Tapping Screw #0298,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0299,SMD Ceramic Chip Capacitor #0299,0805 100nF 50V,PCS,Raw Material
+M0300,Hex Socket Head Cap Screw #0300,M5*20 Zinc Plated,pack,Raw Material
+M0301,304 Stainless Steel Sheet #0301,3.0mm*1500*3000,PCS,Raw Material
+M0302,Hex Socket Head Cap Screw #0302,M4*16 Stainless 304,pack,Raw Material
+M0303,304 Stainless Steel Sheet #0303,2.0mm*1000*2000,PCS,Raw Material
+M0304,32-bit ARM Cortex Microcontroller #0304,QFN-48 120MHz,PCS,Raw Material
+M0305,Pan Head Cross Tapping Screw #0305,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0306,Nylon Insert Lock Nut #0306,M4 Stainless 304,pack,Raw Material
+M0307,Power N-Channel MOSFET #0307,TO-252 100V 30A,PCS,Raw Material
+M0308,Nylon Insert Lock Nut #0308,M4 Stainless 304,pack,Raw Material
+M0309,Hex Socket Head Cap Screw #0309,M4*16 Stainless 304,pack,Raw Material
+M0310,Epoxy Resin Potting Compound #0310,EP-202 Thermal 10kg,set,Raw Material
+M0311,TC4 Titanium Alloy Plate #0311,2.5mm*500*1000,PCS,Raw Material
+M0312,Galvanized Seamless Steel Pipe #0312,DN25*3.2*6000mm,PCS,Raw Material
+M0313,Hex Socket Head Cap Screw #0313,M5*20 Zinc Plated,pack,Raw Material
+M0314,Protective Conformal Coating #0314,Fast-Drying Acrylic 5L,drum,Raw Material
+M0315,Cold Rolled Steel Strip Coil #0315,1.2mm*200mm*Coil,kg,Raw Material
+M0316,Galvanized Seamless Steel Pipe #0316,DN50*3.5*6000mm,PCS,Raw Material
+M0317,TC4 Titanium Alloy Plate #0317,1.0mm*500*1000,PCS,Raw Material
+M0318,Power N-Channel MOSFET #0318,TO-252 100V 30A,PCS,Raw Material
+M0319,Ferrite Core Transformer Set #0319,EE19 PC40 Core,set,Raw Material
+M0320,Spring Lock Washer #0320,M5 304 Stainless,pack,Raw Material
+M0321,Ferrite Core Transformer Set #0321,PQ2625 Ferrite,set,Raw Material
+M0322,Power N-Channel MOSFET #0322,TO-252 100V 30A,PCS,Raw Material
+M0323,Power N-Channel MOSFET #0323,TO-220 60V 50A,PCS,Raw Material
+M0324,Nylon Insert Lock Nut #0324,M4 Stainless 304,pack,Raw Material
+M0325,Thermal Conductive Grease #0325,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0326,High-Speed Optocoupler Isolator #0326,SOP-4 5000Vrms,PCS,Raw Material
+M0327,PTFE Thread Seal Tape #0327,12mm*0.1mm*10m,roll,Raw Material
+M0328,PTFE Thread Seal Tape #0328,12mm*0.1mm*10m,roll,Raw Material
+M0329,304 Stainless Steel Sheet #0329,1.5mm*1219*2438,PCS,Raw Material
+M0330,SMD Ceramic Chip Capacitor #0330,0603 10uF 25V X7R,PCS,Raw Material
+M0331,Flame Retardant ABS Granules #0331,UL94-V0 Black 25kg,bag,Raw Material
+M0332,Precision Thick Film Resistor #0332,0603 10k Ohm 1%,PCS,Raw Material
+M0333,Nylon Insert Lock Nut #0333,M6 Black Oxide,pack,Raw Material
+M0334,H59-1 Brass Round Bar #0334,D12*2000mm,PCS,Raw Material
+M0335,Spring Lock Washer #0335,M6 Galvanized,pack,Raw Material
+M0336,Power N-Channel MOSFET #0336,TO-252 100V 30A,PCS,Raw Material
+M0337,TC4 Titanium Alloy Plate #0337,1.0mm*500*1000,PCS,Raw Material
+M0338,TC4 Titanium Alloy Plate #0338,2.5mm*500*1000,PCS,Raw Material
+M0339,H59-1 Brass Round Bar #0339,D12*2000mm,PCS,Raw Material
+M0340,32-bit ARM Cortex Microcontroller #0340,LQFP-100 168MHz,PCS,Raw Material
+M0341,Epoxy Resin Potting Compound #0341,EP-202 Thermal 10kg,set,Raw Material
+M0342,Hex Socket Head Cap Screw #0342,M5*20 Zinc Plated,pack,Raw Material
+M0343,SMD Ceramic Chip Capacitor #0343,0603 10uF 25V X7R,PCS,Raw Material
+M0344,Protective Conformal Coating #0344,Fast-Drying Acrylic 5L,drum,Raw Material
+M0345,H59-1 Brass Round Bar #0345,D25*2500mm,PCS,Raw Material
+M0346,Epoxy Resin Potting Compound #0346,EP-101 2-Part 20kg,set,Raw Material
+M0347,Protective Conformal Coating #0347,Fast-Drying Acrylic 5L,drum,Raw Material
+M0348,High-Speed Optocoupler Isolator #0348,DIP-8 2500Vrms,PCS,Raw Material
+M0349,Epoxy Resin Potting Compound #0349,EP-202 Thermal 10kg,set,Raw Material
+M0350,Cold Rolled Steel Strip Coil #0350,1.2mm*200mm*Coil,kg,Raw Material
+M0351,304 Stainless Steel Sheet #0351,2.0mm*1000*2000,PCS,Raw Material
+M0352,Nylon Insert Lock Nut #0352,M4 Stainless 304,pack,Raw Material
+M0353,Pan Head Cross Tapping Screw #0353,ST3.5*12 Carbon Steel,pack,Raw Material
+M0354,PTFE Thread Seal Tape #0354,19mm*0.2mm*15m,roll,Raw Material
+M0355,Galvanized Seamless Steel Pipe #0355,DN50*3.5*6000mm,PCS,Raw Material
+M0356,TC4 Titanium Alloy Plate #0356,2.5mm*500*1000,PCS,Raw Material
+M0357,Flame Retardant ABS Granules #0357,UL94-V0 Natural 25kg,bag,Raw Material
+M0358,Spring Lock Washer #0358,M5 304 Stainless,pack,Raw Material
+M0359,Protective Conformal Coating #0359,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0360,Ferrite Core Transformer Set #0360,EE19 PC40 Core,set,Raw Material
+M0361,Cold Rolled Steel Strip Coil #0361,1.2mm*200mm*Coil,kg,Raw Material
+M0362,Spring Lock Washer #0362,M4 65Mn Blued,pack,Raw Material
+M0363,Spring Lock Washer #0363,M6 Galvanized,pack,Raw Material
+M0364,Flame Retardant ABS Granules #0364,UL94-V0 Natural 25kg,bag,Raw Material
+M0365,Ferrite Core Transformer Set #0365,EE19 PC40 Core,set,Raw Material
+M0366,Nylon Insert Lock Nut #0366,M5 Zinc Plated,pack,Raw Material
+M0367,TC4 Titanium Alloy Plate #0367,2.5mm*500*1000,PCS,Raw Material
+M0368,SMD Ceramic Chip Capacitor #0368,0805 100nF 50V,PCS,Raw Material
+M0369,Power N-Channel MOSFET #0369,TO-252 100V 30A,PCS,Raw Material
+M0370,Power N-Channel MOSFET #0370,PDFN5*6 40V 100A,PCS,Raw Material
+M0371,Power N-Channel MOSFET #0371,PDFN5*6 40V 100A,PCS,Raw Material
+M0372,304 Stainless Steel Sheet #0372,3.0mm*1500*3000,PCS,Raw Material
+M0373,SMD Ceramic Chip Capacitor #0373,0603 10uF 25V X7R,PCS,Raw Material
+M0374,Precision Thick Film Resistor #0374,1206 1k Ohm 1%,PCS,Raw Material
+M0375,Pan Head Cross Tapping Screw #0375,ST3.5*12 Carbon Steel,pack,Raw Material
+M0376,Thermal Conductive Grease #0376,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0377,Nylon Insert Lock Nut #0377,M6 Black Oxide,pack,Raw Material
+M0378,Nylon Insert Lock Nut #0378,M5 Zinc Plated,pack,Raw Material
+M0379,304 Stainless Steel Sheet #0379,1.5mm*1219*2438,PCS,Raw Material
+M0380,32-bit ARM Cortex Microcontroller #0380,LQFP-64 72MHz,PCS,Raw Material
+M0381,Hex Socket Head Cap Screw #0381,M5*20 Zinc Plated,pack,Raw Material
+M0382,Precision Thick Film Resistor #0382,0805 100 Ohm 0.5%,PCS,Raw Material
+M0383,Epoxy Resin Potting Compound #0383,EP-202 Thermal 10kg,set,Raw Material
+M0384,Nylon Insert Lock Nut #0384,M6 Black Oxide,pack,Raw Material
+M0385,Lead-Free Solder Wire #0385,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0386,Pan Head Cross Tapping Screw #0386,ST3.5*12 Carbon Steel,pack,Raw Material
+M0387,High-Speed Optocoupler Isolator #0387,DIP-8 2500Vrms,PCS,Raw Material
+M0388,Power N-Channel MOSFET #0388,TO-252 100V 30A,PCS,Raw Material
+M0389,Power N-Channel MOSFET #0389,TO-220 60V 50A,PCS,Raw Material
+M0390,H59-1 Brass Round Bar #0390,D12*2000mm,PCS,Raw Material
+M0391,Ferrite Core Transformer Set #0391,EE19 PC40 Core,set,Raw Material
+M0392,Thermal Conductive Grease #0392,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0393,SMD Ceramic Chip Capacitor #0393,0603 10uF 25V X7R,PCS,Raw Material
+M0394,Nylon Insert Lock Nut #0394,M5 Zinc Plated,pack,Raw Material
+M0395,Protective Conformal Coating #0395,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0396,H59-1 Brass Round Bar #0396,D12*2000mm,PCS,Raw Material
+M0397,32-bit ARM Cortex Microcontroller #0397,LQFP-64 72MHz,PCS,Raw Material
+M0398,High-Speed Optocoupler Isolator #0398,SOP-4 5000Vrms,PCS,Raw Material
+M0399,32-bit ARM Cortex Microcontroller #0399,LQFP-64 72MHz,PCS,Raw Material
+M0400,Thermal Conductive Grease #0400,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0401,Power N-Channel MOSFET #0401,TO-220 60V 50A,PCS,Raw Material
+M0402,6061-T6 Aluminum Alloy Rod #0402,D50*3000mm,PCS,Raw Material
+M0403,32-bit ARM Cortex Microcontroller #0403,LQFP-100 168MHz,PCS,Raw Material
+M0404,Galvanized Seamless Steel Pipe #0404,DN50*3.5*6000mm,PCS,Raw Material
+M0405,H59-1 Brass Round Bar #0405,D12*2000mm,PCS,Raw Material
+M0406,Protective Conformal Coating #0406,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0407,Nylon Insert Lock Nut #0407,M5 Zinc Plated,pack,Raw Material
+M0408,Spring Lock Washer #0408,M5 304 Stainless,pack,Raw Material
+M0409,TC4 Titanium Alloy Plate #0409,1.0mm*500*1000,PCS,Raw Material
+M0410,Power N-Channel MOSFET #0410,TO-252 100V 30A,PCS,Raw Material
+M0411,H59-1 Brass Round Bar #0411,D12*2000mm,PCS,Raw Material
+M0412,Hex Socket Head Cap Screw #0412,M4*16 Stainless 304,pack,Raw Material
+M0413,Cold Rolled Steel Strip Coil #0413,0.8mm*150mm*Coil,kg,Raw Material
+M0414,Galvanized Seamless Steel Pipe #0414,DN25*3.2*6000mm,PCS,Raw Material
+M0415,Protective Conformal Coating #0415,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0416,Cold Rolled Steel Strip Coil #0416,0.8mm*150mm*Coil,kg,Raw Material
+M0417,H59-1 Brass Round Bar #0417,D25*2500mm,PCS,Raw Material
+M0418,Flame Retardant ABS Granules #0418,UL94-V0 Black 25kg,bag,Raw Material
+M0419,Lead-Free Solder Wire #0419,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0420,Spring Lock Washer #0420,M5 304 Stainless,pack,Raw Material
+M0421,32-bit ARM Cortex Microcontroller #0421,LQFP-100 168MHz,PCS,Raw Material
+M0422,Pan Head Cross Tapping Screw #0422,ST3.5*12 Carbon Steel,pack,Raw Material
+M0423,Protective Conformal Coating #0423,Fast-Drying Acrylic 5L,drum,Raw Material
+M0424,Flame Retardant ABS Granules #0424,UL94-V0 Black 25kg,bag,Raw Material
+M0425,SMD Ceramic Chip Capacitor #0425,1206 22uF 16V,PCS,Raw Material
+M0426,SMD Ceramic Chip Capacitor #0426,0805 100nF 50V,PCS,Raw Material
+M0427,Epoxy Resin Potting Compound #0427,EP-101 2-Part 20kg,set,Raw Material
+M0428,TC4 Titanium Alloy Plate #0428,1.0mm*500*1000,PCS,Raw Material
+M0429,TC4 Titanium Alloy Plate #0429,1.0mm*500*1000,PCS,Raw Material
+M0430,TC4 Titanium Alloy Plate #0430,1.0mm*500*1000,PCS,Raw Material
+M0431,Pan Head Cross Tapping Screw #0431,ST3.5*12 Carbon Steel,pack,Raw Material
+M0432,Flame Retardant ABS Granules #0432,UL94-V0 Natural 25kg,bag,Raw Material
+M0433,32-bit ARM Cortex Microcontroller #0433,LQFP-64 72MHz,PCS,Raw Material
+M0434,Precision Thick Film Resistor #0434,0805 100 Ohm 0.5%,PCS,Raw Material
+M0435,32-bit ARM Cortex Microcontroller #0435,LQFP-100 168MHz,PCS,Raw Material
+M0436,Spring Lock Washer #0436,M4 65Mn Blued,pack,Raw Material
+M0437,Epoxy Resin Potting Compound #0437,EP-101 2-Part 20kg,set,Raw Material
+M0438,Power N-Channel MOSFET #0438,PDFN5*6 40V 100A,PCS,Raw Material
+M0439,Protective Conformal Coating #0439,Fast-Drying Acrylic 5L,drum,Raw Material
+M0440,Pan Head Cross Tapping Screw #0440,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0441,Thermal Conductive Grease #0441,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0442,PTFE Thread Seal Tape #0442,12mm*0.1mm*10m,roll,Raw Material
+M0443,Power N-Channel MOSFET #0443,TO-220 60V 50A,PCS,Raw Material
+M0444,Cold Rolled Steel Strip Coil #0444,0.8mm*150mm*Coil,kg,Raw Material
+M0445,TC4 Titanium Alloy Plate #0445,2.5mm*500*1000,PCS,Raw Material
+M0446,Flame Retardant ABS Granules #0446,UL94-V0 Natural 25kg,bag,Raw Material
+M0447,Spring Lock Washer #0447,M4 65Mn Blued,pack,Raw Material
+M0448,Spring Lock Washer #0448,M6 Galvanized,pack,Raw Material
+M0449,32-bit ARM Cortex Microcontroller #0449,LQFP-100 168MHz,PCS,Raw Material
+M0450,Hex Socket Head Cap Screw #0450,M4*16 Stainless 304,pack,Raw Material
+M0451,Lead-Free Solder Wire #0451,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0452,Spring Lock Washer #0452,M4 65Mn Blued,pack,Raw Material
+M0453,Flame Retardant ABS Granules #0453,UL94-V0 Black 25kg,bag,Raw Material
+M0454,Pan Head Cross Tapping Screw #0454,ST3.5*12 Carbon Steel,pack,Raw Material
+M0455,Flame Retardant ABS Granules #0455,UL94-V0 Natural 25kg,bag,Raw Material
+M0456,304 Stainless Steel Sheet #0456,1.5mm*1219*2438,PCS,Raw Material
+M0457,Precision Thick Film Resistor #0457,1206 1k Ohm 1%,PCS,Raw Material
+M0458,Protective Conformal Coating #0458,Fast-Drying Acrylic 5L,drum,Raw Material
+M0459,Epoxy Resin Potting Compound #0459,EP-202 Thermal 10kg,set,Raw Material
+M0460,Protective Conformal Coating #0460,Fast-Drying Acrylic 5L,drum,Raw Material
+M0461,TC4 Titanium Alloy Plate #0461,2.5mm*500*1000,PCS,Raw Material
+M0462,Lead-Free Solder Wire #0462,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0463,Power N-Channel MOSFET #0463,TO-220 60V 50A,PCS,Raw Material
+M0464,Protective Conformal Coating #0464,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0465,PTFE Thread Seal Tape #0465,19mm*0.2mm*15m,roll,Raw Material
+M0466,Cold Rolled Steel Strip Coil #0466,1.2mm*200mm*Coil,kg,Raw Material
+M0467,High-Speed Optocoupler Isolator #0467,DIP-8 2500Vrms,PCS,Raw Material
+M0468,Ferrite Core Transformer Set #0468,PQ2625 Ferrite,set,Raw Material
+M0469,Epoxy Resin Potting Compound #0469,EP-101 2-Part 20kg,set,Raw Material
+M0470,TC4 Titanium Alloy Plate #0470,2.5mm*500*1000,PCS,Raw Material
+M0471,Pan Head Cross Tapping Screw #0471,ST3.5*12 Carbon Steel,pack,Raw Material
+M0472,32-bit ARM Cortex Microcontroller #0472,LQFP-100 168MHz,PCS,Raw Material
+M0473,Hex Socket Head Cap Screw #0473,M5*20 Zinc Plated,pack,Raw Material
+M0474,6061-T6 Aluminum Alloy Rod #0474,D35*3000mm,PCS,Raw Material
+M0475,Cold Rolled Steel Strip Coil #0475,1.2mm*200mm*Coil,kg,Raw Material
+M0476,Power N-Channel MOSFET #0476,TO-252 100V 30A,PCS,Raw Material
+M0477,H59-1 Brass Round Bar #0477,D25*2500mm,PCS,Raw Material
+M0478,Lead-Free Solder Wire #0478,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0479,Epoxy Resin Potting Compound #0479,EP-202 Thermal 10kg,set,Raw Material
+M0480,Pan Head Cross Tapping Screw #0480,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0481,SMD Ceramic Chip Capacitor #0481,1206 22uF 16V,PCS,Raw Material
+M0482,High-Speed Optocoupler Isolator #0482,DIP-8 2500Vrms,PCS,Raw Material
+M0483,PTFE Thread Seal Tape #0483,19mm*0.2mm*15m,roll,Raw Material
+M0484,6061-T6 Aluminum Alloy Rod #0484,D20*2500mm,PCS,Raw Material
+M0485,Power N-Channel MOSFET #0485,PDFN5*6 40V 100A,PCS,Raw Material
+M0486,Galvanized Seamless Steel Pipe #0486,DN50*3.5*6000mm,PCS,Raw Material
+M0487,Spring Lock Washer #0487,M6 Galvanized,pack,Raw Material
+M0488,Nylon Insert Lock Nut #0488,M4 Stainless 304,pack,Raw Material
+M0489,304 Stainless Steel Sheet #0489,3.0mm*1500*3000,PCS,Raw Material
+M0490,Flame Retardant ABS Granules #0490,UL94-V0 Black 25kg,bag,Raw Material
+M0491,TC4 Titanium Alloy Plate #0491,2.5mm*500*1000,PCS,Raw Material
+M0492,Thermal Conductive Grease #0492,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0493,Thermal Conductive Grease #0493,TG-500 5.0W/mK 500g,pot,Raw Material
+M0494,Cold Rolled Steel Strip Coil #0494,0.8mm*150mm*Coil,kg,Raw Material
+M0495,H59-1 Brass Round Bar #0495,D25*2500mm,PCS,Raw Material
+M0496,H59-1 Brass Round Bar #0496,D12*2000mm,PCS,Raw Material
+M0497,Nylon Insert Lock Nut #0497,M6 Black Oxide,pack,Raw Material
+M0498,32-bit ARM Cortex Microcontroller #0498,LQFP-100 168MHz,PCS,Raw Material
+M0499,Power N-Channel MOSFET #0499,TO-252 100V 30A,PCS,Raw Material
+M0500,Nylon Insert Lock Nut #0500,M5 Zinc Plated,pack,Raw Material
+M0501,Precision Thick Film Resistor #0501,0805 100 Ohm 0.5%,PCS,Raw Material
+M0502,Thermal Conductive Grease #0502,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0503,Hex Socket Head Cap Screw #0503,M3*12 Grade 12.9,pack,Raw Material
+M0504,Flame Retardant ABS Granules #0504,UL94-V0 Black 25kg,bag,Raw Material
+M0505,Cold Rolled Steel Strip Coil #0505,1.2mm*200mm*Coil,kg,Raw Material
+M0506,Pan Head Cross Tapping Screw #0506,ST3.5*12 Carbon Steel,pack,Raw Material
+M0507,Lead-Free Solder Wire #0507,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0508,304 Stainless Steel Sheet #0508,2.0mm*1000*2000,PCS,Raw Material
+M0509,32-bit ARM Cortex Microcontroller #0509,LQFP-100 168MHz,PCS,Raw Material
+M0510,Protective Conformal Coating #0510,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0511,Galvanized Seamless Steel Pipe #0511,DN50*3.5*6000mm,PCS,Raw Material
+M0512,Thermal Conductive Grease #0512,TG-500 5.0W/mK 500g,pot,Raw Material
+M0513,High-Speed Optocoupler Isolator #0513,DIP-8 2500Vrms,PCS,Raw Material
+M0514,Thermal Conductive Grease #0514,TG-500 5.0W/mK 500g,pot,Raw Material
+M0515,Spring Lock Washer #0515,M5 304 Stainless,pack,Raw Material
+M0516,SMD Ceramic Chip Capacitor #0516,1206 22uF 16V,PCS,Raw Material
+M0517,Precision Thick Film Resistor #0517,1206 1k Ohm 1%,PCS,Raw Material
+M0518,Hex Socket Head Cap Screw #0518,M3*12 Grade 12.9,pack,Raw Material
+M0519,Pan Head Cross Tapping Screw #0519,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0520,Ferrite Core Transformer Set #0520,ETD39 MnZn,set,Raw Material
+M0521,Nylon Insert Lock Nut #0521,M6 Black Oxide,pack,Raw Material
+M0522,Hex Socket Head Cap Screw #0522,M4*16 Stainless 304,pack,Raw Material
+M0523,Epoxy Resin Potting Compound #0523,EP-101 2-Part 20kg,set,Raw Material
+M0524,Nylon Insert Lock Nut #0524,M4 Stainless 304,pack,Raw Material
+M0525,Galvanized Seamless Steel Pipe #0525,DN50*3.5*6000mm,PCS,Raw Material
+M0526,H59-1 Brass Round Bar #0526,D25*2500mm,PCS,Raw Material
+M0527,H59-1 Brass Round Bar #0527,D25*2500mm,PCS,Raw Material
+M0528,304 Stainless Steel Sheet #0528,3.0mm*1500*3000,PCS,Raw Material
+M0529,Galvanized Seamless Steel Pipe #0529,DN50*3.5*6000mm,PCS,Raw Material
+M0530,PTFE Thread Seal Tape #0530,12mm*0.1mm*10m,roll,Raw Material
+M0531,Cold Rolled Steel Strip Coil #0531,1.2mm*200mm*Coil,kg,Raw Material
+M0532,Power N-Channel MOSFET #0532,TO-252 100V 30A,PCS,Raw Material
+M0533,Flame Retardant ABS Granules #0533,UL94-V0 Natural 25kg,bag,Raw Material
+M0534,PTFE Thread Seal Tape #0534,12mm*0.1mm*10m,roll,Raw Material
+M0535,Ferrite Core Transformer Set #0535,ETD39 MnZn,set,Raw Material
+M0536,Thermal Conductive Grease #0536,TG-500 5.0W/mK 500g,pot,Raw Material
+M0537,Ferrite Core Transformer Set #0537,ETD39 MnZn,set,Raw Material
+M0538,Nylon Insert Lock Nut #0538,M6 Black Oxide,pack,Raw Material
+M0539,6061-T6 Aluminum Alloy Rod #0539,D50*3000mm,PCS,Raw Material
+M0540,Cold Rolled Steel Strip Coil #0540,0.8mm*150mm*Coil,kg,Raw Material
+M0541,PTFE Thread Seal Tape #0541,19mm*0.2mm*15m,roll,Raw Material
+M0542,Precision Thick Film Resistor #0542,1206 1k Ohm 1%,PCS,Raw Material
+M0543,Cold Rolled Steel Strip Coil #0543,1.2mm*200mm*Coil,kg,Raw Material
+M0544,H59-1 Brass Round Bar #0544,D12*2000mm,PCS,Raw Material
+M0545,Spring Lock Washer #0545,M4 65Mn Blued,pack,Raw Material
+M0546,32-bit ARM Cortex Microcontroller #0546,LQFP-64 72MHz,PCS,Raw Material
+M0547,6061-T6 Aluminum Alloy Rod #0547,D35*3000mm,PCS,Raw Material
+M0548,6061-T6 Aluminum Alloy Rod #0548,D35*3000mm,PCS,Raw Material
+M0549,High-Speed Optocoupler Isolator #0549,DIP-8 2500Vrms,PCS,Raw Material
+M0550,Pan Head Cross Tapping Screw #0550,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0551,Precision Thick Film Resistor #0551,1206 1k Ohm 1%,PCS,Raw Material
+M0552,Pan Head Cross Tapping Screw #0552,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0553,TC4 Titanium Alloy Plate #0553,1.0mm*500*1000,PCS,Raw Material
+M0554,Cold Rolled Steel Strip Coil #0554,1.2mm*200mm*Coil,kg,Raw Material
+M0555,Flame Retardant ABS Granules #0555,UL94-V0 Black 25kg,bag,Raw Material
+M0556,Nylon Insert Lock Nut #0556,M6 Black Oxide,pack,Raw Material
+M0557,Galvanized Seamless Steel Pipe #0557,DN25*3.2*6000mm,PCS,Raw Material
+M0558,Spring Lock Washer #0558,M6 Galvanized,pack,Raw Material
+M0559,Power N-Channel MOSFET #0559,TO-252 100V 30A,PCS,Raw Material
+M0560,Power N-Channel MOSFET #0560,PDFN5*6 40V 100A,PCS,Raw Material
+M0561,304 Stainless Steel Sheet #0561,2.0mm*1000*2000,PCS,Raw Material
+M0562,32-bit ARM Cortex Microcontroller #0562,LQFP-100 168MHz,PCS,Raw Material
+M0563,Thermal Conductive Grease #0563,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0564,Cold Rolled Steel Strip Coil #0564,1.2mm*200mm*Coil,kg,Raw Material
+M0565,High-Speed Optocoupler Isolator #0565,DIP-8 2500Vrms,PCS,Raw Material
+M0566,PTFE Thread Seal Tape #0566,19mm*0.2mm*15m,roll,Raw Material
+M0567,Power N-Channel MOSFET #0567,TO-252 100V 30A,PCS,Raw Material
+M0568,32-bit ARM Cortex Microcontroller #0568,LQFP-64 72MHz,PCS,Raw Material
+M0569,Hex Socket Head Cap Screw #0569,M4*16 Stainless 304,pack,Raw Material
+M0570,H59-1 Brass Round Bar #0570,D12*2000mm,PCS,Raw Material
+M0571,Hex Socket Head Cap Screw #0571,M5*20 Zinc Plated,pack,Raw Material
+M0572,High-Speed Optocoupler Isolator #0572,DIP-8 2500Vrms,PCS,Raw Material
+M0573,32-bit ARM Cortex Microcontroller #0573,LQFP-64 72MHz,PCS,Raw Material
+M0574,Epoxy Resin Potting Compound #0574,EP-202 Thermal 10kg,set,Raw Material
+M0575,Power N-Channel MOSFET #0575,TO-220 60V 50A,PCS,Raw Material
+M0576,Protective Conformal Coating #0576,Fast-Drying Acrylic 5L,drum,Raw Material
+M0577,Flame Retardant ABS Granules #0577,UL94-V0 Natural 25kg,bag,Raw Material
+M0578,32-bit ARM Cortex Microcontroller #0578,LQFP-64 72MHz,PCS,Raw Material
+M0579,Flame Retardant ABS Granules #0579,UL94-V0 Natural 25kg,bag,Raw Material
+M0580,Precision Thick Film Resistor #0580,1206 1k Ohm 1%,PCS,Raw Material
+M0581,SMD Ceramic Chip Capacitor #0581,1206 22uF 16V,PCS,Raw Material
+M0582,Power N-Channel MOSFET #0582,PDFN5*6 40V 100A,PCS,Raw Material
+M0583,Epoxy Resin Potting Compound #0583,EP-101 2-Part 20kg,set,Raw Material
+M0584,PTFE Thread Seal Tape #0584,12mm*0.1mm*10m,roll,Raw Material
+M0585,PTFE Thread Seal Tape #0585,12mm*0.1mm*10m,roll,Raw Material
+M0586,32-bit ARM Cortex Microcontroller #0586,QFN-48 120MHz,PCS,Raw Material
+M0587,6061-T6 Aluminum Alloy Rod #0587,D50*3000mm,PCS,Raw Material
+M0588,High-Speed Optocoupler Isolator #0588,SOP-4 5000Vrms,PCS,Raw Material
+M0589,Cold Rolled Steel Strip Coil #0589,1.2mm*200mm*Coil,kg,Raw Material
+M0590,Ferrite Core Transformer Set #0590,ETD39 MnZn,set,Raw Material
+M0591,Pan Head Cross Tapping Screw #0591,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0592,SMD Ceramic Chip Capacitor #0592,0603 10uF 25V X7R,PCS,Raw Material
+M0593,Thermal Conductive Grease #0593,TG-500 5.0W/mK 500g,pot,Raw Material
+M0594,Lead-Free Solder Wire #0594,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0595,TC4 Titanium Alloy Plate #0595,2.5mm*500*1000,PCS,Raw Material
+M0596,Nylon Insert Lock Nut #0596,M5 Zinc Plated,pack,Raw Material
+M0597,Ferrite Core Transformer Set #0597,EE19 PC40 Core,set,Raw Material
+M0598,Spring Lock Washer #0598,M4 65Mn Blued,pack,Raw Material
+M0599,Galvanized Seamless Steel Pipe #0599,DN25*3.2*6000mm,PCS,Raw Material
+M0600,Epoxy Resin Potting Compound #0600,EP-202 Thermal 10kg,set,Raw Material
+M0601,Thermal Conductive Grease #0601,TG-500 5.0W/mK 500g,pot,Raw Material
+M0602,Cold Rolled Steel Strip Coil #0602,1.2mm*200mm*Coil,kg,Raw Material
+M0603,304 Stainless Steel Sheet #0603,2.0mm*1000*2000,PCS,Raw Material
+M0604,Thermal Conductive Grease #0604,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0605,Spring Lock Washer #0605,M5 304 Stainless,pack,Raw Material
+M0606,Epoxy Resin Potting Compound #0606,EP-202 Thermal 10kg,set,Raw Material
+M0607,Protective Conformal Coating #0607,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0608,PTFE Thread Seal Tape #0608,19mm*0.2mm*15m,roll,Raw Material
+M0609,H59-1 Brass Round Bar #0609,D12*2000mm,PCS,Raw Material
+M0610,Nylon Insert Lock Nut #0610,M4 Stainless 304,pack,Raw Material
+M0611,Flame Retardant ABS Granules #0611,UL94-V0 Natural 25kg,bag,Raw Material
+M0612,Flame Retardant ABS Granules #0612,UL94-V0 Black 25kg,bag,Raw Material
+M0613,PTFE Thread Seal Tape #0613,12mm*0.1mm*10m,roll,Raw Material
+M0614,PTFE Thread Seal Tape #0614,19mm*0.2mm*15m,roll,Raw Material
+M0615,32-bit ARM Cortex Microcontroller #0615,LQFP-100 168MHz,PCS,Raw Material
+M0616,Pan Head Cross Tapping Screw #0616,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0617,Galvanized Seamless Steel Pipe #0617,DN25*3.2*6000mm,PCS,Raw Material
+M0618,6061-T6 Aluminum Alloy Rod #0618,D35*3000mm,PCS,Raw Material
+M0619,Nylon Insert Lock Nut #0619,M4 Stainless 304,pack,Raw Material
+M0620,H59-1 Brass Round Bar #0620,D12*2000mm,PCS,Raw Material
+M0621,Thermal Conductive Grease #0621,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0622,Hex Socket Head Cap Screw #0622,M4*16 Stainless 304,pack,Raw Material
+M0623,High-Speed Optocoupler Isolator #0623,DIP-8 2500Vrms,PCS,Raw Material
+M0624,Protective Conformal Coating #0624,Fast-Drying Acrylic 5L,drum,Raw Material
+M0625,Pan Head Cross Tapping Screw #0625,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0626,Nylon Insert Lock Nut #0626,M6 Black Oxide,pack,Raw Material
+M0627,Pan Head Cross Tapping Screw #0627,ST3.5*12 Carbon Steel,pack,Raw Material
+M0628,6061-T6 Aluminum Alloy Rod #0628,D50*3000mm,PCS,Raw Material
+M0629,High-Speed Optocoupler Isolator #0629,SOP-4 5000Vrms,PCS,Raw Material
+M0630,Spring Lock Washer #0630,M5 304 Stainless,pack,Raw Material
+M0631,Precision Thick Film Resistor #0631,0805 100 Ohm 0.5%,PCS,Raw Material
+M0632,H59-1 Brass Round Bar #0632,D25*2500mm,PCS,Raw Material
+M0633,Thermal Conductive Grease #0633,TG-500 5.0W/mK 500g,pot,Raw Material
+M0634,6061-T6 Aluminum Alloy Rod #0634,D35*3000mm,PCS,Raw Material
+M0635,Power N-Channel MOSFET #0635,TO-220 60V 50A,PCS,Raw Material
+M0636,H59-1 Brass Round Bar #0636,D25*2500mm,PCS,Raw Material
+M0637,Cold Rolled Steel Strip Coil #0637,0.8mm*150mm*Coil,kg,Raw Material
+M0638,PTFE Thread Seal Tape #0638,12mm*0.1mm*10m,roll,Raw Material
+M0639,6061-T6 Aluminum Alloy Rod #0639,D35*3000mm,PCS,Raw Material
+M0640,Precision Thick Film Resistor #0640,0603 10k Ohm 1%,PCS,Raw Material
+M0641,Protective Conformal Coating #0641,Fast-Drying Acrylic 5L,drum,Raw Material
+M0642,Cold Rolled Steel Strip Coil #0642,0.8mm*150mm*Coil,kg,Raw Material
+M0643,Protective Conformal Coating #0643,Fast-Drying Acrylic 5L,drum,Raw Material
+M0644,Precision Thick Film Resistor #0644,0805 100 Ohm 0.5%,PCS,Raw Material
+M0645,Galvanized Seamless Steel Pipe #0645,DN25*3.2*6000mm,PCS,Raw Material
+M0646,Power N-Channel MOSFET #0646,TO-220 60V 50A,PCS,Raw Material
+M0647,Galvanized Seamless Steel Pipe #0647,DN50*3.5*6000mm,PCS,Raw Material
+M0648,TC4 Titanium Alloy Plate #0648,1.0mm*500*1000,PCS,Raw Material
+M0649,Epoxy Resin Potting Compound #0649,EP-101 2-Part 20kg,set,Raw Material
+M0650,Galvanized Seamless Steel Pipe #0650,DN25*3.2*6000mm,PCS,Raw Material
+M0651,High-Speed Optocoupler Isolator #0651,SOP-4 5000Vrms,PCS,Raw Material
+M0652,Protective Conformal Coating #0652,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0653,304 Stainless Steel Sheet #0653,1.5mm*1219*2438,PCS,Raw Material
+M0654,Power N-Channel MOSFET #0654,TO-220 60V 50A,PCS,Raw Material
+M0655,Galvanized Seamless Steel Pipe #0655,DN50*3.5*6000mm,PCS,Raw Material
+M0656,Lead-Free Solder Wire #0656,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0657,Cold Rolled Steel Strip Coil #0657,1.2mm*200mm*Coil,kg,Raw Material
+M0658,Spring Lock Washer #0658,M5 304 Stainless,pack,Raw Material
+M0659,Lead-Free Solder Wire #0659,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0660,Spring Lock Washer #0660,M6 Galvanized,pack,Raw Material
+M0661,Precision Thick Film Resistor #0661,1206 1k Ohm 1%,PCS,Raw Material
+M0662,6061-T6 Aluminum Alloy Rod #0662,D50*3000mm,PCS,Raw Material
+M0663,Epoxy Resin Potting Compound #0663,EP-202 Thermal 10kg,set,Raw Material
+M0664,Spring Lock Washer #0664,M6 Galvanized,pack,Raw Material
+M0665,304 Stainless Steel Sheet #0665,1.5mm*1219*2438,PCS,Raw Material
+M0666,Nylon Insert Lock Nut #0666,M5 Zinc Plated,pack,Raw Material
+M0667,Pan Head Cross Tapping Screw #0667,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0668,Nylon Insert Lock Nut #0668,M6 Black Oxide,pack,Raw Material
+M0669,Spring Lock Washer #0669,M4 65Mn Blued,pack,Raw Material
+M0670,Cold Rolled Steel Strip Coil #0670,1.2mm*200mm*Coil,kg,Raw Material
+M0671,Flame Retardant ABS Granules #0671,UL94-V0 Black 25kg,bag,Raw Material
+M0672,Cold Rolled Steel Strip Coil #0672,0.8mm*150mm*Coil,kg,Raw Material
+M0673,Power N-Channel MOSFET #0673,PDFN5*6 40V 100A,PCS,Raw Material
+M0674,PTFE Thread Seal Tape #0674,19mm*0.2mm*15m,roll,Raw Material
+M0675,Hex Socket Head Cap Screw #0675,M5*20 Zinc Plated,pack,Raw Material
+M0676,Lead-Free Solder Wire #0676,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0677,Spring Lock Washer #0677,M6 Galvanized,pack,Raw Material
+M0678,Flame Retardant ABS Granules #0678,UL94-V0 Natural 25kg,bag,Raw Material
+M0679,H59-1 Brass Round Bar #0679,D12*2000mm,PCS,Raw Material
+M0680,PTFE Thread Seal Tape #0680,12mm*0.1mm*10m,roll,Raw Material
+M0681,Pan Head Cross Tapping Screw #0681,ST3.5*12 Carbon Steel,pack,Raw Material
+M0682,Precision Thick Film Resistor #0682,0805 100 Ohm 0.5%,PCS,Raw Material
+M0683,Ferrite Core Transformer Set #0683,PQ2625 Ferrite,set,Raw Material
+M0684,Hex Socket Head Cap Screw #0684,M4*16 Stainless 304,pack,Raw Material
+M0685,H59-1 Brass Round Bar #0685,D25*2500mm,PCS,Raw Material
+M0686,Pan Head Cross Tapping Screw #0686,ST3.5*12 Carbon Steel,pack,Raw Material
+M0687,Epoxy Resin Potting Compound #0687,EP-202 Thermal 10kg,set,Raw Material
+M0688,High-Speed Optocoupler Isolator #0688,SOP-4 5000Vrms,PCS,Raw Material
+M0689,Epoxy Resin Potting Compound #0689,EP-202 Thermal 10kg,set,Raw Material
+M0690,Cold Rolled Steel Strip Coil #0690,0.8mm*150mm*Coil,kg,Raw Material
+M0691,Cold Rolled Steel Strip Coil #0691,0.8mm*150mm*Coil,kg,Raw Material
+M0692,Pan Head Cross Tapping Screw #0692,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0693,High-Speed Optocoupler Isolator #0693,SOP-4 5000Vrms,PCS,Raw Material
+M0694,Thermal Conductive Grease #0694,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0695,Protective Conformal Coating #0695,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0696,Epoxy Resin Potting Compound #0696,EP-101 2-Part 20kg,set,Raw Material
+M0697,Pan Head Cross Tapping Screw #0697,ST3.5*12 Carbon Steel,pack,Raw Material
+M0698,Epoxy Resin Potting Compound #0698,EP-202 Thermal 10kg,set,Raw Material
+M0699,6061-T6 Aluminum Alloy Rod #0699,D35*3000mm,PCS,Raw Material
+M0700,Flame Retardant ABS Granules #0700,UL94-V0 Natural 25kg,bag,Raw Material
+M0701,High-Speed Optocoupler Isolator #0701,SOP-4 5000Vrms,PCS,Raw Material
+M0702,Protective Conformal Coating #0702,Fast-Drying Acrylic 5L,drum,Raw Material
+M0703,Galvanized Seamless Steel Pipe #0703,DN50*3.5*6000mm,PCS,Raw Material
+M0704,Precision Thick Film Resistor #0704,0603 10k Ohm 1%,PCS,Raw Material
+M0705,High-Speed Optocoupler Isolator #0705,DIP-8 2500Vrms,PCS,Raw Material
+M0706,H59-1 Brass Round Bar #0706,D25*2500mm,PCS,Raw Material
+M0707,Protective Conformal Coating #0707,Fast-Drying Acrylic 5L,drum,Raw Material
+M0708,Pan Head Cross Tapping Screw #0708,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0709,Flame Retardant ABS Granules #0709,UL94-V0 Natural 25kg,bag,Raw Material
+M0710,304 Stainless Steel Sheet #0710,1.5mm*1219*2438,PCS,Raw Material
+M0711,Power N-Channel MOSFET #0711,PDFN5*6 40V 100A,PCS,Raw Material
+M0712,32-bit ARM Cortex Microcontroller #0712,QFN-48 120MHz,PCS,Raw Material
+M0713,High-Speed Optocoupler Isolator #0713,SOP-4 5000Vrms,PCS,Raw Material
+M0714,TC4 Titanium Alloy Plate #0714,1.0mm*500*1000,PCS,Raw Material
+M0715,Protective Conformal Coating #0715,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0716,Cold Rolled Steel Strip Coil #0716,0.8mm*150mm*Coil,kg,Raw Material
+M0717,PTFE Thread Seal Tape #0717,12mm*0.1mm*10m,roll,Raw Material
+M0718,Cold Rolled Steel Strip Coil #0718,0.8mm*150mm*Coil,kg,Raw Material
+M0719,Hex Socket Head Cap Screw #0719,M4*16 Stainless 304,pack,Raw Material
+M0720,Spring Lock Washer #0720,M5 304 Stainless,pack,Raw Material
+M0721,TC4 Titanium Alloy Plate #0721,2.5mm*500*1000,PCS,Raw Material
+M0722,32-bit ARM Cortex Microcontroller #0722,LQFP-100 168MHz,PCS,Raw Material
+M0723,Ferrite Core Transformer Set #0723,ETD39 MnZn,set,Raw Material
+M0724,Flame Retardant ABS Granules #0724,UL94-V0 Black 25kg,bag,Raw Material
+M0725,6061-T6 Aluminum Alloy Rod #0725,D20*2500mm,PCS,Raw Material
+M0726,TC4 Titanium Alloy Plate #0726,1.0mm*500*1000,PCS,Raw Material
+M0727,Epoxy Resin Potting Compound #0727,EP-101 2-Part 20kg,set,Raw Material
+M0728,Power N-Channel MOSFET #0728,TO-252 100V 30A,PCS,Raw Material
+M0729,Epoxy Resin Potting Compound #0729,EP-202 Thermal 10kg,set,Raw Material
+M0730,Nylon Insert Lock Nut #0730,M6 Black Oxide,pack,Raw Material
+M0731,Spring Lock Washer #0731,M5 304 Stainless,pack,Raw Material
+M0732,Power N-Channel MOSFET #0732,TO-220 60V 50A,PCS,Raw Material
+M0733,Lead-Free Solder Wire #0733,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0734,High-Speed Optocoupler Isolator #0734,DIP-8 2500Vrms,PCS,Raw Material
+M0735,H59-1 Brass Round Bar #0735,D25*2500mm,PCS,Raw Material
+M0736,Epoxy Resin Potting Compound #0736,EP-202 Thermal 10kg,set,Raw Material
+M0737,Lead-Free Solder Wire #0737,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0738,6061-T6 Aluminum Alloy Rod #0738,D20*2500mm,PCS,Raw Material
+M0739,Hex Socket Head Cap Screw #0739,M5*20 Zinc Plated,pack,Raw Material
+M0740,6061-T6 Aluminum Alloy Rod #0740,D20*2500mm,PCS,Raw Material
+M0741,SMD Ceramic Chip Capacitor #0741,0805 100nF 50V,PCS,Raw Material
+M0742,SMD Ceramic Chip Capacitor #0742,0603 10uF 25V X7R,PCS,Raw Material
+M0743,Power N-Channel MOSFET #0743,TO-252 100V 30A,PCS,Raw Material
+M0744,Ferrite Core Transformer Set #0744,EE19 PC40 Core,set,Raw Material
+M0745,304 Stainless Steel Sheet #0745,2.0mm*1000*2000,PCS,Raw Material
+M0746,Pan Head Cross Tapping Screw #0746,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0747,Galvanized Seamless Steel Pipe #0747,DN50*3.5*6000mm,PCS,Raw Material
+M0748,Thermal Conductive Grease #0748,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0749,Lead-Free Solder Wire #0749,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0750,Cold Rolled Steel Strip Coil #0750,1.2mm*200mm*Coil,kg,Raw Material
+M0751,6061-T6 Aluminum Alloy Rod #0751,D35*3000mm,PCS,Raw Material
+M0752,304 Stainless Steel Sheet #0752,2.0mm*1000*2000,PCS,Raw Material
+M0753,Cold Rolled Steel Strip Coil #0753,1.2mm*200mm*Coil,kg,Raw Material
+M0754,Protective Conformal Coating #0754,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0755,Protective Conformal Coating #0755,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0756,PTFE Thread Seal Tape #0756,19mm*0.2mm*15m,roll,Raw Material
+M0757,32-bit ARM Cortex Microcontroller #0757,LQFP-64 72MHz,PCS,Raw Material
+M0758,Hex Socket Head Cap Screw #0758,M3*12 Grade 12.9,pack,Raw Material
+M0759,Ferrite Core Transformer Set #0759,EE19 PC40 Core,set,Raw Material
+M0760,Flame Retardant ABS Granules #0760,UL94-V0 Natural 25kg,bag,Raw Material
+M0761,High-Speed Optocoupler Isolator #0761,SOP-4 5000Vrms,PCS,Raw Material
+M0762,Pan Head Cross Tapping Screw #0762,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0763,Precision Thick Film Resistor #0763,0805 100 Ohm 0.5%,PCS,Raw Material
+M0764,Protective Conformal Coating #0764,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0765,Lead-Free Solder Wire #0765,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0766,Hex Socket Head Cap Screw #0766,M4*16 Stainless 304,pack,Raw Material
+M0767,Ferrite Core Transformer Set #0767,EE19 PC40 Core,set,Raw Material
+M0768,Ferrite Core Transformer Set #0768,EE19 PC40 Core,set,Raw Material
+M0769,Cold Rolled Steel Strip Coil #0769,0.8mm*150mm*Coil,kg,Raw Material
+M0770,Lead-Free Solder Wire #0770,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0771,High-Speed Optocoupler Isolator #0771,DIP-8 2500Vrms,PCS,Raw Material
+M0772,PTFE Thread Seal Tape #0772,12mm*0.1mm*10m,roll,Raw Material
+M0773,Precision Thick Film Resistor #0773,0603 10k Ohm 1%,PCS,Raw Material
+M0774,Galvanized Seamless Steel Pipe #0774,DN50*3.5*6000mm,PCS,Raw Material
+M0775,SMD Ceramic Chip Capacitor #0775,0603 10uF 25V X7R,PCS,Raw Material
+M0776,Flame Retardant ABS Granules #0776,UL94-V0 Black 25kg,bag,Raw Material
+M0777,PTFE Thread Seal Tape #0777,12mm*0.1mm*10m,roll,Raw Material
+M0778,TC4 Titanium Alloy Plate #0778,2.5mm*500*1000,PCS,Raw Material
+M0779,Spring Lock Washer #0779,M6 Galvanized,pack,Raw Material
+M0780,Protective Conformal Coating #0780,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0781,Epoxy Resin Potting Compound #0781,EP-202 Thermal 10kg,set,Raw Material
+M0782,PTFE Thread Seal Tape #0782,19mm*0.2mm*15m,roll,Raw Material
+M0783,Galvanized Seamless Steel Pipe #0783,DN50*3.5*6000mm,PCS,Raw Material
+M0784,Cold Rolled Steel Strip Coil #0784,1.2mm*200mm*Coil,kg,Raw Material
+M0785,Spring Lock Washer #0785,M6 Galvanized,pack,Raw Material
+M0786,32-bit ARM Cortex Microcontroller #0786,QFN-48 120MHz,PCS,Raw Material
+M0787,Protective Conformal Coating #0787,Fast-Drying Acrylic 5L,drum,Raw Material
+M0788,High-Speed Optocoupler Isolator #0788,SOP-4 5000Vrms,PCS,Raw Material
+M0789,32-bit ARM Cortex Microcontroller #0789,QFN-48 120MHz,PCS,Raw Material
+M0790,Spring Lock Washer #0790,M4 65Mn Blued,pack,Raw Material
+M0791,6061-T6 Aluminum Alloy Rod #0791,D35*3000mm,PCS,Raw Material
+M0792,32-bit ARM Cortex Microcontroller #0792,LQFP-64 72MHz,PCS,Raw Material
+M0793,PTFE Thread Seal Tape #0793,12mm*0.1mm*10m,roll,Raw Material
+M0794,Flame Retardant ABS Granules #0794,UL94-V0 Natural 25kg,bag,Raw Material
+M0795,Spring Lock Washer #0795,M6 Galvanized,pack,Raw Material
+M0796,Thermal Conductive Grease #0796,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0797,Spring Lock Washer #0797,M6 Galvanized,pack,Raw Material
+M0798,PTFE Thread Seal Tape #0798,12mm*0.1mm*10m,roll,Raw Material
+M0799,Ferrite Core Transformer Set #0799,ETD39 MnZn,set,Raw Material
+M0800,Nylon Insert Lock Nut #0800,M6 Black Oxide,pack,Raw Material
+M0801,Galvanized Seamless Steel Pipe #0801,DN25*3.2*6000mm,PCS,Raw Material
+M0802,Spring Lock Washer #0802,M4 65Mn Blued,pack,Raw Material
+M0803,Ferrite Core Transformer Set #0803,ETD39 MnZn,set,Raw Material
+M0804,Cold Rolled Steel Strip Coil #0804,0.8mm*150mm*Coil,kg,Raw Material
+M0805,6061-T6 Aluminum Alloy Rod #0805,D20*2500mm,PCS,Raw Material
+M0806,Spring Lock Washer #0806,M5 304 Stainless,pack,Raw Material
+M0807,Lead-Free Solder Wire #0807,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0808,High-Speed Optocoupler Isolator #0808,DIP-8 2500Vrms,PCS,Raw Material
+M0809,32-bit ARM Cortex Microcontroller #0809,QFN-48 120MHz,PCS,Raw Material
+M0810,Pan Head Cross Tapping Screw #0810,ST3.5*12 Carbon Steel,pack,Raw Material
+M0811,Epoxy Resin Potting Compound #0811,EP-101 2-Part 20kg,set,Raw Material
+M0812,PTFE Thread Seal Tape #0812,19mm*0.2mm*15m,roll,Raw Material
+M0813,Cold Rolled Steel Strip Coil #0813,1.2mm*200mm*Coil,kg,Raw Material
+M0814,H59-1 Brass Round Bar #0814,D25*2500mm,PCS,Raw Material
+M0815,32-bit ARM Cortex Microcontroller #0815,QFN-48 120MHz,PCS,Raw Material
+M0816,Epoxy Resin Potting Compound #0816,EP-101 2-Part 20kg,set,Raw Material
+M0817,Ferrite Core Transformer Set #0817,EE19 PC40 Core,set,Raw Material
+M0818,Protective Conformal Coating #0818,Fast-Drying Acrylic 5L,drum,Raw Material
+M0819,High-Speed Optocoupler Isolator #0819,DIP-8 2500Vrms,PCS,Raw Material
+M0820,PTFE Thread Seal Tape #0820,19mm*0.2mm*15m,roll,Raw Material
+M0821,Galvanized Seamless Steel Pipe #0821,DN25*3.2*6000mm,PCS,Raw Material
+M0822,32-bit ARM Cortex Microcontroller #0822,LQFP-100 168MHz,PCS,Raw Material
+M0823,Hex Socket Head Cap Screw #0823,M5*20 Zinc Plated,pack,Raw Material
+M0824,Ferrite Core Transformer Set #0824,EE19 PC40 Core,set,Raw Material
+M0825,Epoxy Resin Potting Compound #0825,EP-101 2-Part 20kg,set,Raw Material
+M0826,PTFE Thread Seal Tape #0826,19mm*0.2mm*15m,roll,Raw Material
+M0827,Lead-Free Solder Wire #0827,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0828,304 Stainless Steel Sheet #0828,2.0mm*1000*2000,PCS,Raw Material
+M0829,32-bit ARM Cortex Microcontroller #0829,LQFP-64 72MHz,PCS,Raw Material
+M0830,SMD Ceramic Chip Capacitor #0830,0805 100nF 50V,PCS,Raw Material
+M0831,Nylon Insert Lock Nut #0831,M4 Stainless 304,pack,Raw Material
+M0832,Precision Thick Film Resistor #0832,0603 10k Ohm 1%,PCS,Raw Material
+M0833,Galvanized Seamless Steel Pipe #0833,DN25*3.2*6000mm,PCS,Raw Material
+M0834,32-bit ARM Cortex Microcontroller #0834,LQFP-64 72MHz,PCS,Raw Material
+M0835,Lead-Free Solder Wire #0835,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0836,Epoxy Resin Potting Compound #0836,EP-202 Thermal 10kg,set,Raw Material
+M0837,Flame Retardant ABS Granules #0837,UL94-V0 Black 25kg,bag,Raw Material
+M0838,Flame Retardant ABS Granules #0838,UL94-V0 Natural 25kg,bag,Raw Material
+M0839,Galvanized Seamless Steel Pipe #0839,DN25*3.2*6000mm,PCS,Raw Material
+M0840,TC4 Titanium Alloy Plate #0840,1.0mm*500*1000,PCS,Raw Material
+M0841,Spring Lock Washer #0841,M4 65Mn Blued,pack,Raw Material
+M0842,Pan Head Cross Tapping Screw #0842,ST3.5*12 Carbon Steel,pack,Raw Material
+M0843,Epoxy Resin Potting Compound #0843,EP-101 2-Part 20kg,set,Raw Material
+M0844,Spring Lock Washer #0844,M6 Galvanized,pack,Raw Material
+M0845,32-bit ARM Cortex Microcontroller #0845,LQFP-100 168MHz,PCS,Raw Material
+M0846,Spring Lock Washer #0846,M4 65Mn Blued,pack,Raw Material
+M0847,Thermal Conductive Grease #0847,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0848,32-bit ARM Cortex Microcontroller #0848,QFN-48 120MHz,PCS,Raw Material
+M0849,SMD Ceramic Chip Capacitor #0849,0805 100nF 50V,PCS,Raw Material
+M0850,Epoxy Resin Potting Compound #0850,EP-202 Thermal 10kg,set,Raw Material
+M0851,Spring Lock Washer #0851,M5 304 Stainless,pack,Raw Material
+M0852,Hex Socket Head Cap Screw #0852,M5*20 Zinc Plated,pack,Raw Material
+M0853,Lead-Free Solder Wire #0853,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0854,TC4 Titanium Alloy Plate #0854,1.0mm*500*1000,PCS,Raw Material
+M0855,Flame Retardant ABS Granules #0855,UL94-V0 Black 25kg,bag,Raw Material
+M0856,Power N-Channel MOSFET #0856,TO-220 60V 50A,PCS,Raw Material
+M0857,PTFE Thread Seal Tape #0857,19mm*0.2mm*15m,roll,Raw Material
+M0858,High-Speed Optocoupler Isolator #0858,SOP-4 5000Vrms,PCS,Raw Material
+M0859,Lead-Free Solder Wire #0859,Sn99.3Cu0.7 D0.8mm 500g,roll,Raw Material
+M0860,32-bit ARM Cortex Microcontroller #0860,LQFP-64 72MHz,PCS,Raw Material
+M0861,TC4 Titanium Alloy Plate #0861,2.5mm*500*1000,PCS,Raw Material
+M0862,Spring Lock Washer #0862,M6 Galvanized,pack,Raw Material
+M0863,Galvanized Seamless Steel Pipe #0863,DN50*3.5*6000mm,PCS,Raw Material
+M0864,Cold Rolled Steel Strip Coil #0864,0.8mm*150mm*Coil,kg,Raw Material
+M0865,Spring Lock Washer #0865,M5 304 Stainless,pack,Raw Material
+M0866,304 Stainless Steel Sheet #0866,2.0mm*1000*2000,PCS,Raw Material
+M0867,6061-T6 Aluminum Alloy Rod #0867,D35*3000mm,PCS,Raw Material
+M0868,Lead-Free Solder Wire #0868,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0869,Precision Thick Film Resistor #0869,0805 100 Ohm 0.5%,PCS,Raw Material
+M0870,Cold Rolled Steel Strip Coil #0870,1.2mm*200mm*Coil,kg,Raw Material
+M0871,Precision Thick Film Resistor #0871,0603 10k Ohm 1%,PCS,Raw Material
+M0872,Ferrite Core Transformer Set #0872,EE19 PC40 Core,set,Raw Material
+M0873,PTFE Thread Seal Tape #0873,19mm*0.2mm*15m,roll,Raw Material
+M0874,Galvanized Seamless Steel Pipe #0874,DN25*3.2*6000mm,PCS,Raw Material
+M0875,6061-T6 Aluminum Alloy Rod #0875,D35*3000mm,PCS,Raw Material
+M0876,Nylon Insert Lock Nut #0876,M6 Black Oxide,pack,Raw Material
+M0877,Galvanized Seamless Steel Pipe #0877,DN50*3.5*6000mm,PCS,Raw Material
+M0878,Spring Lock Washer #0878,M6 Galvanized,pack,Raw Material
+M0879,304 Stainless Steel Sheet #0879,1.5mm*1219*2438,PCS,Raw Material
+M0880,304 Stainless Steel Sheet #0880,2.0mm*1000*2000,PCS,Raw Material
+M0881,SMD Ceramic Chip Capacitor #0881,0603 10uF 25V X7R,PCS,Raw Material
+M0882,Thermal Conductive Grease #0882,TG-500 5.0W/mK 500g,pot,Raw Material
+M0883,H59-1 Brass Round Bar #0883,D25*2500mm,PCS,Raw Material
+M0884,Precision Thick Film Resistor #0884,0805 100 Ohm 0.5%,PCS,Raw Material
+M0885,H59-1 Brass Round Bar #0885,D12*2000mm,PCS,Raw Material
+M0886,Precision Thick Film Resistor #0886,0805 100 Ohm 0.5%,PCS,Raw Material
+M0887,PTFE Thread Seal Tape #0887,19mm*0.2mm*15m,roll,Raw Material
+M0888,Cold Rolled Steel Strip Coil #0888,0.8mm*150mm*Coil,kg,Raw Material
+M0889,Nylon Insert Lock Nut #0889,M6 Black Oxide,pack,Raw Material
+M0890,Thermal Conductive Grease #0890,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0891,PTFE Thread Seal Tape #0891,12mm*0.1mm*10m,roll,Raw Material
+M0892,Galvanized Seamless Steel Pipe #0892,DN50*3.5*6000mm,PCS,Raw Material
+M0893,Pan Head Cross Tapping Screw #0893,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0894,Flame Retardant ABS Granules #0894,UL94-V0 Natural 25kg,bag,Raw Material
+M0895,Precision Thick Film Resistor #0895,1206 1k Ohm 1%,PCS,Raw Material
+M0896,Pan Head Cross Tapping Screw #0896,ST2.9*9.5 Nickel Plated,pack,Raw Material
+M0897,Epoxy Resin Potting Compound #0897,EP-101 2-Part 20kg,set,Raw Material
+M0898,Lead-Free Solder Wire #0898,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0899,Cold Rolled Steel Strip Coil #0899,0.8mm*150mm*Coil,kg,Raw Material
+M0900,Hex Socket Head Cap Screw #0900,M4*16 Stainless 304,pack,Raw Material
+M0901,6061-T6 Aluminum Alloy Rod #0901,D50*3000mm,PCS,Raw Material
+M0902,Hex Socket Head Cap Screw #0902,M4*16 Stainless 304,pack,Raw Material
+M0903,Power N-Channel MOSFET #0903,PDFN5*6 40V 100A,PCS,Raw Material
+M0904,304 Stainless Steel Sheet #0904,2.0mm*1000*2000,PCS,Raw Material
+M0905,Cold Rolled Steel Strip Coil #0905,1.2mm*200mm*Coil,kg,Raw Material
+M0906,Precision Thick Film Resistor #0906,1206 1k Ohm 1%,PCS,Raw Material
+M0907,Epoxy Resin Potting Compound #0907,EP-101 2-Part 20kg,set,Raw Material
+M0908,Protective Conformal Coating #0908,Flame-Retardant Polyurethane 20L,drum,Raw Material
+M0909,Galvanized Seamless Steel Pipe #0909,DN25*3.2*6000mm,PCS,Raw Material
+M0910,High-Speed Optocoupler Isolator #0910,DIP-8 2500Vrms,PCS,Raw Material
+M0911,PTFE Thread Seal Tape #0911,12mm*0.1mm*10m,roll,Raw Material
+M0912,Epoxy Resin Potting Compound #0912,EP-202 Thermal 10kg,set,Raw Material
+M0913,Nylon Insert Lock Nut #0913,M6 Black Oxide,pack,Raw Material
+M0914,TC4 Titanium Alloy Plate #0914,1.0mm*500*1000,PCS,Raw Material
+M0915,Cold Rolled Steel Strip Coil #0915,1.2mm*200mm*Coil,kg,Raw Material
+M0916,6061-T6 Aluminum Alloy Rod #0916,D35*3000mm,PCS,Raw Material
+M0917,SMD Ceramic Chip Capacitor #0917,0603 10uF 25V X7R,PCS,Raw Material
+M0918,SMD Ceramic Chip Capacitor #0918,0603 10uF 25V X7R,PCS,Raw Material
+M0919,Ferrite Core Transformer Set #0919,PQ2625 Ferrite,set,Raw Material
+M0920,Lead-Free Solder Wire #0920,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0921,Thermal Conductive Grease #0921,TG-500 5.0W/mK 500g,pot,Raw Material
+M0922,Power N-Channel MOSFET #0922,TO-220 60V 50A,PCS,Raw Material
+M0923,PTFE Thread Seal Tape #0923,12mm*0.1mm*10m,roll,Raw Material
+M0924,32-bit ARM Cortex Microcontroller #0924,QFN-48 120MHz,PCS,Raw Material
+M0925,6061-T6 Aluminum Alloy Rod #0925,D50*3000mm,PCS,Raw Material
+M0926,Ferrite Core Transformer Set #0926,PQ2625 Ferrite,set,Raw Material
+M0927,H59-1 Brass Round Bar #0927,D25*2500mm,PCS,Raw Material
+M0928,Pan Head Cross Tapping Screw #0928,ST3.5*12 Carbon Steel,pack,Raw Material
+M0929,Spring Lock Washer #0929,M5 304 Stainless,pack,Raw Material
+M0930,Ferrite Core Transformer Set #0930,EE19 PC40 Core,set,Raw Material
+M0931,Nylon Insert Lock Nut #0931,M6 Black Oxide,pack,Raw Material
+M0932,Nylon Insert Lock Nut #0932,M5 Zinc Plated,pack,Raw Material
+M0933,Lead-Free Solder Wire #0933,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0934,Cold Rolled Steel Strip Coil #0934,1.2mm*200mm*Coil,kg,Raw Material
+M0935,Cold Rolled Steel Strip Coil #0935,1.2mm*200mm*Coil,kg,Raw Material
+M0936,Flame Retardant ABS Granules #0936,UL94-V0 Black 25kg,bag,Raw Material
+M0937,Thermal Conductive Grease #0937,TG-500 5.0W/mK 500g,pot,Raw Material
+M0938,Ferrite Core Transformer Set #0938,EE19 PC40 Core,set,Raw Material
+M0939,Cold Rolled Steel Strip Coil #0939,1.2mm*200mm*Coil,kg,Raw Material
+M0940,Epoxy Resin Potting Compound #0940,EP-202 Thermal 10kg,set,Raw Material
+M0941,32-bit ARM Cortex Microcontroller #0941,QFN-48 120MHz,PCS,Raw Material
+M0942,Flame Retardant ABS Granules #0942,UL94-V0 Natural 25kg,bag,Raw Material
+M0943,TC4 Titanium Alloy Plate #0943,2.5mm*500*1000,PCS,Raw Material
+M0944,High-Speed Optocoupler Isolator #0944,DIP-8 2500Vrms,PCS,Raw Material
+M0945,6061-T6 Aluminum Alloy Rod #0945,D50*3000mm,PCS,Raw Material
+M0946,High-Speed Optocoupler Isolator #0946,DIP-8 2500Vrms,PCS,Raw Material
+M0947,Power N-Channel MOSFET #0947,PDFN5*6 40V 100A,PCS,Raw Material
+M0948,6061-T6 Aluminum Alloy Rod #0948,D20*2500mm,PCS,Raw Material
+M0949,Epoxy Resin Potting Compound #0949,EP-202 Thermal 10kg,set,Raw Material
+M0950,High-Speed Optocoupler Isolator #0950,SOP-4 5000Vrms,PCS,Raw Material
+M0951,304 Stainless Steel Sheet #0951,1.5mm*1219*2438,PCS,Raw Material
+M0952,Flame Retardant ABS Granules #0952,UL94-V0 Natural 25kg,bag,Raw Material
+M0953,6061-T6 Aluminum Alloy Rod #0953,D20*2500mm,PCS,Raw Material
+M0954,Cold Rolled Steel Strip Coil #0954,0.8mm*150mm*Coil,kg,Raw Material
+M0955,PTFE Thread Seal Tape #0955,19mm*0.2mm*15m,roll,Raw Material
+M0956,High-Speed Optocoupler Isolator #0956,DIP-8 2500Vrms,PCS,Raw Material
+M0957,Protective Conformal Coating #0957,Fast-Drying Acrylic 5L,drum,Raw Material
+M0958,Flame Retardant ABS Granules #0958,UL94-V0 Black 25kg,bag,Raw Material
+M0959,Epoxy Resin Potting Compound #0959,EP-202 Thermal 10kg,set,Raw Material
+M0960,High-Speed Optocoupler Isolator #0960,DIP-8 2500Vrms,PCS,Raw Material
+M0961,Spring Lock Washer #0961,M4 65Mn Blued,pack,Raw Material
+M0962,Protective Conformal Coating #0962,Fast-Drying Acrylic 5L,drum,Raw Material
+M0963,Lead-Free Solder Wire #0963,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0964,Hex Socket Head Cap Screw #0964,M4*16 Stainless 304,pack,Raw Material
+M0965,PTFE Thread Seal Tape #0965,19mm*0.2mm*15m,roll,Raw Material
+M0966,Precision Thick Film Resistor #0966,0603 10k Ohm 1%,PCS,Raw Material
+M0967,304 Stainless Steel Sheet #0967,3.0mm*1500*3000,PCS,Raw Material
+M0968,TC4 Titanium Alloy Plate #0968,2.5mm*500*1000,PCS,Raw Material
+M0969,Lead-Free Solder Wire #0969,Sn96.5Ag3.0Cu0.5 D0.6mm,roll,Raw Material
+M0970,Thermal Conductive Grease #0970,TG-300 3.0W/mK 1kg,pot,Raw Material
+M0971,Power N-Channel MOSFET #0971,TO-252 100V 30A,PCS,Raw Material
+M0972,Spring Lock Washer #0972,M4 65Mn Blued,pack,Raw Material
+M0973,Flame Retardant ABS Granules #0973,UL94-V0 Natural 25kg,bag,Raw Material
+M0974,Nylon Insert Lock Nut #0974,M4 Stainless 304,pack,Raw Material
+M0975,H59-1 Brass Round Bar #0975,D12*2000mm,PCS,Raw Material
+M0976,Cold Rolled Steel Strip Coil #0976,1.2mm*200mm*Coil,kg,Raw Material
+M0977,TC4 Titanium Alloy Plate #0977,2.5mm*500*1000,PCS,Raw Material
+M0978,Cold Rolled Steel Strip Coil #0978,1.2mm*200mm*Coil,kg,Raw Material
+M0979,Epoxy Resin Potting Compound #0979,EP-202 Thermal 10kg,set,Raw Material
+M0980,Cold Rolled Steel Strip Coil #0980,1.2mm*200mm*Coil,kg,Raw Material
+M0981,32-bit ARM Cortex Microcontroller #0981,LQFP-64 72MHz,PCS,Raw Material
+M0982,PTFE Thread Seal Tape #0982,12mm*0.1mm*10m,roll,Raw Material
+M0983,High-Speed Optocoupler Isolator #0983,SOP-4 5000Vrms,PCS,Raw Material
+M0984,H59-1 Brass Round Bar #0984,D12*2000mm,PCS,Raw Material
+M0985,Galvanized Seamless Steel Pipe #0985,DN25*3.2*6000mm,PCS,Raw Material
+M0986,Nylon Insert Lock Nut #0986,M4 Stainless 304,pack,Raw Material
+M0987,High-Speed Optocoupler Isolator #0987,DIP-8 2500Vrms,PCS,Raw Material
+M0988,Spring Lock Washer #0988,M6 Galvanized,pack,Raw Material
+M0989,Galvanized Seamless Steel Pipe #0989,DN25*3.2*6000mm,PCS,Raw Material
+M0990,Cold Rolled Steel Strip Coil #0990,1.2mm*200mm*Coil,kg,Raw Material
+M0991,Hex Socket Head Cap Screw #0991,M5*20 Zinc Plated,pack,Raw Material
+M0992,Nylon Insert Lock Nut #0992,M6 Black Oxide,pack,Raw Material
+M0993,Pan Head Cross Tapping Screw #0993,ST3.5*12 Carbon Steel,pack,Raw Material
+M0994,Protective Conformal Coating #0994,Fast-Drying Acrylic 5L,drum,Raw Material
+M0995,Galvanized Seamless Steel Pipe #0995,DN50*3.5*6000mm,PCS,Raw Material
+M0996,PTFE Thread Seal Tape #0996,12mm*0.1mm*10m,roll,Raw Material
+M0997,Spring Lock Washer #0997,M5 304 Stainless,pack,Raw Material
+M0998,Epoxy Resin Potting Compound #0998,EP-202 Thermal 10kg,set,Raw Material
+M0999,Galvanized Seamless Steel Pipe #0999,DN25*3.2*6000mm,PCS,Raw Material
+M1000,Galvanized Seamless Steel Pipe #1000,DN50*3.5*6000mm,PCS,Raw Material
+S0001,Ground Ball Screw Assembly #0001,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0002,3-Phase Power Inverter Board #0002,48V/20A FOC Vector,PCS,Semi-Product
+S0003,Isolated DC-DC Converter Module #0003,48V to 24V 150W,PCS,Semi-Product
+S0004,Isolated DC-DC Converter Module #0004,24V to 5V/12V 50W,PCS,Semi-Product
+S0005,Brushless Motor Rotor Assembly #0005,D45*60mm NdFeB Magnet,set,Semi-Product
+S0006,Brushless Motor Rotor Assembly #0006,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0007,3-Phase Power Inverter Board #0007,100V/50A Bipolar,PCS,Semi-Product
+S0008,Precision Sensor Conditioner Board #0008,Hall Differential Board,PCS,Semi-Product
+S0009,Ground Ball Screw Assembly #0009,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0010,Isolated DC-DC Converter Module #0010,12V to 3.3V 15W,PCS,Semi-Product
+S0011,Industrial Communication Interface Card #0011,Modbus-RTU Module,PCS,Semi-Product
+S0012,Ground Ball Screw Assembly #0012,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0013,Ground Ball Screw Assembly #0013,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0014,Die-Cast Aluminum Heat Sink Chassis #0014,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0015,Isolated DC-DC Converter Module #0015,12V to 3.3V 15W,PCS,Semi-Product
+S0016,Die-Cast Aluminum Heat Sink Chassis #0016,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0017,Die-Cast Aluminum Heat Sink Chassis #0017,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0018,Main Controller PCBA Assembly #0018,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0019,Main Controller PCBA Assembly #0019,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0020,Die-Cast Aluminum Heat Sink Chassis #0020,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0021,Electromagnetic Safety Brake Assembly #0021,DC24V 15Nm with Lever,set,Semi-Product
+S0022,Die-Cast Aluminum Heat Sink Chassis #0022,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0023,Die-Cast Aluminum Heat Sink Chassis #0023,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0024,Precision Planetary Gearbox Unit #0024,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0025,Electromagnetic Safety Brake Assembly #0025,DC24V 30Nm Spring Applied,set,Semi-Product
+S0026,Precision Planetary Gearbox Unit #0026,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0027,Electromagnetic Safety Brake Assembly #0027,DC24V 30Nm Spring Applied,set,Semi-Product
+S0028,Industrial Communication Interface Card #0028,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0029,3-Phase Power Inverter Board #0029,48V/20A FOC Vector,PCS,Semi-Product
+S0030,Main Controller PCBA Assembly #0030,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0031,Precision Planetary Gearbox Unit #0031,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0032,Precision Planetary Gearbox Unit #0032,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0033,Precision Sensor Conditioner Board #0033,Thermocouple Signal Board,PCS,Semi-Product
+S0034,Die-Cast Aluminum Heat Sink Chassis #0034,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0035,Brushless Motor Rotor Assembly #0035,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0036,Hydraulic Directional Control Valve #0036,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0037,Stator Core and Winding Assembly #0037,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0038,Brushless Motor Rotor Assembly #0038,D45*60mm NdFeB Magnet,set,Semi-Product
+S0039,Brushless Motor Rotor Assembly #0039,D45*60mm NdFeB Magnet,set,Semi-Product
+S0040,Precision Planetary Gearbox Unit #0040,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0041,Industrial Communication Interface Card #0041,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0042,Precision Sensor Conditioner Board #0042,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0043,3-Phase Power Inverter Board #0043,60V/30A Integrated Inverter,PCS,Semi-Product
+S0044,Industrial Communication Interface Card #0044,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0045,Die-Cast Aluminum Heat Sink Chassis #0045,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0046,Precision Sensor Conditioner Board #0046,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0047,Brushless Motor Rotor Assembly #0047,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0048,Precision Sensor Conditioner Board #0048,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0049,Precision Planetary Gearbox Unit #0049,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0050,Precision Planetary Gearbox Unit #0050,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0051,Precision Planetary Gearbox Unit #0051,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0052,3-Phase Power Inverter Board #0052,100V/50A Bipolar,PCS,Semi-Product
+S0053,Ground Ball Screw Assembly #0053,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0054,Precision Sensor Conditioner Board #0054,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0055,Die-Cast Aluminum Heat Sink Chassis #0055,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0056,Main Controller PCBA Assembly #0056,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0057,Industrial Communication Interface Card #0057,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0058,Die-Cast Aluminum Heat Sink Chassis #0058,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0059,Industrial Communication Interface Card #0059,Modbus-RTU Module,PCS,Semi-Product
+S0060,Main Controller PCBA Assembly #0060,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0061,Stator Core and Winding Assembly #0061,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0062,Industrial Communication Interface Card #0062,Modbus-RTU Module,PCS,Semi-Product
+S0063,Brushless Motor Rotor Assembly #0063,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0064,Brushless Motor Rotor Assembly #0064,D45*60mm NdFeB Magnet,set,Semi-Product
+S0065,Stator Core and Winding Assembly #0065,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0066,Die-Cast Aluminum Heat Sink Chassis #0066,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0067,Brushless Motor Rotor Assembly #0067,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0068,3-Phase Power Inverter Board #0068,100V/50A Bipolar,PCS,Semi-Product
+S0069,Ground Ball Screw Assembly #0069,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0070,Ground Ball Screw Assembly #0070,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0071,Die-Cast Aluminum Heat Sink Chassis #0071,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0072,Isolated DC-DC Converter Module #0072,24V to 5V/12V 50W,PCS,Semi-Product
+S0073,Stator Core and Winding Assembly #0073,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0074,Brushless Motor Rotor Assembly #0074,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0075,Isolated DC-DC Converter Module #0075,24V to 5V/12V 50W,PCS,Semi-Product
+S0076,Die-Cast Aluminum Heat Sink Chassis #0076,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0077,Ground Ball Screw Assembly #0077,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0078,Main Controller PCBA Assembly #0078,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0079,Isolated DC-DC Converter Module #0079,12V to 3.3V 15W,PCS,Semi-Product
+S0080,Brushless Motor Rotor Assembly #0080,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0081,Ground Ball Screw Assembly #0081,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0082,Isolated DC-DC Converter Module #0082,12V to 3.3V 15W,PCS,Semi-Product
+S0083,Ground Ball Screw Assembly #0083,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0084,Brushless Motor Rotor Assembly #0084,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0085,Isolated DC-DC Converter Module #0085,48V to 24V 150W,PCS,Semi-Product
+S0086,Die-Cast Aluminum Heat Sink Chassis #0086,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0087,Die-Cast Aluminum Heat Sink Chassis #0087,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0088,Ground Ball Screw Assembly #0088,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0089,Hydraulic Directional Control Valve #0089,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0090,Precision Planetary Gearbox Unit #0090,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0091,Brushless Motor Rotor Assembly #0091,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0092,Electromagnetic Safety Brake Assembly #0092,DC24V 15Nm with Lever,set,Semi-Product
+S0093,Stator Core and Winding Assembly #0093,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0094,Hydraulic Directional Control Valve #0094,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0095,Die-Cast Aluminum Heat Sink Chassis #0095,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0096,Industrial Communication Interface Card #0096,Modbus-RTU Module,PCS,Semi-Product
+S0097,Die-Cast Aluminum Heat Sink Chassis #0097,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0098,Hydraulic Directional Control Valve #0098,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0099,Die-Cast Aluminum Heat Sink Chassis #0099,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0100,Isolated DC-DC Converter Module #0100,12V to 3.3V 15W,PCS,Semi-Product
+S0101,Electromagnetic Safety Brake Assembly #0101,DC24V 30Nm Spring Applied,set,Semi-Product
+S0102,Isolated DC-DC Converter Module #0102,12V to 3.3V 15W,PCS,Semi-Product
+S0103,Precision Sensor Conditioner Board #0103,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0104,Die-Cast Aluminum Heat Sink Chassis #0104,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0105,Precision Sensor Conditioner Board #0105,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0106,Precision Planetary Gearbox Unit #0106,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0107,Stator Core and Winding Assembly #0107,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0108,Stator Core and Winding Assembly #0108,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0109,Stator Core and Winding Assembly #0109,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0110,Hydraulic Directional Control Valve #0110,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0111,Hydraulic Directional Control Valve #0111,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0112,Ground Ball Screw Assembly #0112,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0113,Ground Ball Screw Assembly #0113,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0114,Electromagnetic Safety Brake Assembly #0114,DC24V 30Nm Spring Applied,set,Semi-Product
+S0115,Ground Ball Screw Assembly #0115,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0116,Brushless Motor Rotor Assembly #0116,D45*60mm NdFeB Magnet,set,Semi-Product
+S0117,Precision Planetary Gearbox Unit #0117,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0118,Ground Ball Screw Assembly #0118,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0119,Electromagnetic Safety Brake Assembly #0119,DC24V 30Nm Spring Applied,set,Semi-Product
+S0120,Die-Cast Aluminum Heat Sink Chassis #0120,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0121,Precision Sensor Conditioner Board #0121,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0122,Industrial Communication Interface Card #0122,Modbus-RTU Module,PCS,Semi-Product
+S0123,Industrial Communication Interface Card #0123,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0124,Industrial Communication Interface Card #0124,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0125,Hydraulic Directional Control Valve #0125,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0126,Hydraulic Directional Control Valve #0126,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0127,Brushless Motor Rotor Assembly #0127,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0128,Brushless Motor Rotor Assembly #0128,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0129,Industrial Communication Interface Card #0129,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0130,Die-Cast Aluminum Heat Sink Chassis #0130,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0131,Stator Core and Winding Assembly #0131,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0132,Isolated DC-DC Converter Module #0132,48V to 24V 150W,PCS,Semi-Product
+S0133,Main Controller PCBA Assembly #0133,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0134,Hydraulic Directional Control Valve #0134,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0135,Brushless Motor Rotor Assembly #0135,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0136,Electromagnetic Safety Brake Assembly #0136,DC24V 30Nm Spring Applied,set,Semi-Product
+S0137,Hydraulic Directional Control Valve #0137,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0138,Precision Sensor Conditioner Board #0138,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0139,Ground Ball Screw Assembly #0139,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0140,Ground Ball Screw Assembly #0140,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0141,Isolated DC-DC Converter Module #0141,24V to 5V/12V 50W,PCS,Semi-Product
+S0142,Die-Cast Aluminum Heat Sink Chassis #0142,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0143,Precision Sensor Conditioner Board #0143,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0144,Electromagnetic Safety Brake Assembly #0144,DC24V 15Nm with Lever,set,Semi-Product
+S0145,Electromagnetic Safety Brake Assembly #0145,DC24V 15Nm with Lever,set,Semi-Product
+S0146,Main Controller PCBA Assembly #0146,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0147,Stator Core and Winding Assembly #0147,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0148,Hydraulic Directional Control Valve #0148,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0149,3-Phase Power Inverter Board #0149,48V/20A FOC Vector,PCS,Semi-Product
+S0150,Isolated DC-DC Converter Module #0150,24V to 5V/12V 50W,PCS,Semi-Product
+S0151,Ground Ball Screw Assembly #0151,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0152,Stator Core and Winding Assembly #0152,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0153,Precision Planetary Gearbox Unit #0153,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0154,Industrial Communication Interface Card #0154,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0155,Industrial Communication Interface Card #0155,Modbus-RTU Module,PCS,Semi-Product
+S0156,Main Controller PCBA Assembly #0156,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0157,Electromagnetic Safety Brake Assembly #0157,DC24V 15Nm with Lever,set,Semi-Product
+S0158,Ground Ball Screw Assembly #0158,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0159,Isolated DC-DC Converter Module #0159,48V to 24V 150W,PCS,Semi-Product
+S0160,Isolated DC-DC Converter Module #0160,24V to 5V/12V 50W,PCS,Semi-Product
+S0161,Stator Core and Winding Assembly #0161,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0162,Isolated DC-DC Converter Module #0162,12V to 3.3V 15W,PCS,Semi-Product
+S0163,Industrial Communication Interface Card #0163,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0164,Main Controller PCBA Assembly #0164,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0165,Die-Cast Aluminum Heat Sink Chassis #0165,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0166,Brushless Motor Rotor Assembly #0166,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0167,Precision Planetary Gearbox Unit #0167,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0168,Isolated DC-DC Converter Module #0168,12V to 3.3V 15W,PCS,Semi-Product
+S0169,Precision Planetary Gearbox Unit #0169,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0170,Precision Sensor Conditioner Board #0170,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0171,Brushless Motor Rotor Assembly #0171,D45*60mm NdFeB Magnet,set,Semi-Product
+S0172,Hydraulic Directional Control Valve #0172,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0173,Electromagnetic Safety Brake Assembly #0173,DC24V 30Nm Spring Applied,set,Semi-Product
+S0174,Hydraulic Directional Control Valve #0174,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0175,Main Controller PCBA Assembly #0175,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0176,Brushless Motor Rotor Assembly #0176,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0177,Die-Cast Aluminum Heat Sink Chassis #0177,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0178,Isolated DC-DC Converter Module #0178,12V to 3.3V 15W,PCS,Semi-Product
+S0179,Electromagnetic Safety Brake Assembly #0179,DC24V 30Nm Spring Applied,set,Semi-Product
+S0180,Stator Core and Winding Assembly #0180,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0181,3-Phase Power Inverter Board #0181,100V/50A Bipolar,PCS,Semi-Product
+S0182,Electromagnetic Safety Brake Assembly #0182,DC24V 15Nm with Lever,set,Semi-Product
+S0183,Isolated DC-DC Converter Module #0183,24V to 5V/12V 50W,PCS,Semi-Product
+S0184,Precision Planetary Gearbox Unit #0184,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0185,Precision Sensor Conditioner Board #0185,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0186,Industrial Communication Interface Card #0186,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0187,Precision Sensor Conditioner Board #0187,Thermocouple Signal Board,PCS,Semi-Product
+S0188,Industrial Communication Interface Card #0188,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0189,Industrial Communication Interface Card #0189,Modbus-RTU Module,PCS,Semi-Product
+S0190,Hydraulic Directional Control Valve #0190,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0191,Industrial Communication Interface Card #0191,Modbus-RTU Module,PCS,Semi-Product
+S0192,Brushless Motor Rotor Assembly #0192,D45*60mm NdFeB Magnet,set,Semi-Product
+S0193,Main Controller PCBA Assembly #0193,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0194,3-Phase Power Inverter Board #0194,100V/50A Bipolar,PCS,Semi-Product
+S0195,Industrial Communication Interface Card #0195,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0196,Stator Core and Winding Assembly #0196,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0197,Hydraulic Directional Control Valve #0197,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0198,Electromagnetic Safety Brake Assembly #0198,DC24V 30Nm Spring Applied,set,Semi-Product
+S0199,Brushless Motor Rotor Assembly #0199,D45*60mm NdFeB Magnet,set,Semi-Product
+S0200,Precision Sensor Conditioner Board #0200,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0201,Precision Planetary Gearbox Unit #0201,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0202,Precision Planetary Gearbox Unit #0202,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0203,Stator Core and Winding Assembly #0203,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0204,Ground Ball Screw Assembly #0204,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0205,Precision Sensor Conditioner Board #0205,Hall Differential Board,PCS,Semi-Product
+S0206,Die-Cast Aluminum Heat Sink Chassis #0206,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0207,Ground Ball Screw Assembly #0207,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0208,Ground Ball Screw Assembly #0208,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0209,3-Phase Power Inverter Board #0209,48V/20A FOC Vector,PCS,Semi-Product
+S0210,3-Phase Power Inverter Board #0210,60V/30A Integrated Inverter,PCS,Semi-Product
+S0211,Ground Ball Screw Assembly #0211,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0212,Die-Cast Aluminum Heat Sink Chassis #0212,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0213,Isolated DC-DC Converter Module #0213,48V to 24V 150W,PCS,Semi-Product
+S0214,Ground Ball Screw Assembly #0214,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0215,3-Phase Power Inverter Board #0215,48V/20A FOC Vector,PCS,Semi-Product
+S0216,Precision Sensor Conditioner Board #0216,Hall Differential Board,PCS,Semi-Product
+S0217,Die-Cast Aluminum Heat Sink Chassis #0217,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0218,3-Phase Power Inverter Board #0218,48V/20A FOC Vector,PCS,Semi-Product
+S0219,Precision Planetary Gearbox Unit #0219,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0220,Precision Planetary Gearbox Unit #0220,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0221,Ground Ball Screw Assembly #0221,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0222,Precision Planetary Gearbox Unit #0222,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0223,Ground Ball Screw Assembly #0223,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0224,Electromagnetic Safety Brake Assembly #0224,DC24V 30Nm Spring Applied,set,Semi-Product
+S0225,Hydraulic Directional Control Valve #0225,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0226,Stator Core and Winding Assembly #0226,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0227,Main Controller PCBA Assembly #0227,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0228,Precision Sensor Conditioner Board #0228,Hall Differential Board,PCS,Semi-Product
+S0229,3-Phase Power Inverter Board #0229,60V/30A Integrated Inverter,PCS,Semi-Product
+S0230,Stator Core and Winding Assembly #0230,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0231,Hydraulic Directional Control Valve #0231,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0232,Ground Ball Screw Assembly #0232,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0233,3-Phase Power Inverter Board #0233,100V/50A Bipolar,PCS,Semi-Product
+S0234,Main Controller PCBA Assembly #0234,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0235,Stator Core and Winding Assembly #0235,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0236,Isolated DC-DC Converter Module #0236,12V to 3.3V 15W,PCS,Semi-Product
+S0237,Hydraulic Directional Control Valve #0237,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0238,Brushless Motor Rotor Assembly #0238,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0239,Precision Planetary Gearbox Unit #0239,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0240,Stator Core and Winding Assembly #0240,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0241,Electromagnetic Safety Brake Assembly #0241,DC24V 15Nm with Lever,set,Semi-Product
+S0242,Electromagnetic Safety Brake Assembly #0242,DC24V 30Nm Spring Applied,set,Semi-Product
+S0243,3-Phase Power Inverter Board #0243,60V/30A Integrated Inverter,PCS,Semi-Product
+S0244,Ground Ball Screw Assembly #0244,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0245,Ground Ball Screw Assembly #0245,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0246,Hydraulic Directional Control Valve #0246,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0247,Main Controller PCBA Assembly #0247,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0248,Industrial Communication Interface Card #0248,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0249,Electromagnetic Safety Brake Assembly #0249,DC24V 30Nm Spring Applied,set,Semi-Product
+S0250,Ground Ball Screw Assembly #0250,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0251,Precision Sensor Conditioner Board #0251,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0252,Precision Planetary Gearbox Unit #0252,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0253,Isolated DC-DC Converter Module #0253,48V to 24V 150W,PCS,Semi-Product
+S0254,Precision Sensor Conditioner Board #0254,Hall Differential Board,PCS,Semi-Product
+S0255,3-Phase Power Inverter Board #0255,60V/30A Integrated Inverter,PCS,Semi-Product
+S0256,Electromagnetic Safety Brake Assembly #0256,DC24V 30Nm Spring Applied,set,Semi-Product
+S0257,Die-Cast Aluminum Heat Sink Chassis #0257,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0258,Precision Sensor Conditioner Board #0258,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0259,3-Phase Power Inverter Board #0259,60V/30A Integrated Inverter,PCS,Semi-Product
+S0260,Die-Cast Aluminum Heat Sink Chassis #0260,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0261,Precision Planetary Gearbox Unit #0261,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0262,Precision Sensor Conditioner Board #0262,Hall Differential Board,PCS,Semi-Product
+S0263,Main Controller PCBA Assembly #0263,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0264,Precision Planetary Gearbox Unit #0264,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0265,Ground Ball Screw Assembly #0265,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0266,Main Controller PCBA Assembly #0266,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0267,Ground Ball Screw Assembly #0267,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0268,Precision Sensor Conditioner Board #0268,Hall Differential Board,PCS,Semi-Product
+S0269,Die-Cast Aluminum Heat Sink Chassis #0269,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0270,Die-Cast Aluminum Heat Sink Chassis #0270,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0271,Precision Sensor Conditioner Board #0271,Thermocouple Signal Board,PCS,Semi-Product
+S0272,Isolated DC-DC Converter Module #0272,12V to 3.3V 15W,PCS,Semi-Product
+S0273,Ground Ball Screw Assembly #0273,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0274,Stator Core and Winding Assembly #0274,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0275,Industrial Communication Interface Card #0275,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0276,Ground Ball Screw Assembly #0276,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0277,Electromagnetic Safety Brake Assembly #0277,DC24V 30Nm Spring Applied,set,Semi-Product
+S0278,Ground Ball Screw Assembly #0278,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0279,Main Controller PCBA Assembly #0279,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0280,Electromagnetic Safety Brake Assembly #0280,DC24V 30Nm Spring Applied,set,Semi-Product
+S0281,Ground Ball Screw Assembly #0281,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0282,Hydraulic Directional Control Valve #0282,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0283,Stator Core and Winding Assembly #0283,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0284,Industrial Communication Interface Card #0284,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0285,Isolated DC-DC Converter Module #0285,12V to 3.3V 15W,PCS,Semi-Product
+S0286,Precision Planetary Gearbox Unit #0286,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0287,Precision Sensor Conditioner Board #0287,Thermocouple Signal Board,PCS,Semi-Product
+S0288,Hydraulic Directional Control Valve #0288,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0289,Precision Planetary Gearbox Unit #0289,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0290,Ground Ball Screw Assembly #0290,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0291,Stator Core and Winding Assembly #0291,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0292,Stator Core and Winding Assembly #0292,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0293,Industrial Communication Interface Card #0293,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0294,Brushless Motor Rotor Assembly #0294,D45*60mm NdFeB Magnet,set,Semi-Product
+S0295,Precision Planetary Gearbox Unit #0295,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0296,3-Phase Power Inverter Board #0296,48V/20A FOC Vector,PCS,Semi-Product
+S0297,Hydraulic Directional Control Valve #0297,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0298,Main Controller PCBA Assembly #0298,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0299,Stator Core and Winding Assembly #0299,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0300,3-Phase Power Inverter Board #0300,60V/30A Integrated Inverter,PCS,Semi-Product
+S0301,Die-Cast Aluminum Heat Sink Chassis #0301,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0302,Precision Planetary Gearbox Unit #0302,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0303,Brushless Motor Rotor Assembly #0303,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0304,Main Controller PCBA Assembly #0304,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0305,Precision Sensor Conditioner Board #0305,Hall Differential Board,PCS,Semi-Product
+S0306,3-Phase Power Inverter Board #0306,48V/20A FOC Vector,PCS,Semi-Product
+S0307,Precision Planetary Gearbox Unit #0307,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0308,Hydraulic Directional Control Valve #0308,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0309,Stator Core and Winding Assembly #0309,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0310,Ground Ball Screw Assembly #0310,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0311,Industrial Communication Interface Card #0311,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0312,Precision Planetary Gearbox Unit #0312,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0313,Industrial Communication Interface Card #0313,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0314,Brushless Motor Rotor Assembly #0314,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0315,Precision Planetary Gearbox Unit #0315,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0316,Hydraulic Directional Control Valve #0316,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0317,Brushless Motor Rotor Assembly #0317,D45*60mm NdFeB Magnet,set,Semi-Product
+S0318,Brushless Motor Rotor Assembly #0318,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0319,Stator Core and Winding Assembly #0319,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0320,Die-Cast Aluminum Heat Sink Chassis #0320,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0321,Hydraulic Directional Control Valve #0321,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0322,Main Controller PCBA Assembly #0322,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0323,Ground Ball Screw Assembly #0323,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0324,Industrial Communication Interface Card #0324,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0325,Precision Sensor Conditioner Board #0325,Thermocouple Signal Board,PCS,Semi-Product
+S0326,Precision Sensor Conditioner Board #0326,Thermocouple Signal Board,PCS,Semi-Product
+S0327,Die-Cast Aluminum Heat Sink Chassis #0327,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0328,Precision Planetary Gearbox Unit #0328,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0329,Industrial Communication Interface Card #0329,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0330,Hydraulic Directional Control Valve #0330,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0331,Precision Planetary Gearbox Unit #0331,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0332,Hydraulic Directional Control Valve #0332,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0333,Isolated DC-DC Converter Module #0333,24V to 5V/12V 50W,PCS,Semi-Product
+S0334,Hydraulic Directional Control Valve #0334,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0335,Isolated DC-DC Converter Module #0335,12V to 3.3V 15W,PCS,Semi-Product
+S0336,Electromagnetic Safety Brake Assembly #0336,DC24V 15Nm with Lever,set,Semi-Product
+S0337,Ground Ball Screw Assembly #0337,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0338,3-Phase Power Inverter Board #0338,48V/20A FOC Vector,PCS,Semi-Product
+S0339,Main Controller PCBA Assembly #0339,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0340,Stator Core and Winding Assembly #0340,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0341,Electromagnetic Safety Brake Assembly #0341,DC24V 15Nm with Lever,set,Semi-Product
+S0342,3-Phase Power Inverter Board #0342,48V/20A FOC Vector,PCS,Semi-Product
+S0343,Isolated DC-DC Converter Module #0343,24V to 5V/12V 50W,PCS,Semi-Product
+S0344,Precision Sensor Conditioner Board #0344,Hall Differential Board,PCS,Semi-Product
+S0345,Precision Planetary Gearbox Unit #0345,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0346,Main Controller PCBA Assembly #0346,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0347,Electromagnetic Safety Brake Assembly #0347,DC24V 30Nm Spring Applied,set,Semi-Product
+S0348,Electromagnetic Safety Brake Assembly #0348,DC24V 30Nm Spring Applied,set,Semi-Product
+S0349,Main Controller PCBA Assembly #0349,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0350,Ground Ball Screw Assembly #0350,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0351,Main Controller PCBA Assembly #0351,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0352,Ground Ball Screw Assembly #0352,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0353,Ground Ball Screw Assembly #0353,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0354,Main Controller PCBA Assembly #0354,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0355,Hydraulic Directional Control Valve #0355,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0356,Isolated DC-DC Converter Module #0356,24V to 5V/12V 50W,PCS,Semi-Product
+S0357,3-Phase Power Inverter Board #0357,48V/20A FOC Vector,PCS,Semi-Product
+S0358,Isolated DC-DC Converter Module #0358,24V to 5V/12V 50W,PCS,Semi-Product
+S0359,Precision Sensor Conditioner Board #0359,Hall Differential Board,PCS,Semi-Product
+S0360,Ground Ball Screw Assembly #0360,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0361,Brushless Motor Rotor Assembly #0361,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0362,Stator Core and Winding Assembly #0362,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0363,Brushless Motor Rotor Assembly #0363,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0364,Precision Planetary Gearbox Unit #0364,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0365,Hydraulic Directional Control Valve #0365,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0366,Industrial Communication Interface Card #0366,Modbus-RTU Module,PCS,Semi-Product
+S0367,3-Phase Power Inverter Board #0367,48V/20A FOC Vector,PCS,Semi-Product
+S0368,Electromagnetic Safety Brake Assembly #0368,DC24V 15Nm with Lever,set,Semi-Product
+S0369,3-Phase Power Inverter Board #0369,100V/50A Bipolar,PCS,Semi-Product
+S0370,Stator Core and Winding Assembly #0370,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0371,Ground Ball Screw Assembly #0371,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0372,Main Controller PCBA Assembly #0372,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0373,Main Controller PCBA Assembly #0373,REV-A3 Industrial Gateway,PCS,Semi-Product
+S0374,Isolated DC-DC Converter Module #0374,24V to 5V/12V 50W,PCS,Semi-Product
+S0375,Precision Planetary Gearbox Unit #0375,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0376,Electromagnetic Safety Brake Assembly #0376,DC24V 30Nm Spring Applied,set,Semi-Product
+S0377,Die-Cast Aluminum Heat Sink Chassis #0377,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0378,Ground Ball Screw Assembly #0378,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0379,Precision Sensor Conditioner Board #0379,4-20mA to Digital 4-CH,PCS,Semi-Product
+S0380,Hydraulic Directional Control Valve #0380,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0381,Industrial Communication Interface Card #0381,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0382,3-Phase Power Inverter Board #0382,48V/20A FOC Vector,PCS,Semi-Product
+S0383,Industrial Communication Interface Card #0383,Modbus-RTU Module,PCS,Semi-Product
+S0384,Die-Cast Aluminum Heat Sink Chassis #0384,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0385,Isolated DC-DC Converter Module #0385,48V to 24V 150W,PCS,Semi-Product
+S0386,Main Controller PCBA Assembly #0386,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0387,Die-Cast Aluminum Heat Sink Chassis #0387,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0388,Hydraulic Directional Control Valve #0388,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0389,3-Phase Power Inverter Board #0389,100V/50A Bipolar,PCS,Semi-Product
+S0390,Isolated DC-DC Converter Module #0390,12V to 3.3V 15W,PCS,Semi-Product
+S0391,Precision Sensor Conditioner Board #0391,Hall Differential Board,PCS,Semi-Product
+S0392,Stator Core and Winding Assembly #0392,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0393,Stator Core and Winding Assembly #0393,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0394,Hydraulic Directional Control Valve #0394,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0395,Ground Ball Screw Assembly #0395,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0396,Main Controller PCBA Assembly #0396,REV-B4 STM32 Architecture,PCS,Semi-Product
+S0397,Stator Core and Winding Assembly #0397,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0398,3-Phase Power Inverter Board #0398,100V/50A Bipolar,PCS,Semi-Product
+S0399,Die-Cast Aluminum Heat Sink Chassis #0399,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0400,Brushless Motor Rotor Assembly #0400,D45*60mm NdFeB Magnet,set,Semi-Product
+S0401,Electromagnetic Safety Brake Assembly #0401,DC24V 30Nm Spring Applied,set,Semi-Product
+S0402,Precision Planetary Gearbox Unit #0402,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0403,Precision Sensor Conditioner Board #0403,Thermocouple Signal Board,PCS,Semi-Product
+S0404,Ground Ball Screw Assembly #0404,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0405,Stator Core and Winding Assembly #0405,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0406,Electromagnetic Safety Brake Assembly #0406,DC24V 30Nm Spring Applied,set,Semi-Product
+S0407,3-Phase Power Inverter Board #0407,48V/20A FOC Vector,PCS,Semi-Product
+S0408,Industrial Communication Interface Card #0408,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0409,Hydraulic Directional Control Valve #0409,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0410,3-Phase Power Inverter Board #0410,100V/50A Bipolar,PCS,Semi-Product
+S0411,Isolated DC-DC Converter Module #0411,48V to 24V 150W,PCS,Semi-Product
+S0412,Hydraulic Directional Control Valve #0412,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0413,Hydraulic Directional Control Valve #0413,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0414,Brushless Motor Rotor Assembly #0414,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0415,3-Phase Power Inverter Board #0415,60V/30A Integrated Inverter,PCS,Semi-Product
+S0416,Main Controller PCBA Assembly #0416,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0417,Precision Planetary Gearbox Unit #0417,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0418,Industrial Communication Interface Card #0418,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0419,Isolated DC-DC Converter Module #0419,24V to 5V/12V 50W,PCS,Semi-Product
+S0420,Isolated DC-DC Converter Module #0420,48V to 24V 150W,PCS,Semi-Product
+S0421,Precision Planetary Gearbox Unit #0421,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0422,3-Phase Power Inverter Board #0422,60V/30A Integrated Inverter,PCS,Semi-Product
+S0423,3-Phase Power Inverter Board #0423,100V/50A Bipolar,PCS,Semi-Product
+S0424,Ground Ball Screw Assembly #0424,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0425,Die-Cast Aluminum Heat Sink Chassis #0425,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0426,Stator Core and Winding Assembly #0426,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0427,Industrial Communication Interface Card #0427,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0428,Stator Core and Winding Assembly #0428,12-Slot 14-Pole 0.2mm Silicon,set,Semi-Product
+S0429,Hydraulic Directional Control Valve #0429,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0430,Die-Cast Aluminum Heat Sink Chassis #0430,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0431,Electromagnetic Safety Brake Assembly #0431,DC24V 30Nm Spring Applied,set,Semi-Product
+S0432,Isolated DC-DC Converter Module #0432,24V to 5V/12V 50W,PCS,Semi-Product
+S0433,Industrial Communication Interface Card #0433,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0434,Industrial Communication Interface Card #0434,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0435,Isolated DC-DC Converter Module #0435,24V to 5V/12V 50W,PCS,Semi-Product
+S0436,Isolated DC-DC Converter Module #0436,48V to 24V 150W,PCS,Semi-Product
+S0437,Industrial Communication Interface Card #0437,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0438,Industrial Communication Interface Card #0438,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0439,3-Phase Power Inverter Board #0439,100V/50A Bipolar,PCS,Semi-Product
+S0440,Industrial Communication Interface Card #0440,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0441,Hydraulic Directional Control Valve #0441,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0442,Die-Cast Aluminum Heat Sink Chassis #0442,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0443,Precision Planetary Gearbox Unit #0443,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0444,Isolated DC-DC Converter Module #0444,48V to 24V 150W,PCS,Semi-Product
+S0445,Main Controller PCBA Assembly #0445,REV-C1 Dual-Core DSP,PCS,Semi-Product
+S0446,Brushless Motor Rotor Assembly #0446,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0447,Brushless Motor Rotor Assembly #0447,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0448,Brushless Motor Rotor Assembly #0448,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0449,Electromagnetic Safety Brake Assembly #0449,DC24V 15Nm with Lever,set,Semi-Product
+S0450,Industrial Communication Interface Card #0450,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0451,Die-Cast Aluminum Heat Sink Chassis #0451,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0452,Precision Planetary Gearbox Unit #0452,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0453,Isolated DC-DC Converter Module #0453,48V to 24V 150W,PCS,Semi-Product
+S0454,Brushless Motor Rotor Assembly #0454,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0455,Hydraulic Directional Control Valve #0455,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0456,Die-Cast Aluminum Heat Sink Chassis #0456,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0457,Brushless Motor Rotor Assembly #0457,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0458,Industrial Communication Interface Card #0458,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0459,Brushless Motor Rotor Assembly #0459,D45*60mm NdFeB Magnet,set,Semi-Product
+S0460,Die-Cast Aluminum Heat Sink Chassis #0460,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0461,Die-Cast Aluminum Heat Sink Chassis #0461,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0462,Electromagnetic Safety Brake Assembly #0462,DC24V 15Nm with Lever,set,Semi-Product
+S0463,Hydraulic Directional Control Valve #0463,2-Position 4-Way 40L/min,PCS,Semi-Product
+S0464,Hydraulic Directional Control Valve #0464,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0465,Precision Planetary Gearbox Unit #0465,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0466,Hydraulic Directional Control Valve #0466,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0467,Stator Core and Winding Assembly #0467,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0468,Isolated DC-DC Converter Module #0468,12V to 3.3V 15W,PCS,Semi-Product
+S0469,Industrial Communication Interface Card #0469,CAN-FD/RS485 Dual Bus,PCS,Semi-Product
+S0470,Industrial Communication Interface Card #0470,Modbus-RTU Module,PCS,Semi-Product
+S0471,Isolated DC-DC Converter Module #0471,12V to 3.3V 15W,PCS,Semi-Product
+S0472,Stator Core and Winding Assembly #0472,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0473,3-Phase Power Inverter Board #0473,100V/50A Bipolar,PCS,Semi-Product
+S0474,Die-Cast Aluminum Heat Sink Chassis #0474,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0475,Die-Cast Aluminum Heat Sink Chassis #0475,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0476,Ground Ball Screw Assembly #0476,C3 Lead 10mm Stroke 500mm,PCS,Semi-Product
+S0477,Ground Ball Screw Assembly #0477,C5 Lead 5mm Stroke 300mm,PCS,Semi-Product
+S0478,Brushless Motor Rotor Assembly #0478,D45*60mm NdFeB Magnet,set,Semi-Product
+S0479,3-Phase Power Inverter Board #0479,60V/30A Integrated Inverter,PCS,Semi-Product
+S0480,Electromagnetic Safety Brake Assembly #0480,DC24V 30Nm Spring Applied,set,Semi-Product
+S0481,Isolated DC-DC Converter Module #0481,12V to 3.3V 15W,PCS,Semi-Product
+S0482,Die-Cast Aluminum Heat Sink Chassis #0482,Anodized Black 200*150*60mm,PCS,Semi-Product
+S0483,Die-Cast Aluminum Heat Sink Chassis #0483,Sandblasted 250*180*80mm,PCS,Semi-Product
+S0484,Brushless Motor Rotor Assembly #0484,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0485,3-Phase Power Inverter Board #0485,60V/30A Integrated Inverter,PCS,Semi-Product
+S0486,3-Phase Power Inverter Board #0486,100V/50A Bipolar,PCS,Semi-Product
+S0487,Precision Sensor Conditioner Board #0487,Hall Differential Board,PCS,Semi-Product
+S0488,Hydraulic Directional Control Valve #0488,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0489,Precision Planetary Gearbox Unit #0489,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+S0490,Stator Core and Winding Assembly #0490,18-Slot 0.35mm High-Perm,set,Semi-Product
+S0491,Electromagnetic Safety Brake Assembly #0491,DC24V 15Nm with Lever,set,Semi-Product
+S0492,Brushless Motor Rotor Assembly #0492,D45*60mm NdFeB Magnet,set,Semi-Product
+S0493,Precision Planetary Gearbox Unit #0493,Ratio 1:10 Rated 50Nm,unit,Semi-Product
+S0494,Industrial Communication Interface Card #0494,Dual Gigabit Ethernet PHY,PCS,Semi-Product
+S0495,3-Phase Power Inverter Board #0495,60V/30A Integrated Inverter,PCS,Semi-Product
+S0496,Hydraulic Directional Control Valve #0496,3-Position 4-Way 21MPa,PCS,Semi-Product
+S0497,Brushless Motor Rotor Assembly #0497,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0498,Brushless Motor Rotor Assembly #0498,D60*80mm Dynamic Balance G2.5,set,Semi-Product
+S0499,Precision Sensor Conditioner Board #0499,Hall Differential Board,PCS,Semi-Product
+S0500,Precision Planetary Gearbox Unit #0500,Ratio 1:25 Rated 120Nm,unit,Semi-Product
+P0001,High-Power Energy Storage Power Converter #0001,PCS-50KW-400V Grid-Tied,unit,Product
+P0002,High-Power Energy Storage Power Converter #0002,PCS-100KW-400V Modular,unit,Product
+P0003,Variable Frequency Pump Control Cabinet #0003,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0004,Industrial Edge Computing Gateway #0004,EG-2000 8-Port+CAN,unit,Product
+P0005,6-Axis Industrial Robotic Arm Controller #0005,RC-600A-V2 Payload 10kg,unit,Product
+P0006,Variable Frequency Pump Control Cabinet #0006,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0007,High-Precision Industrial LiDAR Scanner #0007,LIDAR-300M 16-Beam,unit,Product
+P0008,High-Precision Industrial LiDAR Scanner #0008,LIDAR-300M 16-Beam,unit,Product
+P0009,Variable Frequency Pump Control Cabinet #0009,PUMP-CTRL-30KW 4-Pump,unit,Product
+P0010,High-Power Energy Storage Power Converter #0010,PCS-50KW-400V Grid-Tied,unit,Product
+P0011,Distributed PAC Main Controller Station #0011,PLC-PAC-300 Profinet,unit,Product
+P0012,High-Precision Industrial LiDAR Scanner #0012,LIDAR-500M 32-Beam Industrial,unit,Product
+P0013,Distributed PAC Main Controller Station #0013,PLC-PAC-300 Profinet,unit,Product
+P0014,Automated Guided Vehicle AGV Drive Unit #0014,AGV-DRV-48V-1500W,set,Product
+P0015,Distributed PAC Main Controller Station #0015,PLC-PAC-500 EtherCAT,unit,Product
+P0016,Integrated Servo Drive Unit #0016,SERVO-1500W-380V,unit,Product
+P0017,Automated Guided Vehicle AGV Drive Unit #0017,AGV-DRV-24V-800W,set,Product
+P0018,Industrial Edge Computing Gateway #0018,EG-2000 8-Port+CAN,unit,Product
+P0019,6-Axis Industrial Robotic Arm Controller #0019,RC-600A-V2 Payload 10kg,unit,Product
+P0020,Variable Frequency Pump Control Cabinet #0020,PUMP-CTRL-30KW 4-Pump,unit,Product
+P0021,Automated Guided Vehicle AGV Drive Unit #0021,AGV-DRV-48V-1500W,set,Product
+P0022,6-Axis Industrial Robotic Arm Controller #0022,RC-800B-V3 Payload 20kg,unit,Product
+P0023,High-Power Energy Storage Power Converter #0023,PCS-100KW-400V Modular,unit,Product
+P0024,Distributed PAC Main Controller Station #0024,PLC-PAC-500 EtherCAT,unit,Product
+P0025,6-Axis Industrial Robotic Arm Controller #0025,RC-800B-V3 Payload 20kg,unit,Product
+P0026,Variable Frequency Pump Control Cabinet #0026,PUMP-CTRL-30KW 4-Pump,unit,Product
+P0027,High-Precision Industrial LiDAR Scanner #0027,LIDAR-500M 32-Beam Industrial,unit,Product
+P0028,6-Axis Industrial Robotic Arm Controller #0028,RC-600A-V2 Payload 10kg,unit,Product
+P0029,Variable Frequency Pump Control Cabinet #0029,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0030,Automated Guided Vehicle AGV Drive Unit #0030,AGV-DRV-48V-1500W,set,Product
+P0031,6-Axis Industrial Robotic Arm Controller #0031,RC-600A-V2 Payload 10kg,unit,Product
+P0032,Variable Frequency Pump Control Cabinet #0032,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0033,Distributed PAC Main Controller Station #0033,PLC-PAC-500 EtherCAT,unit,Product
+P0034,High-Precision Industrial LiDAR Scanner #0034,LIDAR-500M 32-Beam Industrial,unit,Product
+P0035,Distributed PAC Main Controller Station #0035,PLC-PAC-300 Profinet,unit,Product
+P0036,High-Power Energy Storage Power Converter #0036,PCS-50KW-400V Grid-Tied,unit,Product
+P0037,High-Precision Industrial LiDAR Scanner #0037,LIDAR-500M 32-Beam Industrial,unit,Product
+P0038,Industrial Edge Computing Gateway #0038,EG-2000 8-Port+CAN,unit,Product
+P0039,High-Precision Industrial LiDAR Scanner #0039,LIDAR-500M 32-Beam Industrial,unit,Product
+P0040,High-Power Energy Storage Power Converter #0040,PCS-50KW-400V Grid-Tied,unit,Product
+P0041,Variable Frequency Pump Control Cabinet #0041,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0042,High-Power Energy Storage Power Converter #0042,PCS-50KW-400V Grid-Tied,unit,Product
+P0043,Automated Guided Vehicle AGV Drive Unit #0043,AGV-DRV-48V-1500W,set,Product
+P0044,High-Power Energy Storage Power Converter #0044,PCS-100KW-400V Modular,unit,Product
+P0045,High-Power Energy Storage Power Converter #0045,PCS-100KW-400V Modular,unit,Product
+P0046,High-Power Energy Storage Power Converter #0046,PCS-100KW-400V Modular,unit,Product
+P0047,High-Precision Industrial LiDAR Scanner #0047,LIDAR-300M 16-Beam,unit,Product
+P0048,Integrated Servo Drive Unit #0048,SERVO-500W-220V,unit,Product
+P0049,Industrial Edge Computing Gateway #0049,EG-2000 8-Port+CAN,unit,Product
+P0050,Industrial Edge Computing Gateway #0050,EG-2000 8-Port+CAN,unit,Product
+P0051,Industrial Edge Computing Gateway #0051,EG-2000 8-Port+CAN,unit,Product
+P0052,High-Power Energy Storage Power Converter #0052,PCS-100KW-400V Modular,unit,Product
+P0053,6-Axis Industrial Robotic Arm Controller #0053,RC-600A-V2 Payload 10kg,unit,Product
+P0054,Industrial Edge Computing Gateway #0054,EG-5000 AI Compute 20TOPS,unit,Product
+P0055,Integrated Servo Drive Unit #0055,SERVO-1500W-380V,unit,Product
+P0056,High-Power Energy Storage Power Converter #0056,PCS-50KW-400V Grid-Tied,unit,Product
+P0057,Distributed PAC Main Controller Station #0057,PLC-PAC-300 Profinet,unit,Product
+P0058,Automated Guided Vehicle AGV Drive Unit #0058,AGV-DRV-48V-1500W,set,Product
+P0059,Integrated Servo Drive Unit #0059,SERVO-750W-220V,unit,Product
+P0060,Industrial Edge Computing Gateway #0060,EG-5000 AI Compute 20TOPS,unit,Product
+P0061,6-Axis Industrial Robotic Arm Controller #0061,RC-800B-V3 Payload 20kg,unit,Product
+P0062,6-Axis Industrial Robotic Arm Controller #0062,RC-600A-V2 Payload 10kg,unit,Product
+P0063,Automated Guided Vehicle AGV Drive Unit #0063,AGV-DRV-48V-1500W,set,Product
+P0064,Distributed PAC Main Controller Station #0064,PLC-PAC-300 Profinet,unit,Product
+P0065,High-Precision Industrial LiDAR Scanner #0065,LIDAR-300M 16-Beam,unit,Product
+P0066,Automated Guided Vehicle AGV Drive Unit #0066,AGV-DRV-24V-800W,set,Product
+P0067,Variable Frequency Pump Control Cabinet #0067,PUMP-CTRL-30KW 4-Pump,unit,Product
+P0068,High-Precision Industrial LiDAR Scanner #0068,LIDAR-500M 32-Beam Industrial,unit,Product
+P0069,Industrial Edge Computing Gateway #0069,EG-5000 AI Compute 20TOPS,unit,Product
+P0070,Industrial Edge Computing Gateway #0070,EG-2000 8-Port+CAN,unit,Product
+P0071,High-Precision Industrial LiDAR Scanner #0071,LIDAR-500M 32-Beam Industrial,unit,Product
+P0072,Integrated Servo Drive Unit #0072,SERVO-750W-220V,unit,Product
+P0073,High-Precision Industrial LiDAR Scanner #0073,LIDAR-300M 16-Beam,unit,Product
+P0074,Automated Guided Vehicle AGV Drive Unit #0074,AGV-DRV-24V-800W,set,Product
+P0075,Variable Frequency Pump Control Cabinet #0075,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0076,Distributed PAC Main Controller Station #0076,PLC-PAC-500 EtherCAT,unit,Product
+P0077,High-Precision Industrial LiDAR Scanner #0077,LIDAR-500M 32-Beam Industrial,unit,Product
+P0078,Distributed PAC Main Controller Station #0078,PLC-PAC-500 EtherCAT,unit,Product
+P0079,High-Power Energy Storage Power Converter #0079,PCS-50KW-400V Grid-Tied,unit,Product
+P0080,6-Axis Industrial Robotic Arm Controller #0080,RC-800B-V3 Payload 20kg,unit,Product
+P0081,Industrial Edge Computing Gateway #0081,EG-5000 AI Compute 20TOPS,unit,Product
+P0082,High-Power Energy Storage Power Converter #0082,PCS-100KW-400V Modular,unit,Product
+P0083,Variable Frequency Pump Control Cabinet #0083,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0084,6-Axis Industrial Robotic Arm Controller #0084,RC-800B-V3 Payload 20kg,unit,Product
+P0085,Variable Frequency Pump Control Cabinet #0085,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0086,Distributed PAC Main Controller Station #0086,PLC-PAC-300 Profinet,unit,Product
+P0087,Distributed PAC Main Controller Station #0087,PLC-PAC-300 Profinet,unit,Product
+P0088,High-Power Energy Storage Power Converter #0088,PCS-100KW-400V Modular,unit,Product
+P0089,Variable Frequency Pump Control Cabinet #0089,PUMP-CTRL-30KW 4-Pump,unit,Product
+P0090,Variable Frequency Pump Control Cabinet #0090,PUMP-CTRL-15KW 3-Pump,unit,Product
+P0091,High-Power Energy Storage Power Converter #0091,PCS-100KW-400V Modular,unit,Product
+P0092,Integrated Servo Drive Unit #0092,SERVO-500W-220V,unit,Product
+P0093,6-Axis Industrial Robotic Arm Controller #0093,RC-800B-V3 Payload 20kg,unit,Product
+P0094,Integrated Servo Drive Unit #0094,SERVO-500W-220V,unit,Product
+P0095,High-Precision Industrial LiDAR Scanner #0095,LIDAR-500M 32-Beam Industrial,unit,Product
+P0096,High-Power Energy Storage Power Converter #0096,PCS-50KW-400V Grid-Tied,unit,Product
+P0097,Distributed PAC Main Controller Station #0097,PLC-PAC-300 Profinet,unit,Product
+P0098,High-Precision Industrial LiDAR Scanner #0098,LIDAR-500M 32-Beam Industrial,unit,Product
+P0099,High-Precision Industrial LiDAR Scanner #0099,LIDAR-500M 32-Beam Industrial,unit,Product
+P0100,6-Axis Industrial Robotic Arm Controller #0100,RC-800B-V3 Payload 20kg,unit,Product
