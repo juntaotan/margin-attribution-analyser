@@ -1,0 +1,1 @@
+ALTER TABLE import_job ADD COLUMN raw_table_name VARCHAR(200);
