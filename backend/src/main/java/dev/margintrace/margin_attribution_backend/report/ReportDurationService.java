@@ -1,6 +1,8 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import dev.margintrace.margin_attribution_backend.analysis.service.LocalLlamaClient;
+import dev.margintrace.margin_attribution_backend.analysis.ai.AiErrorMapper;
+import dev.margintrace.margin_attribution_backend.report.ai.PeriodExtraction;
+import dev.margintrace.margin_attribution_backend.report.ai.ReportPeriodAssistant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +14,8 @@ public class ReportDurationService {
 
     private final ReportDocumentStore documentStore;
     private final ReportContentControlScanner contentControlScanner;
-    private final LocalLlamaClient llamaClient;
+    private final ReportPeriodAssistant periodAssistant;
+    private final AiErrorMapper aiErrorMapper;
 
     public DurationAnalysis analyze(String tag, String wordId, String alias) throws Exception {
         if (!validSelector(tag) || !validSelector(wordId) || !validSelector(alias)
@@ -28,17 +31,43 @@ public class ReportDurationService {
                     + firstNonBlank(tag, wordId, alias));
         }
 
-        LocalLlamaClient.DurationResult result = llamaClient.extractDuration(contexts);
-        String duration = result.analyzed()
-                ? (result.detected() ? result.duration() : "Not specified")
-                : "Unavailable";
+        String duration = "Unavailable";
+        boolean detected = false;
+        boolean analyzed = false;
+        String message = null;
+        try {
+            PeriodExtraction extraction = periodAssistant.extract(documentText(contexts));
+            if (extraction == null || (extraction.found()
+                    && (extraction.duration() == null || extraction.duration().isBlank()))) {
+                message = "llama.cpp returned an invalid duration";
+            } else {
+                analyzed = true;
+                detected = extraction.found();
+                duration = detected ? extraction.duration().trim() : "Not specified";
+            }
+        } catch (RuntimeException exception) {
+            message = aiErrorMapper.message(exception);
+        }
+
         return new DurationAnalysis(
                 firstNonBlank(tag, wordId, alias),
                 contexts,
                 duration,
-                result.detected(),
-                result.analyzed(),
-                result.message());
+                detected,
+                analyzed,
+                message);
+    }
+
+    private String documentText(List<String> contexts) {
+        StringBuilder text = new StringBuilder();
+        for (int index = 0; index < Math.min(contexts.size(), 10); index++) {
+            String context = contexts.get(index);
+            if (context.length() > 2_000) {
+                context = context.substring(0, 2_000);
+            }
+            text.append(index + 1).append(". ").append(context).append('\n');
+        }
+        return text.toString();
     }
 
     private boolean validSelector(String value) {

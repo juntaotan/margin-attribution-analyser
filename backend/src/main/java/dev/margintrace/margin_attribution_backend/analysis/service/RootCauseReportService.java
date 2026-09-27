@@ -5,6 +5,8 @@ import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportRequest;
 import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportResponse;
+import dev.margintrace.margin_attribution_backend.analysis.ai.AiErrorMapper;
+import dev.margintrace.margin_attribution_backend.analysis.ai.RootCauseAssistant;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
@@ -29,16 +31,28 @@ public class RootCauseReportService {
     private final AttributionWorkflow workflow;
     private final ProductionRepository productionRepository;
     private final BillOfMaterialRepository bomRepository;
-    private final LocalLlamaClient llamaClient;
+    private final RootCauseAssistant rootCauseAssistant;
+    private final AiErrorMapper aiErrorMapper;
 
     public RootCauseReportResponse report(RootCauseReportRequest request) {
         validate(request);
         CsrGraph actual = workflow.trace(request.actualStartDate(), request.actualEndDate());
         CsrGraph comparable = workflow.trace(request.comparableStartDate(), request.comparableEndDate());
         Diagnosis diagnosis = diagnose(actual, comparable, request);
-        LocalLlamaClient.Result ai = llamaClient.explain(diagnosis.label(), diagnosis.evidence());
+        String summary = null;
+        boolean generated = false;
+        String message = null;
+        try {
+            summary = rootCauseAssistant.summarize(
+                    diagnosis.label(), String.join("\n", diagnosis.evidence()));
+            if (summary != null) summary = summary.trim();
+            generated = summary != null && !summary.isBlank();
+            if (!generated) message = "llama.cpp returned no usable content";
+        } catch (RuntimeException exception) {
+            message = aiErrorMapper.message(exception);
+        }
         return new RootCauseReportResponse(request.inventoryId(), diagnosis.category(), diagnosis.label(),
-                diagnosis.certainty(), diagnosis.evidence(), ai.summary(), ai.generated(), ai.message());
+                diagnosis.certainty(), diagnosis.evidence(), summary, generated, message);
     }
 
     private void validate(RootCauseReportRequest request) {

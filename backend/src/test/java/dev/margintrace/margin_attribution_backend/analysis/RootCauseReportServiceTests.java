@@ -4,7 +4,8 @@ import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.Attribut
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportRequest;
-import dev.margintrace.margin_attribution_backend.analysis.service.LocalLlamaClient;
+import dev.margintrace.margin_attribution_backend.analysis.ai.AiErrorMapper;
+import dev.margintrace.margin_attribution_backend.analysis.ai.RootCauseAssistant;
 import dev.margintrace.margin_attribution_backend.analysis.service.RootCauseReportService;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
@@ -21,7 +22,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -33,7 +33,8 @@ class RootCauseReportServiceTests {
     @Mock private AttributionWorkflow workflow;
     @Mock private ProductionRepository productions;
     @Mock private BillOfMaterialRepository boms;
-    @Mock private LocalLlamaClient llama;
+    @Mock private RootCauseAssistant rootCauseAssistant;
+    @Mock private AiErrorMapper aiErrorMapper;
     @InjectMocks private RootCauseReportService service;
 
     @Test
@@ -106,8 +107,7 @@ class RootCauseReportServiceTests {
     private void stubGraphs(CsrGraph current, CsrGraph previous) {
         when(workflow.trace(CURRENT, CURRENT)).thenReturn(current);
         when(workflow.trace(PREVIOUS, PREVIOUS)).thenReturn(previous);
-        when(llama.explain(anyString(), anyList()))
-                .thenReturn(new LocalLlamaClient.Result(null, false, "model unavailable"));
+        when(rootCauseAssistant.summarize(anyString(), anyString())).thenReturn(null);
     }
 
     private RootCauseReportRequest request(String inventoryId) {
