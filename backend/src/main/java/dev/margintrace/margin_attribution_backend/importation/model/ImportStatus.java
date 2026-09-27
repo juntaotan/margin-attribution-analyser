@@ -63,6 +63,7 @@ public enum ImportStatus {
         return this == VALIDATING_FAILED
                 || this == TRANSFORMING_FAILED
                 || this == WRITE_SUCCESS
+                || this == WRITE_FAILED
                 || this == CANCELLED
                 || this == STORING_FAILED;
     }

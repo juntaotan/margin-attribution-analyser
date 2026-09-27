@@ -76,7 +76,7 @@ public class ImportWorkflow {
      * @param jobId the persistent import job ID
      * @param context the file and confirmed target definition supplied by ImportService
      */
-    public void execute(Long jobId, ImportContext context) {
+    public boolean stageRawFile(Long jobId, ImportContext context) {
         stateService.transition(jobId, PENDING, VALIDATING);
 
         try {
@@ -84,7 +84,7 @@ public class ImportWorkflow {
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(jobId, VALIDATING, VALIDATING_FAILED, "FILE_VALIDATION_FAILED", e.getMessage());
-            return;
+            return false;
         }
 
         stateService.completeValidation(jobId, context.getExtension());
@@ -103,8 +103,13 @@ public class ImportWorkflow {
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(jobId, STORING, STORING_FAILED, "RAW_FILE_STORAGE_FAILED", e.getMessage());
-            return;
+            return false;
         }
+
+        return true;
+    }
+
+    public void processStoredFile(Long jobId, ImportContext context) {
 
         stateService.transition(jobId, STORED, TRANSFORMING);
 
@@ -148,6 +153,6 @@ public class ImportWorkflow {
             return;
         }
 
-        stateService.transition(jobId, WRITING_TO_DATALAKE, WRITE_SUCCESS);
+        stateService.completeWrite(jobId, context.getWarehouseImportedRows(), 0);
     }
 }

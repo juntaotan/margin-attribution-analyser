@@ -23,6 +23,7 @@ public class ImportService {
     private final ImportJobStateService stateService;
     // Executes the import workflow
     private final ImportWorkflow importWorkflow;
+    private final ImportTaskExecutor importTaskExecutor;
     private final dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog presetCatalog;
 
     /**
@@ -48,7 +49,9 @@ public class ImportService {
         // Create a PENDING transaction and write into PostgreSQL
         ImportJob job = stateService.createPendingJob(
                 file.getOriginalFilename(), definition.tableName(), mappingResult);
-        importWorkflow.execute(job.getId(), context);
+        if (importWorkflow.stageRawFile(job.getId(), context)) {
+            importTaskExecutor.process(job.getId(), definition.tableName(), context.getObjectKey());
+        }
 
         return job.getId();
     }

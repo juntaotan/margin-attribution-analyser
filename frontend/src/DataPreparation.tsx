@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { MODULE_LABELS, recognizeFileName, type BusinessModule, type FileRecognition, type TableName } from './fileRecognition';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { MODULE_LABELS, TABLE_PRESETS, recognizeFileName, type BusinessModule, type FileRecognition } from './fileRecognition';
+import { getImportJob, isTerminalImportStatus, listImportJobs, uploadImport, type ImportJob } from './importApi';
 import {
   Database,
   FolderOpen,
@@ -10,15 +11,6 @@ import {
 } from 'lucide-react';
 
 export const DataPreparation: React.FC = () => {
-  type ImportRecord = {
-    id: number;
-    path: string;
-    partition: BusinessModule;
-    table: TableName;
-    mode: 'internal' | 'external';
-    importedAt: string;
-  };
-
   const [recognition, setRecognition] = useState<FileRecognition | null>(null);
   const selectedPartition = recognition?.module ?? null;
 
@@ -26,7 +18,9 @@ export const DataPreparation: React.FC = () => {
   const [dbMode, setDbMode] = useState<'internal' | 'external'>('internal');
   const [importPath, setImportPath] = useState<string>('');
 
-  const [importRecords, setImportRecords] = useState<ImportRecord[]>([]);
+  const [importRecords, setImportRecords] = useState<ImportJob[]>([]);
+  const [activeJob, setActiveJob] = useState<ImportJob | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [fileProgress, setFileProgress] = useState(0);
@@ -45,6 +39,65 @@ export const DataPreparation: React.FC = () => {
     if (bytes < 1024) return `${bytes} B`;
     const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 3);
     return `${(bytes / 1024 ** unit).toFixed(2)} ${['B', 'KB', 'MB', 'GB'][unit]} (${bytes.toLocaleString()} bytes)`;
+  };
+
+  const refreshHistory = useCallback(async () => {
+    try {
+      const page = await listImportJobs();
+      setImportRecords(page.items);
+    } catch {
+      // The active upload surface reports connectivity errors; history can retry independently.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshHistory();
+  }, [refreshHistory]);
+
+  useEffect(() => {
+    if (!activeJob || isTerminalImportStatus(activeJob.status)) return;
+    const poll = async () => {
+      try {
+        const job = await getImportJob(activeJob.jobId);
+        setActiveJob(job);
+        setFileProgress(job.progress);
+        setImportRecords((records) => [job, ...records.filter((record) => record.jobId !== job.jobId)]);
+        if (isTerminalImportStatus(job.status)) {
+          appendLog(job.status === 'WRITE_SUCCESS'
+            ? `Import completed: ${job.importedRows} warehouse rows written.`
+            : `Import failed at ${job.stage}: ${job.errorMessage ?? job.errorCode ?? job.status}.`);
+          if (job.status !== 'WRITE_SUCCESS') {
+            setFileError(job.errorMessage ?? job.errorCode ?? 'Import failed.');
+          }
+          void refreshHistory();
+        }
+      } catch (error) {
+        setFileError(error instanceof Error ? error.message : 'Unable to refresh import status.');
+      }
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 1000);
+    return () => window.clearInterval(timer);
+  }, [activeJob?.jobId, activeJob?.status, refreshHistory]);
+
+  const startImport = async (file: File, result: FileRecognition) => {
+    setIsUploading(true);
+    setFileError('');
+    setFileProgress(0);
+    appendLog(`Uploading to data lake for target table ${result.table}…`);
+    try {
+      const job = await uploadImport(file, result.table, setFileProgress);
+      setActiveJob(job);
+      setImportRecords((records) => [job, ...records.filter((record) => record.jobId !== job.jobId)]);
+      setFileProgress(job.progress);
+      appendLog(`Import job #${job.jobId} created. Backend pipeline started.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Import failed.';
+      setFileError(message);
+      appendLog(message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleFile = (file?: File) => {
@@ -69,10 +122,13 @@ export const DataPreparation: React.FC = () => {
       setFileReady(true);
       const result = recognizeFileName(file.name);
       setRecognition(result);
-      appendLog('File reading completed. Ready for review.');
+      appendLog('File reading completed.');
       appendLog(result
         ? `Identified table: ${result.table}; module: ${MODULE_LABELS[result.module]}.`
         : 'No matching table found. Use a supported table name or alias as the file name.');
+      if (result) {
+        void startImport(file, result);
+      }
     };
     reader.onerror = () => {
       if (fileReader.current !== reader) return;
@@ -84,18 +140,8 @@ export const DataPreparation: React.FC = () => {
   };
 
   const handleImport = () => {
-    if (!fileReady || !recognition) return;
-    const path = importPath;
-    setImportPath(path);
-    setImportRecords((records) => [...records, {
-      id: records.length + 1,
-      path,
-      partition: recognition.module,
-      table: recognition.table,
-      mode: dbMode,
-      importedAt: new Date().toLocaleString(),
-    }]);
-    appendLog(`Import record added for ${recognition.module.toUpperCase()} / ${dbMode.toUpperCase()}.`);
+    if (!fileReady || !recognition || !selectedFile || isUploading) return;
+    void startImport(selectedFile, recognition);
   };
 
   return (
@@ -113,10 +159,10 @@ export const DataPreparation: React.FC = () => {
 
         {importRecords.length > 0 && (
           <button
-            onClick={() => setImportRecords([])}
+            onClick={() => void refreshHistory()}
             className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer"
           >
-            Clear Import History
+            Refresh Import History
           </button>
         )}
       </div>
@@ -155,6 +201,7 @@ export const DataPreparation: React.FC = () => {
                 name="dbMode"
                 checked={dbMode === 'external'}
                 onChange={() => setDbMode('external')}
+                disabled
                 className="text-blue-600 focus:ring-blue-500"
               />
               <span>External Existing Database (Reserved)</span>
@@ -170,7 +217,7 @@ export const DataPreparation: React.FC = () => {
           <input
             ref={fileInput}
             type="file"
-            accept=".csv,.xlsx,.xls"
+            accept=".xlsx,.xls"
             className="hidden"
             aria-label="Select import file"
             onChange={(event) => {
@@ -218,7 +265,7 @@ export const DataPreparation: React.FC = () => {
         </div>
         <div className="space-y-2" aria-live="polite">
           <div className="flex justify-between text-xs text-slate-500">
-            <span>{fileError || (fileReady ? 'File loaded' : importPath ? 'Reading file…' : 'Waiting for file')}</span>
+            <span>{fileError || (isUploading ? 'Uploading to data lake…' : activeJob ? activeJob.stage.replace(/_/g, ' ') : fileReady ? 'File loaded' : importPath ? 'Reading file…' : 'Waiting for file')}</span>
             <span className="font-mono">{fileProgress}%</span>
           </div>
           <div role="progressbar" aria-label="File loading progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={fileProgress} className="h-2 overflow-hidden rounded-full bg-slate-200">
@@ -325,15 +372,15 @@ export const DataPreparation: React.FC = () => {
         <button
           type="button"
           onClick={handleImport}
-          disabled={!fileReady || !selectedPartition}
+          disabled={!fileReady || !selectedPartition || isUploading || Boolean(activeJob && !isTerminalImportStatus(activeJob.status))}
           className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play className="w-4 h-4 fill-white" />
-          <span>Import</span>
+          <span>{isUploading ? 'Uploading…' : activeJob && !isTerminalImportStatus(activeJob.status) ? 'Processing…' : 'Import Again'}</span>
         </button>
 
         <span className="text-xs text-slate-400">
-          Click &quot;Import&quot; to ingest records into the identified module database.
+          Recognized files start automatically; this button retries the selected file.
         </span>
       </div>
 
@@ -371,26 +418,30 @@ export const DataPreparation: React.FC = () => {
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 text-[11px]">
                 <tr>
                   <th className="py-2.5 px-4">#</th>
-                  <th className="py-2.5 px-4">File Path</th>
+                  <th className="py-2.5 px-4">File</th>
                   <th className="py-2.5 px-4">Module</th>
                   <th className="py-2.5 px-4">Target Table</th>
-                  <th className="py-2.5 px-4">Mode</th>
-                  <th className="py-2.5 px-4">Imported At</th>
+                  <th className="py-2.5 px-4">Created At</th>
                   <th className="py-2.5 px-4 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {importRecords.map((record) => (
-                  <tr key={record.id}>
-                    <td className="py-2.5 px-4 font-bold text-slate-900">{record.id}</td>
-                    <td className="py-2.5 px-4 text-blue-700">{record.path}</td>
-                    <td className="py-2.5 px-4 uppercase">{record.partition}</td>
-                    <td className="py-2.5 px-4">{record.table}</td>
-                    <td className="py-2.5 px-4 uppercase">{record.mode}</td>
-                    <td className="py-2.5 px-4">{record.importedAt}</td>
+                  <tr key={record.jobId} title={record.errorMessage ?? undefined}>
+                    <td className="py-2.5 px-4 font-bold text-slate-900">{record.jobId}</td>
+                    <td className="py-2.5 px-4 text-blue-700">{record.filename}</td>
+                    <td className="py-2.5 px-4 uppercase">
+                      {TABLE_PRESETS.find((preset) => preset.table === record.targetTable)?.module ?? '—'}
+                    </td>
+                    <td className="py-2.5 px-4">{record.targetTable}</td>
+                    <td className="py-2.5 px-4">{new Date(record.createdAt).toLocaleString()}</td>
                     <td className="py-2.5 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px]">
-                        Imported
+                      <span className={`px-2 py-0.5 rounded border text-[10px] ${record.status === 'WRITE_SUCCESS'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : isTerminalImportStatus(record.status)
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                        {record.status === 'WRITE_SUCCESS' ? `Imported (${record.importedRows})` : record.stage.replace(/_/g, ' ')}
                       </span>
                     </td>
                   </tr>

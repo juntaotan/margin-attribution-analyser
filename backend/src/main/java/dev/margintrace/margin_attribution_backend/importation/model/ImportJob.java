@@ -132,6 +132,15 @@ public class ImportJob {
         this.storageObjectKey = storageObjectKey;
     }
 
+    public void completeWrite(long importedRows, long rejectedRows) {
+        if (importedRows < 0 || rejectedRows < 0) {
+            throw new IllegalArgumentException("Imported and rejected row counts must not be negative");
+        }
+        transitionTo(ImportStatus.WRITE_SUCCESS);
+        this.importedRows = importedRows;
+        this.rejectedRows = rejectedRows;
+    }
+
     private void transitionTo(ImportStatus next, String errorCode, String errorMessage) {
         if (next == null) {
             throw new IllegalArgumentException("Next status must not be null");

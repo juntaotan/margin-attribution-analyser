@@ -13,6 +13,7 @@ export const TABLE_PRESETS = [
   { table: 'inventory_usage', module: 'production', aliases: ['inventory_movement', '库存移动', '库存流水', '出入库明细', 'material_consumption', '物料消耗', '材料消耗', '生产领料'] },
   { table: 'bill_of_material', module: 'production', aliases: ['bom', '物料清单', '产品配方'] },
   { table: 'sales_order', module: 'sales', aliases: ['sales', '销售', '销售明细', '销售订单'] },
+  { table: 'cost_details', module: 'sales', aliases: ['cost_detail', 'cost details', '销售成本', '销售成本明细', '主营业务成本明细'] },
   { table: 'purchases', module: 'procurement', aliases: ['purchase', '采购', '采购明细', '采购订单'] },
   { table: 'account_receivables', module: 'finance', aliases: ['account_receivable', '应收', '应收账款', '应收明细'] },
   { table: 'account_payables', module: 'finance', aliases: ['account_payable', '应付', '应付账款', '应付明细'] },
@@ -36,7 +37,7 @@ const cleanStem = (raw: string): string => {
 };
 
 export function recognizeFileName(fileName: string): FileRecognition | null {
-  if (!/\.(csv|xlsx|xls)$/i.test(fileName)) return null;
+  if (!/\.(xlsx|xls)$/i.test(fileName)) return null;
   const rawStem = fileName.replace(/\.[^.]+$/, '').trim();
   const stem = normalize(rawStem);
   if (!stem) return null;

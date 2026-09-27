@@ -7,6 +7,8 @@ import dev.margintrace.margin_attribution_backend.importation.model.ImportJob;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportStatus;
 import dev.margintrace.margin_attribution_backend.importation.repository.ImportJobRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Propagation;
@@ -60,6 +62,25 @@ public class ImportJobStateService {
     public void completeRawStorage(Long jobId, String storageObjectKey) {
         ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.STORING);
         job.completeRawStorage(storageObjectKey);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void completeWrite(Long jobId, long importedRows, long rejectedRows) {
+        ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.WRITING_TO_DATALAKE);
+        job.completeWrite(importedRows, rejectedRows);
+    }
+
+    @Transactional(readOnly = true)
+    public ImportJob getRequiredJob(Long jobId) {
+        return importJobRepository.findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Import job not found: " + jobId));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ImportJob> listJobs(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        return importJobRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(safePage, safeSize));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
