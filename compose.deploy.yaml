@@ -27,6 +27,30 @@ services:
     volumes:
       - minio_data:/data
 
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    restart: unless-stopped
+    shm_size: 2gb
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set ONLYOFFICE_JWT_SECRET in .env.deploy}
+      JWT_HEADER: AuthorizationJwt
+      JWT_IN_BODY: "true"
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+    ports:
+      - "${ONLYOFFICE_PORT:-18082}:80"
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+      - onlyoffice_lib:/var/lib/onlyoffice
+      - onlyoffice_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
   backend:
     build:
       context: ./backend
@@ -41,6 +65,11 @@ services:
       MINIO_RAW_BUCKET: ${MINIO_RAW_BUCKET:-margin-raw}
       LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://host.docker.internal:8081}
       LLAMA_MODEL: ${LLAMA_MODEL:-local}
+      ONLYOFFICE_INTERNAL_URL: http://onlyoffice
+      ONLYOFFICE_BACKEND_INTERNAL_URL: http://backend:8090
+      MINIO_REPORT_BUCKET: ${MINIO_REPORT_BUCKET:-margin-reports}
+      ONLYOFFICE_PUBLIC_URL: ${ONLYOFFICE_PUBLIC_URL:?Set ONLYOFFICE_PUBLIC_URL in .env.deploy}
+      ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set ONLYOFFICE_JWT_SECRET in .env.deploy}
       SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
       SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 50MB
     extra_hosts:
@@ -63,3 +92,7 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  onlyoffice_data:
+  onlyoffice_logs:
+  onlyoffice_lib:
+  onlyoffice_postgres:

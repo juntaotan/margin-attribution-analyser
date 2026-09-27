@@ -34,6 +34,30 @@ services:
     volumes:
       - margin_dev_minio_data:/data
 
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    restart: unless-stopped
+    shm_size: 2gb
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set ONLYOFFICE_JWT_SECRET in .env}
+      JWT_HEADER: AuthorizationJwt
+      JWT_IN_BODY: "true"
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+    ports:
+      - "${DEV_ONLYOFFICE_PORT:-18082}:80"
+    volumes:
+      - margin_dev_onlyoffice_data:/var/www/onlyoffice/Data
+      - margin_dev_onlyoffice_logs:/var/log/onlyoffice
+      - margin_dev_onlyoffice_lib:/var/lib/onlyoffice
+      - margin_dev_onlyoffice_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
   backend:
     image: maven:3.9.16-eclipse-temurin-21
     init: true
@@ -50,6 +74,11 @@ services:
       MINIO_RAW_BUCKET: ${MINIO_RAW_BUCKET:-margin-raw}
       LLAMA_BASE_URL: ${LLAMA_BASE_URL:-http://host.docker.internal:8081}
       LLAMA_MODEL: ${LLAMA_MODEL:-local}
+      ONLYOFFICE_INTERNAL_URL: http://onlyoffice
+      ONLYOFFICE_BACKEND_INTERNAL_URL: http://backend:8080
+      MINIO_REPORT_BUCKET: ${MINIO_REPORT_BUCKET:-margin-reports}
+      ONLYOFFICE_PUBLIC_URL: ${ONLYOFFICE_PUBLIC_URL:-http://localhost:18082}
+      ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set ONLYOFFICE_JWT_SECRET in .env}
     ports:
       - "${DEV_BACKEND_PORT:-18080}:8080"
     volumes:
@@ -67,3 +96,7 @@ volumes:
   margin_dev_postgres_data:
   margin_dev_minio_data:
   margin_dev_maven_cache:
+  margin_dev_onlyoffice_data:
+  margin_dev_onlyoffice_logs:
+  margin_dev_onlyoffice_lib:
+  margin_dev_onlyoffice_postgres:
