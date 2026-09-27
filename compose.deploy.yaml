@@ -85,7 +85,7 @@ services:
       context: ./frontend
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${APP_PORT:-18080}:80"
     depends_on:
       - backend
 

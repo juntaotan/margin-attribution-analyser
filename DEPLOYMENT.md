@@ -13,7 +13,7 @@ This stack runs the web app, Java backend, PostgreSQL, and MinIO in Linux contai
 
    In Windows PowerShell, use `Copy-Item .env.deploy.example .env.deploy` instead. `chmod` is a Unix command and is not required for this PowerShell step.
 
-2. Edit `.env.deploy`. Set non-empty values for at least `DB_PASSWORD` and `MINIO_SECRET_KEY`. `APP_PORT` controls the host port for the web app and defaults to `8080`.
+2. Edit `.env.deploy`. Set non-empty values for at least `DB_PASSWORD` and `MINIO_SECRET_KEY`. `APP_PORT` controls the host port for the web app and defaults to `18080`.
 
 3. Start the stack:
 
@@ -22,7 +22,7 @@ This stack runs the web app, Java backend, PostgreSQL, and MinIO in Linux contai
    docker compose --env-file .env.deploy -f compose.deploy.yaml ps
    ```
 
-4. Open `http://localhost:8080` on the host, or `http://HOST_IP:8080` from another device that can reach it. If you changed `APP_PORT`, use that port instead. Inspect backend startup and database migration logs with:
+4. Open `http://localhost:18080` on the host, or `http://HOST_IP:18080` from another device that can reach it. If you changed `APP_PORT`, use that port instead. Inspect backend startup and database migration logs with:
 
    ```sh
    docker compose --env-file .env.deploy -f compose.deploy.yaml logs --tail=100 backend
