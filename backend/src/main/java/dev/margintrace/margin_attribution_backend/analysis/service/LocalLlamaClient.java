@@ -2,19 +2,24 @@ package dev.margintrace.margin_attribution_backend.analysis.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.request.ChatRequestParameters;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.exception.HttpException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.ConnectException;
-import java.net.http.HttpClient;
 import java.net.http.HttpTimeoutException;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /** Calls llama-server's OpenAI-compatible chat endpoint; classification stays in Java. */
@@ -22,16 +27,22 @@ import java.util.Set;
 public class LocalLlamaClient {
     private final ObjectMapper mapper;
     private final URI endpoint;
-    private final String model;
-    private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(2)).build();
+    private final ChatModel chatModel;
 
     public LocalLlamaClient(ObjectMapper mapper,
                             @Value("${analysis.llama.base-url:http://127.0.0.1:8081}") String baseUrl,
                             @Value("${analysis.llama.model:local}") String model) {
         this.mapper = mapper;
-        this.endpoint = URI.create(baseUrl.replaceAll("/+$", "") + "/v1/chat/completions");
-        this.model = model;
+        String normalizedBaseUrl = baseUrl.replaceAll("/+$", "");
+        this.endpoint = URI.create(normalizedBaseUrl + "/v1/chat/completions");
+        this.chatModel = OpenAiChatModel.builder()
+                .baseUrl(normalizedBaseUrl + "/v1")
+                .apiKey("no-key")
+                .modelName(model)
+                .temperature(0.1)
+                .timeout(Duration.ofSeconds(90))
+                .maxRetries(0)
+                .build();
     }
 
     public Result explain(String category, List<String> evidence) {
@@ -209,54 +220,70 @@ public class LocalLlamaClient {
 
     private Completion complete(String system, String user, int maxTokens) {
         try {
-            String body = mapper.writeValueAsString(Map.of(
-                    "model", model, "stream", false, "temperature", 0.1, "max_tokens", maxTokens,
-                    "messages", List.of(Map.of("role", "system", "content", system),
-                            Map.of("role", "user", "content", user))));
-            HttpRequest request = HttpRequest.newBuilder(endpoint)
-                    .header("Content-Type", "application/json")
-                    .timeout(Duration.ofSeconds(90))
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
+            ChatRequest request = ChatRequest.builder()
+                    .messages(SystemMessage.from(system), UserMessage.from(user))
+                    .parameters(ChatRequestParameters.builder()
+                            .maxOutputTokens(maxTokens)
+                            .build())
                     .build();
-            HttpResponse<String> response = null;
+            ChatResponse response = null;
             for (int attempt = 0; attempt < 15; attempt++) {
-                response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 503 || !response.body().contains("Loading model") || attempt == 14) {
-                    break;
-                }
-                Thread.sleep(2_000);
-            }
-            if (response.statusCode() != 200) {
-                String detail = "";
                 try {
-                    JsonNode error = mapper.readTree(response.body()).get("error");
-                    JsonNode message = error == null ? null : error.get("message");
-                    if (message != null) detail = ": " + message.asText();
-                } catch (Exception ignored) {
-                    // The HTTP status still provides a useful error when the body is not JSON.
+                    response = chatModel.chat(request);
+                    break;
+                } catch (RuntimeException exception) {
+                    HttpException httpException = findCause(exception, HttpException.class);
+                    boolean modelLoading = httpException != null
+                            && httpException.statusCode() == 503
+                            && httpException.getMessage().contains("Loading model");
+                    if (!modelLoading || attempt == 14) throw exception;
+                    Thread.sleep(2_000);
                 }
-                return new Completion(null, false, "llama.cpp returned HTTP " + response.statusCode() + detail);
             }
-            JsonNode root = mapper.readTree(response.body());
-            JsonNode choices = root.get("choices");
-            if (choices == null || !choices.isArray() || choices.isEmpty()) {
-                return new Completion(null, false, "llama.cpp returned no usable content");
-            }
-            JsonNode content = choices.get(0).get("message").get("content");
-            String summary = content == null ? "" : content.asText().trim();
-            return summary.isEmpty()
+            String content = response.aiMessage() == null ? null : response.aiMessage().text();
+            String output = content == null ? "" : content.trim();
+            return output.isEmpty()
                     ? new Completion(null, false, "llama.cpp returned no usable content")
-                    : new Completion(summary, true, null);
-        } catch (ConnectException exception) {
-            return new Completion(null, false, "Cannot connect to llama.cpp at " + endpoint.getHost() + ":" + endpoint.getPort());
-        } catch (HttpTimeoutException exception) {
-            return new Completion(null, false, "llama.cpp timed out; check whether the model is still loading");
+                    : new Completion(output, true, null);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return new Completion(null, false, "llama.cpp request was interrupted");
-        } catch (Exception exception) {
-            return new Completion(null, false, "llama.cpp request failed (" + exception.getClass().getSimpleName() + ")");
+        } catch (RuntimeException exception) {
+            if (findCause(exception, ConnectException.class) != null) {
+                return new Completion(null, false, "Cannot connect to llama.cpp at "
+                        + endpoint.getHost() + ":" + endpoint.getPort());
+            }
+            if (findCause(exception, HttpTimeoutException.class) != null) {
+                return new Completion(null, false,
+                        "llama.cpp timed out; check whether the model is still loading");
+            }
+            HttpException httpException = findCause(exception, HttpException.class);
+            if (httpException != null) {
+                return new Completion(null, false, "llama.cpp returned HTTP "
+                        + httpException.statusCode() + httpErrorDetail(httpException));
+            }
+            return new Completion(null, false,
+                    "llama.cpp request failed (" + exception.getClass().getSimpleName() + ")");
         }
+    }
+
+    private String httpErrorDetail(HttpException exception) {
+        try {
+            JsonNode error = mapper.readTree(exception.getMessage()).get("error");
+            JsonNode message = error == null ? null : error.get("message");
+            return message == null ? "" : ": " + message.asText();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private <T extends Throwable> T findCause(Throwable exception, Class<T> type) {
+        Throwable current = exception;
+        while (current != null) {
+            if (type.isInstance(current)) return type.cast(current);
+            current = current.getCause();
+        }
+        return null;
     }
 
     public record Result(String summary, boolean generated, String message) { }

@@ -10,7 +10,7 @@ Run a chat-capable GGUF model with `llama-server` on port 8081:
 llama-server --model /path/to/chat-model.gguf --alias local --host 127.0.0.1 --port 8081 --ctx-size 4096
 ```
 
-For a backend running in Docker, bind `llama-server` to `0.0.0.0` instead. The Compose files route the backend to `http://host.docker.internal:8081`. Set `LLAMA_BASE_URL` if the server is elsewhere and `LLAMA_MODEL` if its advertised model ID differs from `local`. No API key or LangChain dependency is required; the backend calls llama-server's `/v1/chat/completions` endpoint directly.
+For a backend running in Docker, bind `llama-server` to `0.0.0.0` instead. The Compose files route the backend to `http://host.docker.internal:8081`. Set `LLAMA_BASE_URL` if the server is elsewhere and `LLAMA_MODEL` if its advertised model ID differs from `local`. No API key is required. The Java backend uses LangChain4j's OpenAI-compatible client to call llama-server's `/v1/chat/completions` endpoint.
 
 An existing llama-server started with `--embeddings` is not a chat server. Keep it for embeddings and start a second llama-server with a chat model on port 8081, without `--embeddings` or `--reranking`. The report uses chat completions.
 
