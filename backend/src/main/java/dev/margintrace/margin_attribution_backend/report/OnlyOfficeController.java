@@ -43,6 +43,7 @@ public class OnlyOfficeController {
     private final DocxDocumentValidator docxDocumentValidator;
     private final ReportDurationService reportDurationService;
     private final ReportBlueprintService reportBlueprintService;
+    private final ReportQueryService reportQueryService;
     private final Set<String> issuedDocumentKeys = ConcurrentHashMap.newKeySet();
     private final Set<String> supersededDocumentKeys = ConcurrentHashMap.newKeySet();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -171,6 +172,16 @@ public class OnlyOfficeController {
         } catch (AiUnavailableException exception) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), exception);
+        }
+    }
+
+    @PostMapping("/content-controls/blueprint/execute")
+    public ReportQueryService.QueryResult executeBlueprint(
+            @RequestBody ReportBlueprint blueprint) {
+        try {
+            return reportQueryService.execute(blueprint);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
     }
 

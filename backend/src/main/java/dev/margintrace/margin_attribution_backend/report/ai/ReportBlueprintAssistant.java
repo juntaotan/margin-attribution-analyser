@@ -19,6 +19,10 @@ public interface ReportBlueprintAssistant {
             purchases(id, purchase_order_no, date, product_no, product_num, product_total_price)
             account_payables(id, date, account_payable_no, product_no, product_num, product_total_price, purchase_order_no)
             Use only listed table and field names. Preserve the supplied Duration in date filters.
+            formula must be a valid PostgreSQL SELECT expression over the chosen table, using only
+            its listed fields and standard aggregate functions. Each filterConditions item must be
+            a valid PostgreSQL WHERE predicate. Use ISO dates (YYYY-MM-DD), do not include SELECT,
+            FROM, comments, semicolons, aliases, or a trailing percent sign.
             Do not execute a query and do not invent a result.
             format must be exactly one of: percentage, currency, number, text.
             """)

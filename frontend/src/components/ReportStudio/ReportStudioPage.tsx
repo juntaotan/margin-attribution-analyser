@@ -7,12 +7,17 @@ import {
   Filter,
   Layers,
   LoaderCircle,
+  Play,
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
-import { DocumentContentControl, PlaceholderToken, SemanticExecutionPlan } from './types';
+import {
+  DocumentContentControl,
+  PlaceholderToken,
+  SemanticExecutionPlan,
+  SemanticQueryResult,
+} from './types';
 import { createDefaultDocument } from './defaultTemplate';
-import { executeSemanticQuery } from './semanticParser';
 import { OnlyOfficeEditorPane } from './OnlyOfficeEditorPane';
 
 interface DurationInsight {
@@ -64,6 +69,9 @@ export const ReportStudioPage: React.FC = () => {
   const [generatedSemanticPlan, setGeneratedSemanticPlan] = useState<SemanticExecutionPlan>();
   const [blueprintLoading, setBlueprintLoading] = useState(false);
   const [blueprintError, setBlueprintError] = useState<string>();
+  const [queryResult, setQueryResult] = useState<SemanticQueryResult>();
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [queryError, setQueryError] = useState<string>();
   const blueprintRequestId = useRef(0);
 
   const loadContentControls = useCallback(async () => {
@@ -202,6 +210,8 @@ export const ReportStudioPage: React.FC = () => {
     setBlueprintLoading(true);
     setBlueprintError(undefined);
     setGeneratedSemanticPlan(undefined);
+    setQueryResult(undefined);
+    setQueryError(undefined);
 
     try {
       const response = await fetch(
@@ -233,6 +243,49 @@ export const ReportStudioPage: React.FC = () => {
         },
       }));
       setGeneratedSemanticPlan(payload);
+      setQueryLoading(true);
+
+      try {
+        const queryResponse = await fetch(
+          "/api/report-studio/onlyoffice/content-controls/blueprint/execute",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+        const queryPayload = (await queryResponse.json()) as SemanticQueryResult & {
+          detail?: string;
+        };
+        if (!queryResponse.ok) {
+          throw new Error(
+            queryPayload.detail ?? `Query execution failed (${queryResponse.status})`
+          );
+        }
+        if (blueprintRequestId.current !== requestId) return;
+
+        setQueryResult(queryPayload);
+        const firstValue = queryPayload.rows[0]?.[queryPayload.columns[0]];
+        setDoc((currentDocument) => ({
+          ...currentDocument,
+          tokens: {
+            ...currentDocument.tokens,
+            [activeTokenId]: {
+              ...analyzedToken,
+              status: "executed",
+              resolvedValue: firstValue == null ? "" : String(firstValue),
+              unit: payload.format === "percentage" ? "%" : undefined,
+            },
+          },
+        }));
+      } catch (requestError) {
+        if (blueprintRequestId.current !== requestId) return;
+        setQueryError(
+          requestError instanceof Error ? requestError.message : "Unable to execute query"
+        );
+      } finally {
+        if (blueprintRequestId.current === requestId) setQueryLoading(false);
+      }
     } catch (requestError) {
       if (blueprintRequestId.current !== requestId) return;
       setBlueprintError(
@@ -241,28 +294,6 @@ export const ReportStudioPage: React.FC = () => {
     } finally {
       if (blueprintRequestId.current === requestId) setBlueprintLoading(false);
     }
-  };
-
-  const handleExecuteQuery = () => {
-    if (!activeToken || !generatedSemanticPlan) return;
-    const queryResult = executeSemanticQuery(generatedSemanticPlan);
-    const updatedToken: PlaceholderToken = {
-      ...activeToken,
-      prompt: packagedPrompt,
-      status: 'executed',
-      semanticPlan: generatedSemanticPlan,
-      resolvedValue: queryResult.value,
-      unit: queryResult.unit,
-      updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setDoc((currentDocument) => ({
-      ...currentDocument,
-      tokens: {
-        ...currentDocument.tokens,
-        [activeTokenId]: updatedToken,
-      },
-    }));
   };
 
   return (
@@ -363,7 +394,11 @@ export const ReportStudioPage: React.FC = () => {
                           return next;
                         });
                         setGeneratedSemanticPlan(undefined);
+                        setQueryResult(undefined);
+                        setQueryError(undefined);
                         blueprintRequestId.current += 1;
+                        setBlueprintLoading(false);
+                        setQueryLoading(false);
                         setBlueprintError(undefined);
                         setActiveTokenId(control.id);
                         setDurationDetectionAttempt((current) => current + 1);
@@ -448,7 +483,11 @@ export const ReportStudioPage: React.FC = () => {
                         onChange={(event) => {
                           durationRequestId.current += 1;
                           setGeneratedSemanticPlan(undefined);
+                          setQueryResult(undefined);
+                          setQueryError(undefined);
                         blueprintRequestId.current += 1;
+                        setBlueprintLoading(false);
+                        setQueryLoading(false);
                         setBlueprintError(undefined);
                           setDurationOverrides((current) => ({
                             ...current,
@@ -473,7 +512,11 @@ export const ReportStudioPage: React.FC = () => {
                       onChange={(e) => {
                         setPromptInput(e.target.value);
                         setGeneratedSemanticPlan(undefined);
+                        setQueryResult(undefined);
+                        setQueryError(undefined);
                         blueprintRequestId.current += 1;
+                        setBlueprintLoading(false);
+                        setQueryLoading(false);
                         setBlueprintError(undefined);
                       }}
                       placeholder="Enter natural language instructions (e.g. source table, filter criteria, calculation formula)..."
@@ -505,7 +548,11 @@ export const ReportStudioPage: React.FC = () => {
                     ) : (
                       <Sparkles className="h-3.5 w-3.5" />
                     )}
-                    {blueprintLoading ? "Generating Blueprint…" : "Generate Blueprint"}
+                    {blueprintLoading
+                      ? queryLoading
+                        ? "Executing Query…"
+                        : "Generating Blueprint…"
+                      : "Generate Blueprint"}
                   </button>
                   {blueprintError && (
                     <p className="text-[10px] leading-relaxed text-red-600">
@@ -515,6 +562,79 @@ export const ReportStudioPage: React.FC = () => {
                 </div>
 
                 {/* 3. AI Execution Blueprint (Transparent Feedback Card) */}
+                {(queryLoading || queryResult || queryError) && (
+                  <div className="rounded-xl border border-emerald-200 bg-white p-4 shadow-xs">
+                    <div className="mb-3 flex items-center justify-between border-b border-emerald-100 pb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950">
+                        <Database className="h-4 w-4 text-emerald-600" />
+                        <span>Result</span>
+                      </div>
+                      {queryResult && (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-emerald-800">
+                          {queryResult.rowCount} row{queryResult.rowCount === 1 ? '' : 's'}
+                        </span>
+                      )}
+                    </div>
+
+                    {queryLoading && (
+                      <div className="flex items-center justify-center gap-2 py-5 text-xs text-slate-500">
+                        <LoaderCircle className="h-4 w-4 animate-spin text-emerald-600" />
+                        Running query…
+                      </div>
+                    )}
+                    {queryError && (
+                      <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-[11px] text-red-700">
+                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>{queryError}</span>
+                      </div>
+                    )}
+                    {queryResult && !queryLoading && (
+                      <div className="overflow-x-auto rounded-lg border border-slate-200">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-[11px]">
+                          <thead className="bg-slate-50 text-slate-500">
+                            <tr>
+                              {queryResult.columns.map((column) => (
+                                <th key={column} className="px-3 py-2 font-semibold">
+                                  {column}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white font-mono text-slate-800">
+                            {queryResult.rows.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={Math.max(queryResult.columns.length, 1)}
+                                  className="px-3 py-4 text-center font-sans text-slate-400"
+                                >
+                                  No data returned
+                                </td>
+                              </tr>
+                            ) : queryResult.rows.map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {queryResult.columns.map((column) => (
+                                  <td key={column} className="whitespace-nowrap px-3 py-2">
+                                    {row[column] == null ? '—' : String(row[column])}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled
+                      title="Apply will be implemented in the next step"
+                      className="mt-3 inline-flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-lg bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-500"
+                    >
+                      <Play className="h-3.5 w-3.5" />
+                      Apply
+                    </button>
+                  </div>
+                )}
                 {generatedSemanticPlan && (
                   <div className="bg-gradient-to-br from-white to-blue-50/40 rounded-xl border border-blue-200/80 p-4 space-y-3.5 shadow-xs">
                     <div className="flex items-center justify-between border-b border-blue-100 pb-2">
@@ -593,17 +713,6 @@ export const ReportStudioPage: React.FC = () => {
                       {generatedSemanticPlan.explanation}
                     </div>
 
-                    {/* Test & Execute Button */}
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={handleExecuteQuery}
-                        className="w-full py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-blue-200" />
-                        <span>⚡ Execute Query</span>
-                      </button>
-                    </div>
                   </div>
                 )}
               </>

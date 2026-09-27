@@ -17,6 +17,13 @@ export interface SemanticExecutionPlan {
   explanation: string;
 }
 
+export interface SemanticQueryResult {
+  sql: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+}
+
 export interface PlaceholderToken {
   id: string;
   label: string;
