@@ -1,5 +1,7 @@
 package dev.margintrace.margin_attribution_backend.report;
 
+import dev.margintrace.margin_attribution_backend.analysis.service.LocalLlamaClient;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -39,6 +41,7 @@ public class OnlyOfficeController {
     private final ReportContentControlScanner contentControlScanner;
     private final DocxDocumentValidator docxDocumentValidator;
     private final ReportDurationService reportDurationService;
+    private final LocalLlamaClient llamaClient;
     private final Set<String> issuedDocumentKeys = ConcurrentHashMap.newKeySet();
     private final Set<String> supersededDocumentKeys = ConcurrentHashMap.newKeySet();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -157,6 +160,21 @@ public class OnlyOfficeController {
         }
     }
 
+    @PostMapping("/content-controls/blueprint")
+    public LocalLlamaClient.Blueprint generateBlueprint(
+            @RequestBody BlueprintRequest request) {
+        String prompt = request == null ? null : request.prompt();
+        if (prompt == null || prompt.isBlank() || prompt.length() > 10_000) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Enter a valid prompt before generating a Blueprint");
+        }
+        LocalLlamaClient.BlueprintResult result = llamaClient.generateBlueprint(prompt);
+        if (!result.generated()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, result.message());
+        }
+        return result.blueprint();
+    }
+
     @PostMapping("/callback")
     public synchronized Map<String, Integer> callback(
             @RequestParam String accessToken,
@@ -213,6 +231,9 @@ public class OnlyOfficeController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A DOCX file name is required");
         }
         return fileName.length() <= 200 ? fileName : fileName.substring(fileName.length() - 200);
+    }
+
+    public record BlueprintRequest(String prompt) {
     }
 
     public record DurationAnalysisRequest(String tag, String wordId, String alias) {

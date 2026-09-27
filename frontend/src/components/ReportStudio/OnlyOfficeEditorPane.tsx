@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, FileText, LoaderCircle, RefreshCw, Upload } from 'lucide-react';
+import { AlertCircle, LoaderCircle, RefreshCw, Upload } from 'lucide-react';
 import { DocumentEditor } from '@onlyoffice/document-editor-react';
 import type { Config } from '@onlyoffice/doceditor-types';
 
@@ -99,7 +99,7 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-100">
+      <div className="flex h-full items-center justify-center" style={{ backgroundColor: "#f3f3f3" }}>
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <LoaderCircle className="h-5 w-5 animate-spin text-blue-600" />
           <span>Loading ONLYOFFICE editor…</span>
@@ -110,7 +110,7 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
 
   if (error || !editorConfig) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-100 p-8">
+      <div className="flex h-full items-center justify-center p-8" style={{ backgroundColor: "#f3f3f3" }}>
         <div className="w-full max-w-lg rounded-xl border border-amber-200 bg-white p-6 shadow-sm">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
@@ -143,11 +143,9 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+    <div className="flex h-full min-h-0 flex-col" style={{ backgroundColor: "#f3f3f3" }}>
+      <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4" style={{ backgroundColor: "#f3f3f3" }}>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-          <FileText className="h-4 w-4 text-blue-600" />
-          <span>ONLYOFFICE Document Editor</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -159,7 +157,7 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="ml-1 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-wait disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-wait disabled:opacity-60"
           >
             {isUploading ? (
               <LoaderCircle className="h-3.5 w-3.5 animate-spin" />

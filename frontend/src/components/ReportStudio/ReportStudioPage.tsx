@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { DocumentContentControl, PlaceholderToken, SemanticExecutionPlan } from './types';
 import { createDefaultDocument } from './defaultTemplate';
-import { parseSemanticPrompt, executeSemanticQuery } from './semanticParser';
+import { executeSemanticQuery } from './semanticParser';
 import { OnlyOfficeEditorPane } from './OnlyOfficeEditorPane';
 
 interface DurationInsight {
@@ -61,6 +61,10 @@ export const ReportStudioPage: React.FC = () => {
   // Secondary column prompt input buffer
   const activeToken = placeholderTokens.find((token) => token.id === activeTokenId);
   const [promptInput, setPromptInput] = useState<string>(activeToken?.prompt || '');
+  const [generatedSemanticPlan, setGeneratedSemanticPlan] = useState<SemanticExecutionPlan>();
+  const [blueprintLoading, setBlueprintLoading] = useState(false);
+  const [blueprintError, setBlueprintError] = useState<string>();
+  const blueprintRequestId = useRef(0);
 
   const loadContentControls = useCallback(async () => {
     setControlsLoading(true);
@@ -187,32 +191,66 @@ export const ReportStudioPage: React.FC = () => {
     durationDetectionAttempt,
   ]);
 
-  // Context for semantic parser
-  const parserContext = {
-    materialId: doc.materialFocus,
-    actualStartDate: doc.periodActual.split(' to ')[0] || '2026-08-01',
-    actualEndDate: doc.periodActual.split(' to ')[1] || '2026-08-31',
-  };
-
-  // Re-parse when promptInput changes in secondary column
   const effectiveDuration =
     durationOverrides[activeTokenId] ?? durationInsight.duration;
-  const packagedPrompt = `Duration: ${effectiveDuration}${
-    promptInput.trim() ? `\n${promptInput}` : ''
-  }`;
-  const currentSemanticPlan: SemanticExecutionPlan | undefined = activeToken
-    ? parseSemanticPrompt(packagedPrompt, parserContext)
-    : undefined;
+  const packagedPrompt =
+    "Duration: " + effectiveDuration + (promptInput.trim() ? "\n" + promptInput : "");
 
-  // Handle Secondary Column: Test & Execute Query
+  const handleGenerateBlueprint = async () => {
+    if (!activeToken) return;
+    const requestId = ++blueprintRequestId.current;
+    setBlueprintLoading(true);
+    setBlueprintError(undefined);
+    setGeneratedSemanticPlan(undefined);
+
+    try {
+      const response = await fetch(
+        "/api/report-studio/onlyoffice/content-controls/blueprint",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ prompt: packagedPrompt }),
+        }
+      );
+      const payload = (await response.json()) as SemanticExecutionPlan & { detail?: string };
+      if (!response.ok) {
+        throw new Error(payload.detail ?? `Blueprint generation failed (${response.status})`);
+      }
+      if (blueprintRequestId.current !== requestId) return;
+
+      const analyzedToken: PlaceholderToken = {
+        ...activeToken,
+        prompt: packagedPrompt,
+        status: "analyzed",
+        semanticPlan: payload,
+        updatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setDoc((currentDocument) => ({
+        ...currentDocument,
+        tokens: {
+          ...currentDocument.tokens,
+          [activeTokenId]: analyzedToken,
+        },
+      }));
+      setGeneratedSemanticPlan(payload);
+    } catch (requestError) {
+      if (blueprintRequestId.current !== requestId) return;
+      setBlueprintError(
+        requestError instanceof Error ? requestError.message : "Unable to generate Blueprint"
+      );
+    } finally {
+      if (blueprintRequestId.current === requestId) setBlueprintLoading(false);
+    }
+  };
+
   const handleExecuteQuery = () => {
-    if (!activeToken || !currentSemanticPlan) return;
-    const queryResult = executeSemanticQuery(currentSemanticPlan);
+    if (!activeToken || !generatedSemanticPlan) return;
+    const queryResult = executeSemanticQuery(generatedSemanticPlan);
     const updatedToken: PlaceholderToken = {
       ...activeToken,
       prompt: packagedPrompt,
       status: 'executed',
-      semanticPlan: currentSemanticPlan,
+      semanticPlan: generatedSemanticPlan,
       resolvedValue: queryResult.value,
       unit: queryResult.unit,
       updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -227,35 +265,15 @@ export const ReportStudioPage: React.FC = () => {
     }));
   };
 
-  // Quick Preset Prompts
-  const presetPrompts = [
-    {
-      label: 'PPV Deviation',
-      prompt: 'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
-    },
-    {
-      label: 'Material Overuse',
-      prompt: 'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
-    },
-    {
-      label: 'Scrap Losses',
-      prompt: 'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
-    },
-    {
-      label: 'ECN BOM Quota',
-      prompt: 'Compare active ECN design bill of materials against baseline revision to calculate unit quota cost impact',
-    },
-  ];
-
   return (
-    <div className="flex h-full w-full min-h-0 overflow-hidden bg-slate-100 font-sans">
-      <main className="min-w-0 flex-1 bg-slate-100">
+    <div className="flex h-full w-full min-h-0 overflow-hidden font-sans" style={{ backgroundColor: "#f3f3f3" }}>
+      <main className="min-w-0 flex-1" style={{ backgroundColor: "#f3f3f3" }}>
         <OnlyOfficeEditorPane onDocumentChanged={() => void loadContentControls()} />
       </main>
 
-      <aside className="w-96 lg:w-[420px] xl:w-[450px] bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar shadow-lg">
+      <aside className="w-96 lg:w-[420px] xl:w-[450px] border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar shadow-lg" style={{ backgroundColor: "#f3f3f3" }}>
           {/* Header */}
-          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0" style={{ backgroundColor: "#f3f3f3" }}>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
                 <Sparkles className="w-4 h-4" />
@@ -344,6 +362,9 @@ export const ReportStudioPage: React.FC = () => {
                           delete next[control.id];
                           return next;
                         });
+                        setGeneratedSemanticPlan(undefined);
+                        blueprintRequestId.current += 1;
+                        setBlueprintError(undefined);
                         setActiveTokenId(control.id);
                         setDurationDetectionAttempt((current) => current + 1);
                       }}
@@ -426,6 +447,9 @@ export const ReportStudioPage: React.FC = () => {
                         value={effectiveDuration}
                         onChange={(event) => {
                           durationRequestId.current += 1;
+                          setGeneratedSemanticPlan(undefined);
+                        blueprintRequestId.current += 1;
+                        setBlueprintError(undefined);
                           setDurationOverrides((current) => ({
                             ...current,
                             [activeTokenId]: event.target.value,
@@ -446,7 +470,12 @@ export const ReportStudioPage: React.FC = () => {
                     <textarea
                       rows={3}
                       value={promptInput}
-                      onChange={(e) => setPromptInput(e.target.value)}
+                      onChange={(e) => {
+                        setPromptInput(e.target.value);
+                        setGeneratedSemanticPlan(undefined);
+                        blueprintRequestId.current += 1;
+                        setBlueprintError(undefined);
+                      }}
                       placeholder="Enter natural language instructions (e.g. source table, filter criteria, calculation formula)..."
                       className="w-full resize-y border-0 bg-white p-2.5 text-xs leading-relaxed text-slate-800 outline-none"
                     />
@@ -459,32 +488,34 @@ export const ReportStudioPage: React.FC = () => {
                   {durationInsight.sentences[0] && (
                     <p
                       className="truncate text-[10px] text-slate-400"
-                      title={durationInsight.sentences.join('\n')}
+                      title={durationInsight.sentences.join("\n")}
                     >
                       Context: {durationInsight.sentences[0]}
                     </p>
                   )}
 
-                  {/* Preset prompt pills */}
-                  <div className="pt-1">
-                    <span className="text-[10px] text-slate-400 block mb-1">Quick Test Presets:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {presetPrompts.map((p, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setPromptInput(p.prompt)}
-                          className="text-[10px] bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-600 px-2 py-0.5 rounded border border-slate-200 transition-colors"
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGenerateBlueprint}
+                    disabled={durationInsight.status === "loading" || blueprintLoading}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {durationInsight.status === "loading" || blueprintLoading ? (
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    {blueprintLoading ? "Generating Blueprint…" : "Generate Blueprint"}
+                  </button>
+                  {blueprintError && (
+                    <p className="text-[10px] leading-relaxed text-red-600">
+                      {blueprintError}
+                    </p>
+                  )}
                 </div>
 
                 {/* 3. AI Execution Blueprint (Transparent Feedback Card) */}
-                {currentSemanticPlan && (
+                {generatedSemanticPlan && (
                   <div className="bg-gradient-to-br from-white to-blue-50/40 rounded-xl border border-blue-200/80 p-4 space-y-3.5 shadow-xs">
                     <div className="flex items-center justify-between border-b border-blue-100 pb-2">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-blue-950">
@@ -503,7 +534,7 @@ export const ReportStudioPage: React.FC = () => {
                         <span>1. Source Data Table:</span>
                       </div>
                       <div className="bg-white p-2 rounded-md border border-slate-200 text-xs font-mono text-blue-900 font-semibold">
-                        {currentSemanticPlan.sourceTableLabel}
+                        {generatedSemanticPlan.sourceTableLabel}
                       </div>
                     </div>
 
@@ -514,7 +545,7 @@ export const ReportStudioPage: React.FC = () => {
                         <span>2. Filter Criteria:</span>
                       </div>
                       <ul className="bg-white p-2 rounded-md border border-slate-200 space-y-1 text-[11px] font-mono text-slate-700">
-                        {currentSemanticPlan.filterConditions.map((cond, i) => (
+                        {generatedSemanticPlan.filterConditions.map((cond, i) => (
                           <li key={i} className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                             <span>{cond}</span>
@@ -530,7 +561,7 @@ export const ReportStudioPage: React.FC = () => {
                         <span>3. Input Field Mappings:</span>
                       </div>
                       <div className="bg-white rounded-md border border-slate-200 divide-y divide-slate-100 text-[11px]">
-                        {currentSemanticPlan.inputFields.map((f, i) => (
+                        {generatedSemanticPlan.inputFields.map((f, i) => (
                           <div key={i} className="p-2 space-y-0.5">
                             <div className="flex items-center justify-between font-mono">
                               <span className="font-bold text-indigo-700">{f.field}</span>
@@ -549,17 +580,17 @@ export const ReportStudioPage: React.FC = () => {
                         <span>4. Processing &amp; Computation Formula:</span>
                       </div>
                       <div className="bg-slate-900 text-emerald-300 p-2.5 rounded-md font-mono text-[11px] break-all">
-                        {currentSemanticPlan.formula}
+                        {generatedSemanticPlan.formula}
                       </div>
                       <p className="text-[11px] text-slate-500 pt-0.5 leading-snug">
-                        <strong>Business Semantic:</strong> {currentSemanticPlan.formulaDescription}
+                        <strong>Business Semantic:</strong> {generatedSemanticPlan.formulaDescription}
                       </p>
                     </div>
 
                     {/* Explanation */}
                     <div className="p-2.5 bg-blue-50/80 rounded-md border border-blue-200/70 text-[11px] text-blue-900 leading-relaxed">
                       <span className="font-bold block mb-0.5">💡 Auditability &amp; Traceability Guarantee:</span>
-                      {currentSemanticPlan.explanation}
+                      {generatedSemanticPlan.explanation}
                     </div>
 
                     {/* Test & Execute Button */}
