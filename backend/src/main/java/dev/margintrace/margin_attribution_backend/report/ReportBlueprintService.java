@@ -17,7 +17,7 @@ import java.util.Set;
 public class ReportBlueprintService {
     private static final Set<String> ALLOWED_TABLES = Set.of(
             "production_order", "inventory_usage", "bill_of_material", "sales_order",
-            "cost_details", "account_receivables", "purchases", "account_payables");
+            "cost_details", "order_margin_summary", "account_receivables", "purchases", "account_payables");
 
     private static final Set<String> FORMATS =
             Set.of("percentage", "currency", "number", "text");

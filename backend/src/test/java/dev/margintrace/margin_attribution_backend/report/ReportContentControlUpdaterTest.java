@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -83,6 +84,45 @@ class ReportContentControlUpdaterTest {
         assertThatThrownBy(() -> updater.replaceContentByAlias(document, "Missing", "Value"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Missing");
+    }
+
+    @Test
+    void replacesMultipleControlsAndTextTokens() throws Exception {
+        byte[] document = docxWithDocumentXml("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+                  <w:body>
+                    <w:p>
+                      <w:sdt>
+                        <w:sdtPr><w:alias w:val="Current Period"/><w:tag w:val="Current Period"/></w:sdtPr>
+                        <w:sdtContent><w:r><w:t>Period placeholder</w:t></w:r></w:sdtContent>
+                      </w:sdt>
+                    </w:p>
+                    <w:p>
+                      <w:sdt>
+                        <w:sdtPr><w:alias w:val="Revenue"/><w:tag w:val="revenue"/></w:sdtPr>
+                        <w:sdtContent><w:r><w:t>Revenue placeholder</w:t></w:r></w:sdtContent>
+                      </w:sdt>
+                    </w:p>
+                    <w:p>
+                      <w:r><w:t>Text token: {{Gross Margin %}}</w:t></w:r>
+                    </w:p>
+                  </w:body>
+                </w:document>
+                """);
+
+        java.util.Map<String, String> replacements = java.util.Map.of(
+                "Current Period", "2026-08-01 ~ 2026-08-31",
+                "Revenue", "¥ 12,000.00",
+                "Gross Margin %", "59.2%"
+        );
+
+        ReportContentControlUpdater.UpdateResult result = updater.replaceContents(document, replacements);
+        assertThat(result.updatedControls()).isEqualTo(3);
+
+        List<ReportContentControlScanner.ContentControlDescriptor> controls = scanner.scan(result.documentBytes());
+        assertThat(controls).extracting(ReportContentControlScanner.ContentControlDescriptor::preview)
+                .containsExactly("2026-08-01 ~ 2026-08-31", "¥ 12,000.00");
     }
 
     private byte[] docxWithDocumentXml(String xml) throws Exception {

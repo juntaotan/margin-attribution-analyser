@@ -28,7 +28,8 @@ public class ReportDocumentStore {
     private static final String DEFAULT_DOCUMENT_TITLE = "Management Commentary.docx";
 
     private final MinioClient minioClient;
-    private final AtomicLong version = new AtomicLong(1L);
+    private final ReportTemplateStore templateStore;
+    private final AtomicLong version = new AtomicLong(System.currentTimeMillis());
 
     @Value("${onlyoffice.report-bucket}")
     private String bucket;
@@ -42,7 +43,7 @@ public class ReportDocumentStore {
                 .build())) {
             return input.readAllBytes();
         } catch (Exception missingDocument) {
-            byte[] initialDocument = createInitialDocument();
+            byte[] initialDocument = templateStore.loadOrCreateMasterTemplate();
             saveDefaultDocument(initialDocument);
             return initialDocument;
         }
@@ -54,7 +55,7 @@ public class ReportDocumentStore {
                 DEFAULT_DOCUMENT_KEY,
                 content,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-        version.incrementAndGet();
+        version.set(System.currentTimeMillis());
     }
 
     public synchronized void replaceDefaultDocument(byte[] content, String title) throws Exception {
@@ -67,7 +68,12 @@ public class ReportDocumentStore {
                 DEFAULT_DOCUMENT_TITLE_KEY,
                 title.getBytes(StandardCharsets.UTF_8),
                 MediaType.TEXT_PLAIN_VALUE);
-        version.incrementAndGet();
+        version.set(System.currentTimeMillis());
+    }
+
+    public synchronized void resetToMasterTemplate() throws Exception {
+        byte[] masterContent = templateStore.loadOrCreateMasterTemplate();
+        replaceDefaultDocument(masterContent, DEFAULT_DOCUMENT_TITLE);
     }
 
     public synchronized String currentTitle() throws Exception {

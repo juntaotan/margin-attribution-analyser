@@ -41,18 +41,99 @@ public class ReportPlaceholderService {
         return entities.stream().map(this::toDto).toList();
     }
 
+    public record PreconfiguredPrompt(String prompt, String format) {}
+
+    public static final Map<String, PreconfiguredPrompt> DEFAULT_PROMPTS = Map.of(
+            "Revenue", new PreconfiguredPrompt(
+                    "Query actual sales orders to calculate total sales revenue sum(product_total_price) for the active period",
+                    "currency"
+            ),
+            "Revenue Change %", new PreconfiguredPrompt(
+                    "Calculate sales revenue percentage growth rate comparing current sales_order product_total_price against baseline comparison period",
+                    "percentage"
+            ),
+            "Gross Margin", new PreconfiguredPrompt(
+                    "Query order_margin_summary to calculate total gross margin contribution sum(gross_margin) for the active period",
+                    "currency"
+            ),
+            "Gross Margin %", new PreconfiguredPrompt(
+                    "Query order_margin_summary to compute overall gross margin percentage: round(sum(gross_margin) / nullif(sum(revenue), 0) * 100, 2)",
+                    "percentage"
+            ),
+            "Current Period", new PreconfiguredPrompt(
+                    "Extract the active reporting cycle period from sales orders date range",
+                    "text"
+            ),
+            "Comparison Period", new PreconfiguredPrompt(
+                    "Extract the comparable baseline cycle period from historical sales orders date range",
+                    "text"
+            ),
+            "PPV Variance", new PreconfiguredPrompt(
+                    "Query actual purchase order settlement prices vs baseline standard costs to derive Purchase Price Variance rate",
+                    "percentage"
+            ),
+            "Usage Variance", new PreconfiguredPrompt(
+                    "Query inventory_usage to calculate total material consumption: sum(material_total_cost) for the active period",
+                    "currency"
+            ),
+            "Scrap Loss", new PreconfiguredPrompt(
+                    "Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact",
+                    "currency"
+            ),
+            "ECN Impact", new PreconfiguredPrompt(
+                    "Compare active ECN design bill of materials against baseline revision to calculate unit quota cost impact",
+                    "currency"
+            )
+    );
+
+    public PreconfiguredPrompt getPreconfiguredPrompt(String tag) {
+        if (tag == null || tag.isBlank()) {
+            return null;
+        }
+        if (DEFAULT_PROMPTS.containsKey(tag)) {
+            return DEFAULT_PROMPTS.get(tag);
+        }
+        String normalized = tag.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        for (Map.Entry<String, PreconfiguredPrompt> entry : DEFAULT_PROMPTS.entrySet()) {
+            String candidateNorm = entry.getKey().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
+            if (candidateNorm.equals(normalized)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     @Transactional
     public List<PlaceholderConfigDto> syncPlaceholders(String documentId, List<PlaceholderSyncItem> items) {
         String docId = normalizeDocumentId(documentId);
         if (items != null) {
             for (PlaceholderSyncItem item : items) {
-                if (item.tag() != null && !item.tag().isBlank() && item.alias() != null && !item.alias().isBlank()) {
+                if (item.tag() != null && !item.tag().isBlank()) {
+                    String tag = item.tag().trim();
+                    String alias = (item.alias() != null && !item.alias().isBlank()) ? item.alias().trim() : tag;
                     Optional<ReportPlaceholderConfigEntity> existing =
-                            configRepository.findByDocumentIdAndControlTag(docId, item.tag().trim());
+                            configRepository.findByDocumentIdAndControlTag(docId, tag);
                     if (existing.isPresent()) {
                         ReportPlaceholderConfigEntity config = existing.get();
-                        if (!Objects.equals(config.getControlAlias(), item.alias().trim())) {
-                            config.setControlAlias(item.alias().trim());
+                        if (!Objects.equals(config.getControlAlias(), alias)) {
+                            config.setControlAlias(alias);
+                            configRepository.save(config);
+                        }
+                    } else {
+                        // Seed preconfigured prompt on discovery if not yet configured
+                        PreconfiguredPrompt preconfigured = getPreconfiguredPrompt(tag);
+                        if (preconfigured != null) {
+                            String fullPrompt = "Duration: 2026-01-01 to 2026-01-31\n" + preconfigured.prompt();
+                            ReportPlaceholderConfigEntity config = new ReportPlaceholderConfigEntity(
+                                    docId,
+                                    tag,
+                                    alias,
+                                    fullPrompt,
+                                    "2026-01-01 to 2026-01-31",
+                                    null,
+                                    null,
+                                    preconfigured.format()
+                            );
                             configRepository.save(config);
                         }
                     }
@@ -60,6 +141,40 @@ public class ReportPlaceholderService {
             }
         }
         return findConfigurations(docId, null);
+    }
+
+    @Transactional
+    public void seedOrUpdateConfigurations(String documentId, String duration) {
+        String docId = normalizeDocumentId(documentId);
+        String activeDuration = (duration == null || duration.isBlank()) ? "2026-01-01 to 2026-01-31" : duration.trim();
+        for (Map.Entry<String, PreconfiguredPrompt> entry : DEFAULT_PROMPTS.entrySet()) {
+            String tag = entry.getKey();
+            PreconfiguredPrompt defaultPrompt = entry.getValue();
+            Optional<ReportPlaceholderConfigEntity> existing =
+                    configRepository.findByDocumentIdAndControlTag(docId, tag);
+            String fullPrompt = "Duration: " + activeDuration + "\n" + defaultPrompt.prompt();
+
+            if (existing.isPresent()) {
+                ReportPlaceholderConfigEntity config = existing.get();
+                config.setDuration(activeDuration);
+                if (config.getPrompt() == null || config.getPrompt().isBlank() || config.getPrompt().startsWith("Duration:")) {
+                    config.setPrompt(fullPrompt);
+                }
+                configRepository.save(config);
+            } else {
+                ReportPlaceholderConfigEntity config = new ReportPlaceholderConfigEntity(
+                        docId,
+                        tag,
+                        tag,
+                        fullPrompt,
+                        activeDuration,
+                        null,
+                        null,
+                        defaultPrompt.format()
+                );
+                configRepository.save(config);
+            }
+        }
     }
 
     @Transactional
@@ -218,8 +333,24 @@ public class ReportPlaceholderService {
             throw new IllegalArgumentException("There is no result value to save");
         }
         String value = String.valueOf(valueObj);
-        if ("percentage".equalsIgnoreCase(format) && !value.trim().endsWith("%")) {
-            value = value + "%";
+        if ("currency".equalsIgnoreCase(format)) {
+            try {
+                java.math.BigDecimal bd = new java.math.BigDecimal(value).setScale(2, java.math.RoundingMode.HALF_UP);
+                return "$" + String.format(java.util.Locale.US, "%,.2f", bd);
+            } catch (Exception ignored) {
+                if (!value.trim().startsWith("$")) {
+                    return "$" + value;
+                }
+            }
+        } else if ("percentage".equalsIgnoreCase(format)) {
+            try {
+                java.math.BigDecimal bd = new java.math.BigDecimal(value.replace("%", "").trim()).setScale(1, java.math.RoundingMode.HALF_UP);
+                return bd.toPlainString() + "%";
+            } catch (Exception ignored) {
+                if (!value.trim().endsWith("%")) {
+                    return value + "%";
+                }
+            }
         }
         return value;
     }

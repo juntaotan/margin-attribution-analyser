@@ -4,10 +4,10 @@ import { parseSemanticPrompt, executeSemanticQuery } from './semanticParser';
 export const createDefaultDocument = (): ReportDocument => {
   const context = {
     materialId: 'MTR-1029 (Stator Punching Lamination)',
-    actualStartDate: '2026-08-01',
-    actualEndDate: '2026-08-31',
-    comparableStartDate: '2026-07-01',
-    comparableEndDate: '2026-07-31',
+    actualStartDate: '2026-01-01',
+    actualEndDate: '2026-01-31',
+    comparableStartDate: '2025-01-01',
+    comparableEndDate: '2025-01-31',
   };
 
   // Pre-seed 4 representative financial placeholder tokens
@@ -38,8 +38,8 @@ export const createDefaultDocument = (): ReportDocument => {
   return {
     id: 'doc-commentary-001',
     title: 'Management Commentary: Gross Margin Performance & Root-Cause Synthesis',
-    periodActual: '2026-08-01 to 2026-08-31',
-    periodComparable: '2026-07-01 to 2026-07-31',
+    periodActual: '2026-01-01 to 2026-01-31',
+    periodComparable: '2025-01-01 to 2025-01-31',
     materialFocus: 'MTR-1029 (Stator Punching Lamination - 0.35mm Electrical Steel)',
     blocks: [
       {
@@ -112,8 +112,65 @@ export const createDefaultDocument = (): ReportDocument => {
       },
     ],
     tokens: {
+      'Revenue': {
+        id: 'Revenue',
+        label: 'Net Sales Revenue',
+        prompt: 'Query actual sales orders to calculate total sales revenue sum(product_total_price) for the active period',
+        status: 'draft',
+        resolvedValue: '$12,000.00',
+        unit: '$',
+      },
+      'Revenue Change %': {
+        id: 'Revenue Change %',
+        label: 'Revenue Growth Rate',
+        prompt: 'Calculate sales revenue percentage growth rate comparing current sales_order product_total_price against baseline comparison period',
+        status: 'draft',
+        resolvedValue: '0.0%',
+        unit: '%',
+      },
+      'Gross Margin': {
+        id: 'Gross Margin',
+        label: 'Total Gross Margin',
+        prompt: 'Query order_margin_summary to calculate total gross margin contribution sum(gross_margin) for the active period',
+        status: 'draft',
+        resolvedValue: '$7,100.00',
+        unit: '$',
+      },
+      'Gross Margin %': {
+        id: 'Gross Margin %',
+        label: 'Gross Margin Rate',
+        prompt: 'Query order_margin_summary to compute overall gross margin percentage: round(sum(gross_margin) / nullif(sum(revenue), 0) * 100, 2)',
+        status: 'draft',
+        resolvedValue: '59.2%',
+        unit: '%',
+      },
+      'Current Period': {
+        id: 'Current Period',
+        label: 'Active Reporting Period',
+        prompt: 'Extract the active reporting cycle period from sales orders date range',
+        status: 'draft',
+        resolvedValue: '2026-01-01 to 2026-01-31',
+      },
+      'Comparison Period': {
+        id: 'Comparison Period',
+        label: 'Comparable Baseline Period',
+        prompt: 'Extract the comparable baseline cycle period from historical sales orders date range',
+        status: 'draft',
+        resolvedValue: '2025-01-01 to 2025-01-31',
+      },
       token_ppv: {
         id: 'token_ppv',
+        label: 'PPV Deviation Rate',
+        prompt:
+          'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
+        status: 'executed',
+        semanticPlan: plan1,
+        resolvedValue: res1.value,
+        unit: res1.unit,
+        updatedAt: '2026-08-31 16:30',
+      },
+      'PPV Variance': {
+        id: 'PPV Variance',
         label: 'PPV Deviation Rate',
         prompt:
           'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
@@ -134,6 +191,17 @@ export const createDefaultDocument = (): ReportDocument => {
         unit: res2.unit,
         updatedAt: '2026-08-31 16:32',
       },
+      'Usage Variance': {
+        id: 'Usage Variance',
+        label: 'Material Overuse Rate',
+        prompt:
+          'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
+        status: 'executed',
+        semanticPlan: plan2,
+        resolvedValue: res2.value,
+        unit: res2.unit,
+        updatedAt: '2026-08-31 16:32',
+      },
       token_scrap: {
         id: 'token_scrap',
         label: 'Scrap Financial Impact',
@@ -145,8 +213,30 @@ export const createDefaultDocument = (): ReportDocument => {
         unit: res3.unit,
         updatedAt: '2026-08-31 16:35',
       },
+      'Scrap Loss': {
+        id: 'Scrap Loss',
+        label: 'Scrap Financial Impact',
+        prompt:
+          'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
+        status: 'executed',
+        semanticPlan: plan3,
+        resolvedValue: res3.value,
+        unit: res3.unit,
+        updatedAt: '2026-08-31 16:35',
+      },
       token_ecn: {
         id: 'token_ecn',
+        label: 'Structural ECN Cost Impact',
+        prompt:
+          'Compare active ECN design bill of materials against baseline revision to calculate unit quota cost impact',
+        status: 'executed',
+        semanticPlan: plan4,
+        resolvedValue: res4.value,
+        unit: res4.unit,
+        updatedAt: '2026-08-31 16:40',
+      },
+      'ECN Impact': {
+        id: 'ECN Impact',
         label: 'Structural ECN Cost Impact',
         prompt:
           'Compare active ECN design bill of materials against baseline revision to calculate unit quota cost impact',

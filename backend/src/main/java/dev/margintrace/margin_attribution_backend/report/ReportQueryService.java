@@ -43,6 +43,9 @@ public class ReportQueryService {
             "cost_details", Set.of(
                     "id", "sale_order_no", "date", "movement_no", "product_no",
                     "product_num", "total_cost"),
+            "order_margin_summary", Set.of(
+                    "id", "sale_order_no", "date", "movement_no", "product_no",
+                    "product_num", "revenue", "total_cost", "gross_margin", "gross_margin_percent"),
             "account_receivables", Set.of(
                     "id", "date", "account_receivable_no", "product_no", "product_num",
                     "product_total_price", "sale_order_no"),

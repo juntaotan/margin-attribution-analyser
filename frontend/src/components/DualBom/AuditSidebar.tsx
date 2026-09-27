@@ -4,6 +4,7 @@ import {
   Sparkles,
   RefreshCw,
   FileText,
+  LoaderCircle,
 } from 'lucide-react';
 import {
   DualBomNode,
@@ -43,7 +44,38 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
   const [loadingReport, setLoadingReport] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isCommentaryModalOpen, setIsCommentaryModalOpen] = useState(false);
+  const [isNavigatingToStudio, setIsNavigatingToStudio] = useState(false);
   const selectedId = selectedNode?.id;
+
+  const handleOpenReportStudio = async () => {
+    try {
+      setIsNavigatingToStudio(true);
+      await fetch('/api/v1/report/instantiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actualStartDate,
+          actualEndDate,
+          comparableStartDate,
+          comparableEndDate,
+          mode: 'open_in_studio',
+        }),
+      });
+    } catch (err) {
+      console.warn('Instantiate before navigation warning:', err);
+    } finally {
+      setIsNavigatingToStudio(false);
+      const queryParams = new URLSearchParams({
+        actualStartDate,
+        actualEndDate,
+        comparableStartDate: comparableStartDate || '',
+        comparableEndDate: comparableEndDate || '',
+      });
+      const targetUrl = `/report-studio?${queryParams.toString()}`;
+      window.history.pushState({}, '', targetUrl);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
 
   useEffect(() => {
     if (!selectedId) {
@@ -85,14 +117,31 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
           <p className="text-[11px] text-slate-400 mt-1 max-w-[220px]">
             Click any component card in the Dual-BOM tree or material ledger table to inspect detailed specifications and causal audit reports.
           </p>
-          <button
-            type="button"
-            onClick={() => setIsCommentaryModalOpen(true)}
-            className="mt-4 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
-          >
-            <FileText className="w-3.5 h-3.5 text-blue-600" />
-            <span>Management Commentary</span>
-          </button>
+
+          <div className="mt-5 w-full space-y-2">
+            <button
+              type="button"
+              onClick={handleOpenReportStudio}
+              disabled={isNavigatingToStudio}
+              className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+            >
+              {isNavigatingToStudio ? (
+                <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+              )}
+              <span>{isNavigatingToStudio ? 'Opening Report Studio…' : 'Open in Report Studio'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsCommentaryModalOpen(true)}
+              className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              <span>Export &amp; Preview Options</span>
+            </button>
+          </div>
         </aside>
         <ManagementCommentaryModal
           isOpen={isCommentaryModalOpen}
@@ -249,15 +298,29 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
               </button>
             )}
 
-            {/* Quick Action to open the full Management Commentary */}
-            <div className="mt-3 pt-2.5 border-t border-slate-100">
+            {/* Quick Actions to open full Management Commentary or jump to Report Studio */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2">
+              <button
+                type="button"
+                onClick={handleOpenReportStudio}
+                disabled={isNavigatingToStudio}
+                className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+              >
+                {isNavigatingToStudio ? (
+                  <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+                )}
+                <span>{isNavigatingToStudio ? 'Opening Report Studio…' : 'Open in Report Studio'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsCommentaryModalOpen(true)}
-                className="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded text-xs font-medium flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Open Management Commentary Report</span>
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export &amp; Preview Options</span>
               </button>
             </div>
           </div>

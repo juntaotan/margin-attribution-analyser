@@ -21,6 +21,7 @@ import {
   SemanticQueryResult,
 } from './types';
 import { createDefaultDocument } from './defaultTemplate';
+import { getPreconfiguredPrompt } from './defaultPrompts';
 import { OnlyOfficeEditorPane } from './OnlyOfficeEditorPane';
 
 interface DurationInsight {
@@ -58,9 +59,18 @@ export const ReportStudioPage: React.FC = () => {
   const [activeRunRevision, setActiveRunRevision] = useState<number>();
   // Currently selected content control for inspection in secondary column
   const [activeTokenId, setActiveTokenId] = useState<string>('');
+  // Read query parameters passed from analysis page
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const urlActualStart = searchParams?.get('actualStartDate') || undefined;
+  const urlActualEnd = searchParams?.get('actualEndDate') || undefined;
+  const initialUrlDuration = urlActualStart && urlActualEnd ? `${urlActualStart} to ${urlActualEnd}` : undefined;
+
   const placeholderTokens: PlaceholderToken[] = contentControls.map((control) => {
     const persisted = control.tag ? persistedConfigs[control.tag] : undefined;
-    const existingToken = doc.tokens[control.id];
+    const existingToken = doc.tokens[control.id] || (control.alias ? doc.tokens[control.alias] : undefined);
+    const preconfigured = getPreconfiguredPrompt(control.tag || control.alias || control.id);
+    const defaultPrompt = preconfigured?.prompt || '';
+
     if (persisted) {
       const firstVal = persisted.lastRun?.result?.rows?.[0]?.[persisted.lastRun.result.columns[0]];
       let resolvedValue = firstVal != null ? String(firstVal) : undefined;
@@ -70,7 +80,7 @@ export const ReportStudioPage: React.FC = () => {
       return {
         id: control.id,
         label: control.alias || control.tag,
-        prompt: persisted.prompt || '',
+        prompt: persisted.prompt || defaultPrompt,
         status: persisted.lastRun?.status === 'SUCCEEDED' || persisted.lastRun?.status === 'APPLIED'
           ? 'executed'
           : (persisted.lastRun?.status === 'FAILED' ? 'error' : (persisted.executionPlan ? 'analyzed' : 'draft')),
@@ -81,11 +91,11 @@ export const ReportStudioPage: React.FC = () => {
       };
     }
     return existingToken
-      ? { ...existingToken, id: control.id, label: control.alias }
+      ? { ...existingToken, id: control.id, label: control.alias || control.tag, prompt: existingToken.prompt || defaultPrompt }
       : {
           id: control.id,
-          label: control.alias,
-          prompt: '',
+          label: control.alias || control.tag,
+          prompt: defaultPrompt,
           status: 'draft',
         };
   });
@@ -181,20 +191,34 @@ export const ReportStudioPage: React.FC = () => {
       return;
     }
 
+    const preconfigured = getPreconfiguredPrompt(activeControl.tag || activeControl.alias || activeControl.id);
     const persisted = activeControl.tag ? persistedConfigs[activeControl.tag] : undefined;
+
+    // 2. Auto-configure AI prompt: persisted prompt -> activeToken prompt -> preconfigured default prompt
+    const promptSource = (persisted?.prompt && persisted.prompt.trim().length > 0)
+      ? persisted.prompt
+      : (activeToken?.prompt && activeToken.prompt.trim().length > 0)
+        ? activeToken.prompt
+        : (preconfigured?.prompt || '');
+
+    // 1. Auto-configure duration: URL param duration -> local overrides -> persisted duration -> duration from prompt -> default January 2026
+    const promptDuration = durationFromPrompt(promptSource);
+    const effectiveDur = initialUrlDuration || durationOverrides[activeControl.id] || persisted?.duration || promptDuration || '2026-01-01 to 2026-01-31';
+    if (effectiveDur) {
+      setDurationOverrides((current) => ({
+        ...current,
+        [activeControl.id]: effectiveDur,
+      }));
+      setDurationInsight({
+        status: 'ready',
+        duration: effectiveDur,
+        sentences: [],
+      });
+    }
+
+    setPromptInput(userPromptWithoutDuration(promptSource));
+
     if (persisted) {
-      setPromptInput(userPromptWithoutDuration(persisted.prompt || ''));
-      if (persisted.duration) {
-        setDurationOverrides((current) => ({
-          ...current,
-          [activeControl.id]: persisted.duration!,
-        }));
-        setDurationInsight({
-          status: 'ready',
-          duration: persisted.duration,
-          sentences: [],
-        });
-      }
       setGeneratedSemanticPlan(persisted.executionPlan);
       setQueryResult(persisted.lastRun?.result);
       setActiveRunId(persisted.lastRun?.id);
@@ -210,14 +234,6 @@ export const ReportStudioPage: React.FC = () => {
         setApplySuccess(undefined);
       }
     } else {
-      setPromptInput(activeToken?.prompt ? userPromptWithoutDuration(activeToken.prompt) : '');
-      const storedDuration = activeToken?.prompt ? durationFromPrompt(activeToken.prompt) : undefined;
-      if (storedDuration) {
-        setDurationOverrides((current) => ({
-          ...current,
-          [activeControl.id]: storedDuration,
-        }));
-      }
       setGeneratedSemanticPlan(activeToken?.semanticPlan);
       setQueryResult(undefined);
       setActiveRunId(undefined);
@@ -225,7 +241,7 @@ export const ReportStudioPage: React.FC = () => {
       setQueryError(undefined);
       setApplySuccess(undefined);
     }
-  }, [activeTokenId, persistedConfigs]);
+  }, [activeTokenId, persistedConfigs, initialUrlDuration]);
 
   useEffect(() => {
     const control = contentControls.find((item) => item.id === activeTokenId);
@@ -390,9 +406,16 @@ export const ReportStudioPage: React.FC = () => {
       }));
 
       const firstValue = payload.result?.rows?.[0]?.[payload.result.columns[0]];
-      let resolved = firstValue != null ? String(firstValue) : "";
-      if (resolved && payload.blueprint.format === "percentage" && !resolved.endsWith("%")) {
-        resolved += "%";
+      let resolved = "";
+      if (firstValue != null) {
+        if (payload.blueprint.format === "currency" && typeof firstValue === "number") {
+          resolved = "$" + Number(firstValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } else if (payload.blueprint.format === "percentage") {
+          const num = typeof firstValue === "number" ? firstValue : parseFloat(String(firstValue));
+          resolved = !isNaN(num) ? `${num.toFixed(1)}%` : String(firstValue);
+        } else {
+          resolved = String(firstValue);
+        }
       }
 
       setDoc((currentDoc) => ({
@@ -430,9 +453,16 @@ export const ReportStudioPage: React.FC = () => {
     }
 
     const firstValue = queryResult?.rows?.[0]?.[queryResult.columns[0]];
-    let displayVal = firstValue != null ? String(firstValue) : "";
-    if (displayVal && generatedSemanticPlan?.format === "percentage" && !displayVal.endsWith("%")) {
-      displayVal += "%";
+    let displayVal = "";
+    if (firstValue != null) {
+      if (generatedSemanticPlan?.format === "currency" && typeof firstValue === "number") {
+        displayVal = "$" + Number(firstValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else if (generatedSemanticPlan?.format === "percentage") {
+        const num = typeof firstValue === "number" ? firstValue : parseFloat(String(firstValue));
+        displayVal = !isNaN(num) ? `${num.toFixed(1)}%` : String(firstValue);
+      } else {
+        displayVal = String(firstValue);
+      }
     }
 
     const confirmed = window.confirm(
@@ -652,9 +682,26 @@ export const ReportStudioPage: React.FC = () => {
                       <Edit3 className="w-3.5 h-3.5 text-blue-600" />
                       AI Prompt Instructions:
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {activeToken.id}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!activeControl) return;
+                          const pre = getPreconfiguredPrompt(activeControl.tag || activeControl.alias || activeControl.id);
+                          if (pre?.prompt) {
+                            setPromptInput(pre.prompt);
+                          }
+                        }}
+                        title="Reset to preconfigured AI prompt"
+                        className="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 cursor-pointer bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded"
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" />
+                        <span>Preconfigured</span>
+                      </button>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {activeToken.id}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xs focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
@@ -798,16 +845,28 @@ export const ReportStudioPage: React.FC = () => {
                                   colSpan={Math.max(queryResult.columns.length, 1)}
                                   className="px-3 py-4 text-center font-sans text-slate-400"
                                 >
-                                  No data returned
+                                  No records found for the specified period
                                 </td>
                               </tr>
                             ) : queryResult.rows.map((row, rowIndex) => (
                               <tr key={rowIndex}>
-                                {queryResult.columns.map((column) => (
-                                  <td key={column} className="whitespace-nowrap px-3 py-2">
-                                    {row[column] == null ? '-' : String(row[column])}
-                                  </td>
-                                ))}
+                                {queryResult.columns.map((column) => {
+                                  const cellVal = row[column];
+                                  let cellText = cellVal == null ? '-' : String(cellVal);
+                                  if (cellVal != null && typeof cellVal === 'number' && generatedSemanticPlan?.format === 'currency') {
+                                    cellText = '$' + Number(cellVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                  } else if (cellVal != null && generatedSemanticPlan?.format === 'percentage') {
+                                    const num = typeof cellVal === 'number' ? cellVal : parseFloat(String(cellVal));
+                                    if (!isNaN(num) && !cellText.endsWith('%')) {
+                                      cellText = `${num.toFixed(1)}%`;
+                                    }
+                                  }
+                                  return (
+                                    <td key={column} className="whitespace-nowrap px-3 py-2">
+                                      {cellText}
+                                    </td>
+                                  );
+                                })}
                               </tr>
                             ))}
                           </tbody>

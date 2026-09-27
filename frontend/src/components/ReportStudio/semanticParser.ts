@@ -20,7 +20,7 @@ export function parseSemanticPrompt(
 ): SemanticExecutionPlan {
   const normalized = prompt.toLowerCase();
   const mat = context?.materialId || 'MTR-1029 (Stator Punching Lamination)';
-  const actualPeriod = `${context?.actualStartDate || '2026-08-01'} to ${context?.actualEndDate || '2026-08-31'}`;
+  const actualPeriod = `${context?.actualStartDate || '2026-01-01'} to ${context?.actualEndDate || '2026-01-31'}`;
 
   // 1. Purchase Price Variance / PPV / Procurement Cost
   if (

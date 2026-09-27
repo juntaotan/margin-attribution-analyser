@@ -1,26 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   FileDown,
   FileText,
-  TrendingUp,
-  Layers,
-  Sparkles,
   CheckCircle2,
-  Building2,
-  Users,
-  Globe,
   Loader2,
   Edit3,
+  ExternalLink,
+  Sparkles,
+  Calendar,
+  AlertCircle,
+  FileCheck,
 } from 'lucide-react';
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  HeadingLevel,
-  AlignmentType,
-} from 'docx';
 import { DualBomNode, formatCurrency, formatQty } from '../../varianceEngine';
 
 interface RootCauseReport {
@@ -45,6 +36,30 @@ export interface ManagementCommentaryModalProps {
   report?: RootCauseReport | null;
 }
 
+interface PlaceholderValues {
+  currentPeriod: string;
+  comparisonPeriod: string;
+  revenue: string;
+  revenueRaw: number;
+  revenueChangePercent: string;
+  revenueChangePercentRaw: number;
+  grossMargin: string;
+  grossMarginRaw: number;
+  grossMarginPercent: string;
+  grossMarginPercentRaw: number;
+  aiAssisted: boolean;
+  replacements: Record<string, string>;
+}
+
+interface TemplateMetadata {
+  filename: string;
+  sizeBytes: number;
+  updatedAt: string;
+  isCustom: boolean;
+  matchedCount: number;
+  totalExpected: number;
+}
+
 export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps> = ({
   isOpen,
   onClose,
@@ -55,10 +70,18 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
   selectedNode,
   report,
 }) => {
+  const [templateMeta, setTemplateMeta] = useState<TemplateMetadata | null>(null);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [values, setValues] = useState<PlaceholderValues | null>(null);
+  const [loadingValues, setLoadingValues] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const [isExporting, setIsExporting] = useState(false);
+  const [isOpeningInStudio, setIsOpeningInStudio] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
 
-  React.useEffect(() => {
+  // Close on Escape
+  useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -67,293 +90,145 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Load template info and preview values whenever modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let active = true;
+    setLoadingTemplate(true);
+    setLoadingValues(true);
+    setFetchError(null);
+
+    // 1. Fetch template metadata
+    fetch('/api/v1/settings/template')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((meta: TemplateMetadata | null) => {
+        if (active && meta) setTemplateMeta(meta);
+      })
+      .catch((err) => console.warn('Failed to load template info:', err))
+      .finally(() => {
+        if (active) setLoadingTemplate(false);
+      });
+
+    // 2. Fetch placeholder values
+    fetch('/api/v1/report/preview-values', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actualStartDate,
+        actualEndDate,
+        comparableStartDate,
+        comparableEndDate,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { message?: string };
+          throw new Error(body.message || `Request failed (${res.status})`);
+        }
+        return res.json() as Promise<PlaceholderValues>;
+      })
+      .then((data) => {
+        if (active) setValues(data);
+      })
+      .catch((err: Error) => {
+        if (active) setFetchError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoadingValues(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, actualStartDate, actualEndDate, comparableStartDate, comparableEndDate]);
+
   if (!isOpen) return null;
 
+  // Direct download Word
   const handleExportDocx = async () => {
     try {
       setIsExporting(true);
-
-      const doc = new Document({
-        sections: [
-          {
-            properties: {
-              page: {
-                margin: {
-                  top: 1440, // 1 inch
-                  right: 1440,
-                  bottom: 1440,
-                  left: 1440,
-                },
-              },
-            },
-            children: [
-              // Main Title
-              new Paragraph({
-                text: 'Management Commentary: Gross Margin Performance',
-                heading: HeadingLevel.TITLE,
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 200 },
-              }),
-
-              // Subtitle / Metadata
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 400 },
-                children: [
-                  new TextRun({
-                    text: `Reporting Period: Actual (${actualStartDate} to ${actualEndDate}) vs. Comparable (${comparableStartDate} to ${comparableEndDate})`,
-                    italics: true,
-                    color: '555555',
-                    size: 20, // 10pt
-                  }),
-                ],
-              }),
-
-              // Section 1
-              new Paragraph({
-                text: '1. Performance Overview',
-                heading: HeadingLevel.HEADING_1,
-                spacing: { before: 300, after: 150 },
-              }),
-              new Paragraph({
-                spacing: { after: 120 },
-                children: [
-                  new TextRun({
-                    text: 'This executive overview outlines key gross margin variance dynamics and cost drivers observed between the evaluated operational period and the comparable benchmark baseline. Through the Dual-BOM multi-attribute reconciliation engine, manufacturing and inventory movements have been analyzed to decouple structural variances from operational execution deviations.',
-                  }),
-                ],
-              }),
-              ...(selectedNode
-                ? [
-                    new Paragraph({
-                      spacing: { after: 120 },
-                      children: [
-                        new TextRun({
-                          text: `Target Component Inspected: ${selectedNode.name} (${selectedNode.id}) | Station: ${selectedNode.station} | ECN: ${selectedNode.ecn}. `,
-                          bold: true,
-                        }),
-                        new TextRun({
-                          text: `Standard quantity benchmark was ${formatQty(selectedNode.standardQty)}, whereas actual issued quantity reached ${formatQty(selectedNode.actualQty)} (${selectedNode.quantityDeltaPercent > 0 ? '+' : ''}${selectedNode.quantityDeltaPercent.toFixed(1)}%). Baseline cost was ${formatCurrency(selectedNode.baselineCost)}, culminating in a net variance of ${formatCurrency(selectedNode.costDelta)}.`,
-                        }),
-                      ],
-                    }),
-                  ]
-                : []),
-              ...(report?.summary
-                ? [
-                    new Paragraph({
-                      spacing: { after: 120 },
-                      children: [
-                        new TextRun({
-                          text: `AI Root-Cause Synthesis (${report.categoryLabel} - ${report.certainty}): `,
-                          bold: true,
-                          color: '1E40AF',
-                        }),
-                        new TextRun({
-                          text: report.summary,
-                        }),
-                      ],
-                    }),
-                  ]
-                : []),
-
-              // Section 2
-              new Paragraph({
-                text: '2. Margin Walk / Bridge Analysis',
-                heading: HeadingLevel.HEADING_1,
-                spacing: { before: 350, after: 150 },
-              }),
-              new Paragraph({
-                spacing: { after: 150 },
-                children: [
-                  new TextRun({
-                    text: 'Section Coverage: Volume Impact \\ Selling Price \\ Sales Mix \\ Purchase Price Variance (PPV) \\ Manufacturing Efficiency & Yield \\ Overhead Under-Absorption',
-                    bold: true,
-                    color: '2563EB',
-                  }),
-                ],
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'The Margin Walk decomposes gross margin delta across six core attribution pillars:',
-                  }),
-                ],
-              }),
-
-              // 2.1 Volume Impact
-              new Paragraph({
-                text: '2.1 Volume Impact',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Evaluates fixed-cost leverage and scale economics resulting from shifts in total production volume against planned throughput expectations.',
-                  }),
-                ],
-              }),
-
-              // 2.2 Selling Price
-              new Paragraph({
-                text: '2.2 Selling Price',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Reflects the direct impact of Average Selling Price (ASP) adjustments, contract renewals, customer discount structures, and list price realization on margin percentage.',
-                  }),
-                ],
-              }),
-
-              // 2.3 Sales Mix
-              new Paragraph({
-                text: '2.3 Sales Mix',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Isolates the portfolio margin variance driven by changes in the proportion of higher-margin versus lower-margin product assemblies shipped.',
-                  }),
-                ],
-              }),
-
-              // 2.4 Purchase Price Variance (PPV)
-              new Paragraph({
-                text: '2.4 Purchase Price Variance (PPV)',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Captures the deviation between actual procurement costs for raw materials/components and standard planned purchase prices, tracking vendor adjustments and supply market fluctuations.',
-                  }),
-                ],
-              }),
-
-              // 2.5 Manufacturing Efficiency & Yield
-              new Paragraph({
-                text: '2.5 Manufacturing Efficiency & Yield',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Assesses shop-floor execution performance, including thermal scrap rates, machining rework cycles, cycle-time deviations, and direct labor usage anomalies.',
-                  }),
-                ],
-              }),
-
-              // 2.6 Overhead Under-Absorption
-              new Paragraph({
-                text: '2.6 Overhead Under-Absorption',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 150 },
-                children: [
-                  new TextRun({
-                    text: 'Monitors the over- or under-absorption of plant overhead, machine depreciation, and facility fixed costs driven by equipment utilization rates and machine downtime.',
-                  }),
-                ],
-              }),
-
-              // Section 3
-              new Paragraph({
-                text: '3. Dimensional Deep-Dives',
-                heading: HeadingLevel.HEADING_1,
-                spacing: { before: 350, after: 150 },
-              }),
-              new Paragraph({
-                spacing: { after: 150 },
-                children: [
-                  new TextRun({
-                    text: 'Section Coverage: By Product Category / Product Family, By Customer / Channel, By Geographic Region / Market',
-                    bold: true,
-                    color: '2563EB',
-                  }),
-                ],
-              }),
-
-              // 3.1 By Product Category / Product Family
-              new Paragraph({
-                text: '3.1 By Product Category / Product Family',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Slices margin variance across discrete product families and sub-assembly clusters to isolate systemic BOM component drift within specific model architectures.',
-                  }),
-                ],
-              }),
-
-              // 3.2 By Customer / Channel
-              new Paragraph({
-                text: '3.2 By Customer / Channel',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: 'Attributes margin spreads across tier-1 strategic accounts, OEM partners, and regional direct vs. distributor channels, factoring in customer-specific concessions.',
-                  }),
-                ],
-              }),
-
-              // 3.3 By Geographic Region / Market
-              new Paragraph({
-                text: '3.3 By Geographic Region / Market',
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 150, after: 80 },
-              }),
-              new Paragraph({
-                spacing: { after: 150 },
-                children: [
-                  new TextRun({
-                    text: 'Breaks down geographical performance, analyzing regional fulfillment logistics, regional tariff exposure, currency translation effects, and local assembly plant performance.',
-                  }),
-                ],
-              }),
-            ],
-          },
-        ],
+      const response = await fetch('/api/v1/report/instantiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actualStartDate,
+          actualEndDate,
+          comparableStartDate,
+          comparableEndDate,
+          mode: 'download',
+        }),
       });
 
-      const blob = await Packer.toBlob(doc);
-      const url = URL.createObjectURL(blob);
+      if (!response.ok) {
+        throw new Error(`Export failed (${response.status})`);
+      }
+
+      // Read blob and trigger download
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'Management_Commentary.docx';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match?.[1]) filename = match[1];
+      }
+
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Management_Commentary_Gross_Margin_${actualStartDate}_to_${actualEndDate}.docx`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      link.remove();
+      window.URL.revokeObjectURL(url);
 
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to export DOCX:', err);
+      alert('Failed to export Word document. Please check network or backend service.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // Open in Report Studio
+  const handleOpenInStudio = async () => {
+    try {
+      setIsOpeningInStudio(true);
+      const response = await fetch('/api/v1/report/instantiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actualStartDate,
+          actualEndDate,
+          comparableStartDate,
+          comparableEndDate,
+          mode: 'open_in_studio',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Instantiate failed (${response.status})`);
+      }
+
+      const result = (await response.json()) as { redirectUrl?: string };
+      onClose();
+      const queryParams = new URLSearchParams({
+        actualStartDate,
+        actualEndDate,
+        comparableStartDate: comparableStartDate || '',
+        comparableEndDate: comparableEndDate || '',
+      });
+      const targetUrl = result.redirectUrl || `/report-studio?${queryParams.toString()}`;
+      window.history.pushState({}, '', targetUrl);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch (err) {
+      console.error('Failed to instantiate in Report Studio:', err);
+      alert('Failed to open in Report Studio. Please try again.');
+    } finally {
+      setIsOpeningInStudio(false);
     }
   };
 
@@ -367,42 +242,284 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col w-full max-w-4xl max-h-[92vh] overflow-hidden">
         {/* Modal Top Bar */}
         <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
               <FileText className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800 leading-none">
-                Management Commentary Report
+                Generate Management Commentary Report
               </h3>
-              <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                Dual-BOM MAS Attribution Framework
+              <p className="text-[11px] text-slate-500 font-mono mt-1">
+                Data Lake Master Template Clone · Automated Dual-BOM Metrics &amp; Attribution Injection
               </p>
             </div>
           </div>
 
-          {/* Right Action Icons: Open Studio + Export to docx + Close */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
                 onClose();
-                window.history.pushState({}, '', '/report-studio');
+                window.history.pushState({}, '', '/settings');
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              title="Open and edit dynamically in Report Studio"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-xs font-semibold shadow-xs transition-all"
+              title="Go to Settings to configure Word master template"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-md transition shadow-xs cursor-pointer"
             >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit in Report Studio</span>
+              <span>Configure Master</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 rounded-md transition cursor-pointer"
+              title="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-100/50 custom-scrollbar">
+          {/* Section 1: Template Status Banner */}
+          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
+                  <FileCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800">
+                      Active Master Template:
+                    </span>
+                    <span className="text-xs font-mono text-indigo-700 font-medium">
+                      {loadingTemplate ? 'Loading template…' : templateMeta?.filename || 'master-template.docx'}
+                    </span>
+                    {templateMeta && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        templateMeta.isCustom ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {templateMeta.isCustom ? 'Custom Template' : 'System Standard Master'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">
+                    Upon generation, the system clones a fresh copy of this template from the Data Lake and populates analysis metrics into content controls.
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  {templateMeta ? `${templateMeta.matchedCount}/${templateMeta.totalExpected} Core Placeholders Ready` : 'Checking placeholders...'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Data Extraction & Placeholder Preview */}
+          <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Reporting Parameters &amp; Placeholder Injection Preview
+                </h4>
+              </div>
+              {loadingValues && (
+                <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Executing AI &amp; SQL metrics calculation…</span>
+                </div>
+              )}
+            </div>
+
+            {fetchError && (
+              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{fetchError}</span>
+              </div>
+            )}
+
+            {/* Target Material focus if selected */}
+            {selectedNode && (
+              <div className="bg-slate-50 border border-slate-200 rounded-md p-3 text-xs space-y-1.5">
+                <div className="flex items-center justify-between font-mono text-[11px]">
+                  <span className="font-bold text-slate-800">
+                    Inspected Component Focus: {selectedNode.name} ({selectedNode.id})
+                  </span>
+                  <span className="text-slate-500">ECN: {selectedNode.ecn} · Station: {selectedNode.station}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                  <div className="bg-white p-2 rounded border border-slate-200">
+                    <span className="text-slate-400 block text-[10px]">Std Quantity</span>
+                    <span className="font-semibold text-slate-800">{formatQty(selectedNode.standardQty)}</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200">
+                    <span className="text-slate-400 block text-[10px]">Actual Issued</span>
+                    <span className="font-semibold text-slate-800">
+                      {formatQty(selectedNode.actualQty)}{' '}
+                      <span className="text-[10px] text-slate-500">
+                        ({selectedNode.quantityDeltaPercent > 0 ? '+' : ''}{selectedNode.quantityDeltaPercent.toFixed(1)}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200">
+                    <span className="text-slate-400 block text-[10px]">Baseline Cost</span>
+                    <span className="font-semibold text-slate-800">{formatCurrency(selectedNode.baselineCost)}</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200">
+                    <span className="text-slate-400 block text-[10px]">Net Variance</span>
+                    <span className={`font-bold ${(selectedNode.costDelta ?? 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      {formatCurrency(selectedNode.costDelta)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 6 Placeholders Table */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-[11px]">
+                    <th className="py-2.5 px-3">Placeholder (Tag / Alias)</th>
+                    <th className="py-2.5 px-3">Field Description</th>
+                    <th className="py-2.5 px-3">Resolution Source</th>
+                    <th className="py-2.5 px-3 text-right">Injected Value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-blue-700">Current Period</td>
+                    <td className="py-2.5 px-3 text-slate-600">Current reporting duration</td>
+                    <td className="py-2.5 px-3 text-slate-500">Analysis page context</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-800">
+                      {values?.currentPeriod || `${actualStartDate} to ${actualEndDate}`}
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-blue-700">Comparison Period</td>
+                    <td className="py-2.5 px-3 text-slate-600">Comparable baseline duration</td>
+                    <td className="py-2.5 px-3 text-slate-500">Analysis page context</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-800">
+                      {values?.comparisonPeriod || `${comparableStartDate} to ${comparableEndDate}`}
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-blue-700">Revenue</td>
+                    <td className="py-2.5 px-3 text-slate-600">Gross sales revenue cleared</td>
+                    <td className="py-2.5 px-3 text-slate-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-indigo-700">
+                        <Sparkles className="w-3 h-3 text-indigo-500" />
+                        AI (sales_order)
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                      {loadingValues ? 'Calculating…' : values?.revenue || '$0.00'}
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-blue-700">Revenue Change %</td>
+                    <td className="py-2.5 px-3 text-slate-600">Period-over-period revenue growth</td>
+                    <td className="py-2.5 px-3 text-slate-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-indigo-700">
+                        <Sparkles className="w-3 h-3 text-indigo-500" />
+                        AI (Comparable analysis)
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                      {loadingValues ? 'Calculating…' : values?.revenueChangePercent || '0.0%'}
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-blue-700">Gross Margin</td>
+                    <td className="py-2.5 px-3 text-slate-600">Total gross margin contribution</td>
+                    <td className="py-2.5 px-3 text-slate-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-indigo-700">
+                        <Sparkles className="w-3 h-3 text-indigo-500" />
+                        AI (Revenue minus Cost)
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600">
+                      {loadingValues ? 'Calculating…' : values?.grossMargin || '$0.00'}
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-slate-50/50">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-blue-700">Gross Margin %</td>
+                    <td className="py-2.5 px-3 text-slate-600">Effective gross margin rate</td>
+                    <td className="py-2.5 px-3 text-slate-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-indigo-700">
+                        <Sparkles className="w-3 h-3 text-indigo-500" />
+                        AI (Margin rate model)
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600">
+                      {loadingValues ? 'Calculating…' : values?.grossMarginPercent || '0.0%'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* AI Root-cause synthesis if report exists */}
+            {report?.summary && (
+              <div className="bg-blue-50/70 border border-blue-200 rounded-md p-3 text-xs text-blue-900 leading-relaxed">
+                <span className="font-bold flex items-center gap-1 text-blue-800 mb-1">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  AI Root-Cause Diagnostic Summary ({report.categoryLabel}):
+                </span>
+                <p>{report.summary}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
+          <div className="text-slate-500 text-[11px] flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Ready: Document generation clones the Data Lake master template and preserves all corporate styling.</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-md font-medium transition cursor-pointer"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenInStudio}
+              disabled={isOpeningInStudio || isExporting}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md font-semibold transition shadow-xs disabled:opacity-60 cursor-pointer"
+            >
+              {isOpeningInStudio ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Edit3 className="w-3.5 h-3.5" />
+              )}
+              <span>{isOpeningInStudio ? 'Loading into Studio…' : 'Edit in Report Studio'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleExportDocx}
-              disabled={isExporting}
-              title="Export report to Microsoft Word (.docx)"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-md text-xs font-semibold shadow-xs transition-all disabled:opacity-60"
+              disabled={isExporting || isOpeningInStudio}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-md font-semibold transition shadow-xs disabled:opacity-60 cursor-pointer"
             >
               {isExporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -411,245 +528,7 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
               ) : (
                 <FileDown className="w-3.5 h-3.5" />
               )}
-              <span>{isExporting ? 'Exporting...' : exportSuccess ? 'Exported!' : 'Export to DOCX'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 rounded-md transition-colors"
-              title="Close report modal"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Scrollable Report Sheet View */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-slate-100/60 custom-scrollbar">
-          <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-lg shadow-sm p-8 sm:p-10 text-slate-800 font-sans space-y-8">
-            {/* Report Header */}
-            <div className="border-b border-slate-200 pb-5">
-              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono uppercase tracking-wider mb-2">
-                <span>Enterprise Decision Support</span>
-                <span>Confidential · Internal Executive Use</span>
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-                Management Commentary: Gross Margin Performance
-              </h1>
-              <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-2.5 text-xs text-slate-500 font-mono">
-                <span>
-                  <strong>Actual Period:</strong> {actualStartDate} to {actualEndDate}
-                </span>
-                <span>•</span>
-                <span>
-                  <strong>Comparable:</strong> {comparableStartDate} to {comparableEndDate}
-                </span>
-              </div>
-            </div>
-
-            {/* Section 1: 1. Performance Overview */}
-            <section className="space-y-3">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-1.5">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <h2 className="text-base font-bold text-slate-900">
-                  1. Performance Overview
-                </h2>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                This executive commentary provides senior manufacturing and finance leadership with an exhaustive variance synthesis for the evaluated cycle. Leveraging the Dual-BOM reconciliation engine, financial variance is decoupled across structural bill-of-materials shifts, scrap rate deviations, and procurement pricing trends.
-              </p>
-
-              {/* Dynamic Context Card if node is inspected */}
-              {selectedNode && (
-                <div className="bg-slate-50 border border-slate-200 rounded-md p-3.5 text-xs space-y-2">
-                  <div className="flex items-center justify-between font-mono text-[11px]">
-                    <span className="font-bold text-slate-700">
-                      Component Focus: {selectedNode.name} ({selectedNode.id})
-                    </span>
-                    <span className="text-slate-500">ECN: {selectedNode.ecn}</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
-                    <div className="bg-white p-2 rounded border border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">Std Qty</span>
-                      <span className="font-semibold text-slate-800">{formatQty(selectedNode.standardQty)}</span>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">Actual Issued</span>
-                      <span className="font-semibold text-slate-800">
-                        {formatQty(selectedNode.actualQty)}{' '}
-                        <span className="text-[10px] text-slate-500">
-                          ({selectedNode.quantityDeltaPercent > 0 ? '+' : ''}{selectedNode.quantityDeltaPercent.toFixed(1)}%)
-                        </span>
-                      </span>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">Baseline Cost</span>
-                      <span className="font-semibold text-slate-800">{formatCurrency(selectedNode.baselineCost)}</span>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-200">
-                      <span className="text-slate-400 block text-[10px]">Net Variance</span>
-                      <span className={`font-bold ${(selectedNode.costDelta ?? 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {formatCurrency(selectedNode.costDelta)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI synthesis if present */}
-              {report?.summary && (
-                <div className="bg-blue-50/70 border border-blue-200/80 rounded-md p-3 text-xs text-blue-900 leading-relaxed">
-                  <span className="font-bold flex items-center gap-1 text-blue-800 mb-1">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    AI Root-Cause Diagnostic Summary ({report.categoryLabel}):
-                  </span>
-                  <p>{report.summary}</p>
-                </div>
-              )}
-            </section>
-
-            {/* Section 2: 2. Margin Walk / Bridge Analysis */}
-            <section className="space-y-3.5">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-1.5">
-                <Layers className="w-4 h-4 text-blue-600" />
-                <h2 className="text-base font-bold text-slate-900">
-                  2. Margin Walk / Bridge Analysis
-                </h2>
-              </div>
-
-              {/* Required Placeholder Box */}
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-950 font-medium">
-                <span className="font-bold text-blue-800 block mb-1">
-                  Section Coverage / Placeholder:
-                </span>
-                <p className="font-mono text-[11px] text-blue-900">
-                  Volume Impact \ Selling Price \ Sales Mix \ Purchase Price Variance (PPV) \ Manufacturing Efficiency & Yield \ Overhead Under-Absorption
-                </p>
-              </div>
-
-              {/* Detailed 6 pillars */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                  <h4 className="font-bold text-slate-900 mb-1">2.1 Volume Impact</h4>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Evaluates fixed-cost leverage and scale economics resulting from shifts in total production throughput and sales volume against planned expectations.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                  <h4 className="font-bold text-slate-900 mb-1">2.2 Selling Price</h4>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Reflects the direct impact of Average Selling Price (ASP) adjustments, contractual renegotiations, discounts, and realized spot pricing.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                  <h4 className="font-bold text-slate-900 mb-1">2.3 Sales Mix</h4>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Decomposes gross margin variance resulting from changes in the portfolio proportion of high-margin versus low-margin assemblies.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                  <h4 className="font-bold text-slate-900 mb-1">2.4 Purchase Price Variance (PPV)</h4>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Tracks procurement deviations between actual direct material purchase costs and standard standard baseline costs across supplier agreements.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                  <h4 className="font-bold text-slate-900 mb-1">2.5 Manufacturing Efficiency & Yield</h4>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Assesses shop-floor execution performance, including thermal scrap rates, machining rework concessions, cycle-time slippage, and process drift.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-                  <h4 className="font-bold text-slate-900 mb-1">2.6 Overhead Under-Absorption</h4>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Monitors over- or under-absorption of plant overhead, machine depreciation, and fixed factory burden driven by utilization and downtime.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Section 3: 3. Dimensional Deep-Dives */}
-            <section className="space-y-3.5">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-1.5">
-                <Globe className="w-4 h-4 text-blue-600" />
-                <h2 className="text-base font-bold text-slate-900">
-                  3. Dimensional Deep-Dives
-                </h2>
-              </div>
-
-              {/* Required Placeholder Box */}
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-950 font-medium">
-                <span className="font-bold text-blue-800 block mb-1">
-                  Section Coverage / Placeholder:
-                </span>
-                <p className="font-mono text-[11px] text-blue-900">
-                  By Product Category / Product Family, By Customer / Channel, By Geographic Region / Market
-                </p>
-              </div>
-
-              {/* Detailed 3 dimensions */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                    <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span>By Product Category / Product Family</span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed pt-1">
-                    Drills into margin performance across product families and sub-assembly clusters to identify systemic BOM cost drift.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                    <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span>By Customer / Channel</span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed pt-1">
-                    Segments contribution margins across key strategic accounts, OEM partners, and direct vs. distributor channels.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                    <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span>By Geographic Region / Market</span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed pt-1">
-                    Analyzes regional freight logistics, tariff exposures, currency adjustments, and localized production footprint costs.
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
-          <span className="text-slate-500 font-mono text-[11px]">
-            HMLV MarginTrace Attribution Engine v4.8.2
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded font-medium transition-colors"
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              onClick={handleExportDocx}
-              disabled={isExporting}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium flex items-center gap-1.5 shadow-xs transition-colors"
-            >
-              <FileDown className="w-3.5 h-3.5" />
-              <span>{isExporting ? 'Exporting...' : 'Export to DOCX'}</span>
+              <span>{isExporting ? 'Generating DOCX…' : exportSuccess ? 'Exported!' : 'Export to DOCX'}</span>
             </button>
           </div>
         </div>

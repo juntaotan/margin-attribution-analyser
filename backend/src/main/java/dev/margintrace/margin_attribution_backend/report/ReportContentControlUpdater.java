@@ -19,6 +19,9 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -41,6 +44,29 @@ public class ReportContentControlUpdater {
             throw new IllegalArgumentException("Enter a valid result value before applying");
         }
 
+        UpdateResult result = replaceContents(documentBytes, Map.of(alias, replacementValue));
+        if (result.updatedControls() == 0) {
+            throw new IllegalArgumentException(
+                    "No saved content control was found for Alias: " + alias);
+        }
+        return result;
+    }
+
+    public UpdateResult replaceContents(
+            byte[] documentBytes,
+            Map<String, String> replacements) throws IOException {
+        if (replacements == null || replacements.isEmpty()) {
+            return new UpdateResult(documentBytes, 0);
+        }
+
+        Map<String, String> normalizedReplacements = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                normalizedReplacements.put(entry.getKey(), entry.getValue());
+                normalizedReplacements.put(normalizeKey(entry.getKey()), entry.getValue());
+            }
+        }
+
         int updatedControls = 0;
         try (ZipInputStream input = new ZipInputStream(new ByteArrayInputStream(documentBytes));
              ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -52,7 +78,7 @@ public class ReportContentControlUpdater {
                 if (!entry.isDirectory()) {
                     byte[] content = input.readAllBytes();
                     if (isWordContentPart(entry.getName())) {
-                        PartUpdate updatedPart = updatePart(content, alias, replacementValue);
+                        PartUpdate updatedPart = updatePartBatch(content, replacements, normalizedReplacements);
                         content = updatedPart.content();
                         updatedControls += updatedPart.updatedControls();
                     }
@@ -62,16 +88,14 @@ public class ReportContentControlUpdater {
                 input.closeEntry();
             }
             archive.finish();
-            if (updatedControls == 0) {
-                throw new IllegalArgumentException(
-                        "No saved content control was found for Alias: " + alias);
-            }
             return new UpdateResult(output.toByteArray(), updatedControls);
         }
     }
 
-    private PartUpdate updatePart(byte[] xml, String alias, String replacementValue)
-            throws IOException {
+    private PartUpdate updatePartBatch(
+            byte[] xml,
+            Map<String, String> originalReplacements,
+            Map<String, String> normalizedReplacements) throws IOException {
         Document document = parseXml(xml);
         NodeList controls = document.getElementsByTagNameNS(WORD_NAMESPACE, "sdt");
         int updatedControls = 0;
@@ -79,19 +103,70 @@ public class ReportContentControlUpdater {
         for (int index = 0; index < controls.getLength(); index++) {
             Element control = (Element) controls.item(index);
             Element properties = directChild(control, "sdtPr");
-            if (properties == null || !alias.equals(propertyValue(properties, "alias"))) {
+            if (properties == null) {
                 continue;
             }
-            Element content = directChild(control, "sdtContent");
-            if (content != null) {
-                replaceContent(document, control, content, replacementValue);
-                updatedControls++;
+            String alias = propertyValue(properties, "alias");
+            String tag = propertyValue(properties, "tag");
+            String matchedValue = resolveReplacementValue(alias, tag, originalReplacements, normalizedReplacements);
+
+            if (matchedValue != null) {
+                Element content = directChild(control, "sdtContent");
+                if (content != null) {
+                    replaceContent(document, control, content, matchedValue);
+                    updatedControls++;
+                }
+            }
+        }
+
+        // Also replace any textual {{Placeholder}} in <w:t> nodes for fallback compatibility
+        NodeList textNodes = document.getElementsByTagNameNS(WORD_NAMESPACE, "t");
+        for (int i = 0; i < textNodes.getLength(); i++) {
+            Node textNode = textNodes.item(i);
+            String currentText = textNode.getTextContent();
+            if (currentText != null && currentText.contains("{{")) {
+                String modifiedText = currentText;
+                for (Map.Entry<String, String> entry : originalReplacements.entrySet()) {
+                    String token = "{{" + entry.getKey() + "}}";
+                    if (modifiedText.contains(token)) {
+                        modifiedText = modifiedText.replace(token, entry.getValue());
+                        updatedControls++;
+                    }
+                }
+                if (!modifiedText.equals(currentText)) {
+                    textNode.setTextContent(modifiedText);
+                }
             }
         }
 
         return updatedControls == 0
                 ? new PartUpdate(xml, 0)
                 : new PartUpdate(writeXml(document), updatedControls);
+    }
+
+    private String resolveReplacementValue(
+            String alias,
+            String tag,
+            Map<String, String> original,
+            Map<String, String> normalized) {
+        if (!alias.isBlank() && original.containsKey(alias)) {
+            return original.get(alias);
+        }
+        if (!tag.isBlank() && original.containsKey(tag)) {
+            return original.get(tag);
+        }
+        if (!alias.isBlank() && normalized.containsKey(normalizeKey(alias))) {
+            return normalized.get(normalizeKey(alias));
+        }
+        if (!tag.isBlank() && normalized.containsKey(normalizeKey(tag))) {
+            return normalized.get(normalizeKey(tag));
+        }
+        return null;
+    }
+
+    private String normalizeKey(String key) {
+        if (key == null) return "";
+        return key.replaceAll("[\\s_\\-]", "").toLowerCase(java.util.Locale.ROOT);
     }
 
     private void replaceContent(
