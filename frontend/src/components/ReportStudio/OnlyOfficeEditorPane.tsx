@@ -13,10 +13,12 @@ const DOCUMENT_ENDPOINT = '/api/report-studio/onlyoffice/document';
 
 interface OnlyOfficeEditorPaneProps {
   onDocumentChanged?: () => void;
+  reloadKey?: number;
 }
 
 export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
   onDocumentChanged,
+  reloadKey = 0,
 }) => {
   const [editorConfig, setEditorConfig] = useState<OnlyOfficeEditorConfigResponse>();
   const [editorRevision, setEditorRevision] = useState(0);
@@ -59,7 +61,7 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
 
   useEffect(() => {
     void loadConfig();
-  }, [loadConfig]);
+  }, [loadConfig, reloadKey]);
 
   const handleDocumentSelected = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

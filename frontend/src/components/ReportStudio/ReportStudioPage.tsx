@@ -65,6 +65,7 @@ export const ReportStudioPage: React.FC = () => {
   });
   // Secondary column prompt input buffer
   const activeToken = placeholderTokens.find((token) => token.id === activeTokenId);
+  const activeControl = contentControls.find((control) => control.id === activeTokenId);
   const [promptInput, setPromptInput] = useState<string>(activeToken?.prompt || '');
   const [generatedSemanticPlan, setGeneratedSemanticPlan] = useState<SemanticExecutionPlan>();
   const [blueprintLoading, setBlueprintLoading] = useState(false);
@@ -72,6 +73,10 @@ export const ReportStudioPage: React.FC = () => {
   const [queryResult, setQueryResult] = useState<SemanticQueryResult>();
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState<string>();
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyError, setApplyError] = useState<string>();
+  const [applySuccess, setApplySuccess] = useState<string>();
+  const [editorReloadKey, setEditorReloadKey] = useState(0);
   const blueprintRequestId = useRef(0);
 
   const loadContentControls = useCallback(async () => {
@@ -212,6 +217,8 @@ export const ReportStudioPage: React.FC = () => {
     setGeneratedSemanticPlan(undefined);
     setQueryResult(undefined);
     setQueryError(undefined);
+    setApplyError(undefined);
+    setApplySuccess(undefined);
 
     try {
       const response = await fetch(
@@ -296,10 +303,72 @@ export const ReportStudioPage: React.FC = () => {
     }
   };
 
+  const handleApplyResult = async () => {
+    if (!queryResult || !generatedSemanticPlan || !activeControl?.alias) return;
+
+    const firstValue = queryResult.rows[0]?.[queryResult.columns[0]];
+    if (firstValue == null) {
+      setApplyError("There is no result value to save");
+      return;
+    }
+
+    let value = String(firstValue);
+    if (generatedSemanticPlan.format === "percentage" && !value.trim().endsWith("%")) {
+      value += "%";
+    }
+
+    const confirmed = window.confirm(
+      'Save "' + value + '" to the content control with Alias "' +
+        activeControl.alias + '"? The document will reload.'
+    );
+    if (!confirmed) return;
+
+    setApplyLoading(true);
+    setApplyError(undefined);
+    setApplySuccess(undefined);
+
+    try {
+      const response = await fetch(
+        "/api/report-studio/onlyoffice/content-controls/apply",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ alias: activeControl.alias, value }),
+        }
+      );
+      const payload = (await response.json()) as {
+        documentVersion?: number;
+        updatedControls?: number;
+        detail?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.detail ?? `Save failed (${response.status})`);
+      }
+
+      await loadContentControls();
+      setEditorReloadKey((current) => current + 1);
+      const updatedControls = payload.updatedControls ?? 1;
+      setApplySuccess(
+        updatedControls === 1
+          ? "Saved to the source document"
+          : `Saved to ${updatedControls} matching controls`
+      );
+    } catch (requestError) {
+      setApplyError(
+        requestError instanceof Error ? requestError.message : "Unable to save the result"
+      );
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-full w-full min-h-0 overflow-hidden font-sans" style={{ backgroundColor: "#f3f3f3" }}>
       <main className="min-w-0 flex-1" style={{ backgroundColor: "#f3f3f3" }}>
-        <OnlyOfficeEditorPane onDocumentChanged={() => void loadContentControls()} />
+        <OnlyOfficeEditorPane
+          reloadKey={editorReloadKey}
+          onDocumentChanged={() => void loadContentControls()}
+        />
       </main>
 
       <aside className="w-96 lg:w-[420px] xl:w-[450px] border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar shadow-lg" style={{ backgroundColor: "#f3f3f3" }}>
@@ -396,6 +465,8 @@ export const ReportStudioPage: React.FC = () => {
                         setGeneratedSemanticPlan(undefined);
                         setQueryResult(undefined);
                         setQueryError(undefined);
+                        setApplyError(undefined);
+                        setApplySuccess(undefined);
                         blueprintRequestId.current += 1;
                         setBlueprintLoading(false);
                         setQueryLoading(false);
@@ -415,7 +486,7 @@ export const ReportStudioPage: React.FC = () => {
                           activeTokenId === control.id ? 'text-blue-800' : 'text-slate-700'
                         }`}
                       >
-                        {control.alias}
+                        {control.tag || control.alias}
                       </span>
                       <span className="flex shrink-0 items-center gap-1">
                         {control.occurrences > 1 && (
@@ -432,7 +503,7 @@ export const ReportStudioPage: React.FC = () => {
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2 text-[10px]">
                       <span className="truncate font-mono text-slate-400">
-                        {control.tag || `Word ID: ${control.wordId || 'unassigned'}`}
+                        {control.alias || `Word ID: ${control.wordId || 'unassigned'}`}
                       </span>
                       {token?.resolvedValue && (
                         <span className="shrink-0 font-mono text-emerald-700">
@@ -485,6 +556,8 @@ export const ReportStudioPage: React.FC = () => {
                           setGeneratedSemanticPlan(undefined);
                           setQueryResult(undefined);
                           setQueryError(undefined);
+                          setApplyError(undefined);
+                          setApplySuccess(undefined);
                         blueprintRequestId.current += 1;
                         setBlueprintLoading(false);
                         setQueryLoading(false);
@@ -514,6 +587,8 @@ export const ReportStudioPage: React.FC = () => {
                         setGeneratedSemanticPlan(undefined);
                         setQueryResult(undefined);
                         setQueryError(undefined);
+                        setApplyError(undefined);
+                        setApplySuccess(undefined);
                         blueprintRequestId.current += 1;
                         setBlueprintLoading(false);
                         setQueryLoading(false);
@@ -561,7 +636,6 @@ export const ReportStudioPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* 3. AI Execution Blueprint (Transparent Feedback Card) */}
                 {(queryLoading || queryResult || queryError) && (
                   <div className="rounded-xl border border-emerald-200 bg-white p-4 shadow-xs">
                     <div className="mb-3 flex items-center justify-between border-b border-emerald-100 pb-2">
@@ -579,7 +653,7 @@ export const ReportStudioPage: React.FC = () => {
                     {queryLoading && (
                       <div className="flex items-center justify-center gap-2 py-5 text-xs text-slate-500">
                         <LoaderCircle className="h-4 w-4 animate-spin text-emerald-600" />
-                        Running query…
+                        Running query...
                       </div>
                     )}
                     {queryError && (
@@ -614,7 +688,7 @@ export const ReportStudioPage: React.FC = () => {
                               <tr key={rowIndex}>
                                 {queryResult.columns.map((column) => (
                                   <td key={column} className="whitespace-nowrap px-3 py-2">
-                                    {row[column] == null ? '—' : String(row[column])}
+                                    {row[column] == null ? '-' : String(row[column])}
                                   </td>
                                 ))}
                               </tr>
@@ -626,15 +700,26 @@ export const ReportStudioPage: React.FC = () => {
 
                     <button
                       type="button"
-                      disabled
-                      title="Apply will be implemented in the next step"
-                      className="mt-3 inline-flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-lg bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-500"
+                      onClick={() => void handleApplyResult()}
+                      disabled={applyLoading || !queryResult || !activeControl?.alias}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
                     >
-                      <Play className="h-3.5 w-3.5" />
-                      Apply
+                      {applyLoading ? (
+                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5" />
+                      )}
+                      {applyLoading ? "Saving..." : "Apply"}
                     </button>
+                    {applySuccess && (
+                      <p className="mt-2 text-[10px] text-emerald-700">{applySuccess}</p>
+                    )}
+                    {applyError && (
+                      <p className="mt-2 text-[10px] text-red-600">{applyError}</p>
+                    )}
                   </div>
                 )}
+                {/* 3. AI Execution Blueprint (Transparent Feedback Card) */}
                 {generatedSemanticPlan && (
                   <div className="bg-gradient-to-br from-white to-blue-50/40 rounded-xl border border-blue-200/80 p-4 space-y-3.5 shadow-xs">
                     <div className="flex items-center justify-between border-b border-blue-100 pb-2">

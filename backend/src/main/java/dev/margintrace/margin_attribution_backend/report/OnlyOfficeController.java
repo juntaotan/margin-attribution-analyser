@@ -44,6 +44,7 @@ public class OnlyOfficeController {
     private final ReportDurationService reportDurationService;
     private final ReportBlueprintService reportBlueprintService;
     private final ReportQueryService reportQueryService;
+    private final ReportContentControlUpdater contentControlUpdater;
     private final Set<String> issuedDocumentKeys = ConcurrentHashMap.newKeySet();
     private final Set<String> supersededDocumentKeys = ConcurrentHashMap.newKeySet();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -185,6 +186,26 @@ public class OnlyOfficeController {
         }
     }
 
+    @PostMapping("/content-controls/apply")
+    public synchronized Map<String, Object> applyContentControl(
+            @RequestBody ApplyContentControlRequest request) throws Exception {
+        try {
+            ReportContentControlUpdater.UpdateResult update =
+                    contentControlUpdater.replaceContentByAlias(
+                            documentStore.loadOrCreateDefaultDocument(),
+                            request == null ? null : request.alias(),
+                            request == null ? null : request.value());
+            supersededDocumentKeys.addAll(issuedDocumentKeys);
+            issuedDocumentKeys.clear();
+            documentStore.saveDefaultDocument(update.documentBytes());
+            return Map.of(
+                    "documentVersion", documentStore.currentVersion(),
+                    "updatedControls", update.updatedControls());
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        }
+    }
+
     @PostMapping("/callback")
     public synchronized Map<String, Integer> callback(
             @RequestParam String accessToken,
@@ -244,6 +265,9 @@ public class OnlyOfficeController {
     }
 
     public record BlueprintRequest(String prompt) {
+    }
+
+    public record ApplyContentControlRequest(String alias, String value) {
     }
 
     public record DurationAnalysisRequest(String tag, String wordId, String alias) {
