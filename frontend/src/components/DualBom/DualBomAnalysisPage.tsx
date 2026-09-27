@@ -12,7 +12,8 @@ import {
   reconcileDualBom,
 } from '../../varianceEngine';
 import {
-  ReconciliationPath, StreamCsrGraph, StreamNode, csrToAdjacency, readAnalysisStream,
+  COST_OF_GOODS_SOLD_NODE_ID, ReconciliationPath, StreamCsrGraph, StreamNode,
+  csrToAdjacency, readAnalysisStream,
 } from '../../analysisGraph';
 
 export const DualBomAnalysisPage: React.FC = () => {
@@ -162,7 +163,7 @@ export const DualBomAnalysisPage: React.FC = () => {
           );
           setResult(reconciled);
           const first = reconciled.nodes
-            .filter((node) => (node.costDelta ?? 0) > 0)
+            .filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID && (node.costDelta ?? 0) > 0)
             .sort((left, right) => (right.costDelta ?? 0) - (left.costDelta ?? 0))[0]
             ?? reconciled.nodes[0];
           setSelectedNode(first ?? null);
@@ -210,7 +211,7 @@ export const DualBomAnalysisPage: React.FC = () => {
   }, []);
 
   const topOverrunNode = result?.nodes
-    .filter((node) => (node.costDelta ?? 0) > 0)
+    .filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID && (node.costDelta ?? 0) > 0)
     .sort((left, right) => (right.costDelta ?? 0) - (left.costDelta ?? 0))[0];
 
   return (

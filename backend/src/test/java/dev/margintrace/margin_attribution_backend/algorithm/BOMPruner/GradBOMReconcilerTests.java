@@ -110,6 +110,24 @@ class GradBOMReconcilerTests {
     }
 
     @Test
+    void propagatesThroughAProductToTheCostOfGoodsSoldRoot() {
+        CsrGraph actual = graph(
+                new Node[] {node("M", 10), new Node("P", BigDecimal.ONE), node("__COGS__", 100)},
+                new int[] {0, 1, 2, 2}, new int[] {1, 2});
+        CsrGraph comparable = graph(
+                new Node[] {node("M", 0), new Node("P", BigDecimal.ONE), node("__COGS__", 40)},
+                new int[] {0, 1, 2, 2}, new int[] {1, 2});
+
+        ReconciliationResult result = reconciler.reconcile(
+                actual, comparable, bd(10), bd(50));
+
+        assertThat(result.paths()).containsExactly(new PropagationPath(
+                List.of(0, 1, 2),
+                List.of(new GraphEdge(0, 1, 0), new GraphEdge(1, 2, 1)),
+                PropagationPath.EndReason.THRESHOLD_EXCEEDED, bd(60)));
+    }
+
+    @Test
     void scoresAndRecordsParallelEdgesSeparately() {
         CsrGraph actual = graph(new Node[] {node("M", 10), node("P", 10)},
                 new int[] {0, 2, 2}, new int[] {1, 1});

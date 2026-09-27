@@ -3,6 +3,7 @@ package dev.margintrace.margin_attribution_backend.importation.model;
 public enum DataSetType {
     // Sales part
     SALES,
+    COST_DETAIL,
     ACCOUNT_RECEIVABLE,
     // Purchase part
     PURCHASE,

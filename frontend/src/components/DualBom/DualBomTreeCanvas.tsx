@@ -4,7 +4,9 @@ import {
   Background, Controls, Edge, Node, Position, ReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { StreamCsrGraph, StreamNode, formatAmount, formatQuantity } from '../../analysisGraph';
+import {
+  COST_OF_GOODS_SOLD_NODE_ID, StreamCsrGraph, StreamNode, formatAmount, formatQuantity,
+} from '../../analysisGraph';
 
 interface DualBomTreeCanvasProps {
   actualGraph: StreamCsrGraph;
@@ -58,6 +60,7 @@ function layoutGraph(
   const nodes: Node[] = graph.nodes.map((node) => {
     const point = layout.node(node.id);
     const highlighted = highlightedNodeIds.has(node.id);
+    const isCostOfGoodsSold = node.inventoryId === COST_OF_GOODS_SOLD_NODE_ID;
     return {
       id: node.id,
       position: { x: point.x - NODE_WIDTH / 2, y: point.y - NODE_HEIGHT / 2 },
@@ -67,9 +70,13 @@ function layoutGraph(
         label: (
           <div className="text-left font-sans" data-testid={`csr-node-${node.position}`}>
             <div className="font-mono text-[11px] font-bold truncate" title={node.inventoryId}>
-              {node.inventoryId}
+              {isCostOfGoodsSold ? 'Cost of Goods Sold' : node.inventoryId}
             </div>
-            <div className="mt-1 text-[10px] text-slate-500">Qty {formatQuantity(node.quantity)}</div>
+            {!isCostOfGoodsSold && (
+              <div className="mt-1 text-[10px] text-slate-500">
+                Qty {formatQuantity(node.quantity)}
+              </div>
+            )}
             <div className={`mt-1 text-xs font-semibold ${highlighted ? 'text-rose-700' : 'text-slate-800'}`}>
               {formatAmount(node.cost)}
             </div>

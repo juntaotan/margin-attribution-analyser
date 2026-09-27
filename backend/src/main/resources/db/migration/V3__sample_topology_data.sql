@@ -86,6 +86,13 @@ INSERT INTO sales_order (
     ('SO-DEMO-2026', '2026-01-15', 'SALE-DEMO-2026', 'PROD-A', 100.000000, 12000.000000)
 ON CONFLICT DO NOTHING;
 
+INSERT INTO cost_details (
+    sale_order_no, date, movement_no, product_no, product_num, total_cost
+) VALUES
+    ('SO-DEMO-2025', '2025-01-15', 'COGS-DEMO-2025', 'PROD-A', 100.000000, 4500.000000),
+    ('SO-DEMO-2026', '2026-01-15', 'COGS-DEMO-2026', 'PROD-A', 100.000000, 4900.000000)
+ON CONFLICT DO NOTHING;
+
 -- Comparable period: the same topology and quantities as January 2026.
 INSERT INTO production_order (
     production_order_no, date, product_no, product_num, product_department, bom_no

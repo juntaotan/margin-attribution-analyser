@@ -7,6 +7,7 @@ import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.warehouse.model.AccountPayableLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.AccountReceivableLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
+import dev.margintrace.margin_attribution_backend.warehouse.model.CostDetail;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.model.PurchaseOrderLine;
@@ -81,6 +82,7 @@ class SchemaMappingPresetCatalogTests {
     void warehousePresetsMatchEveryMappedEntityFieldAndColumn() {
         Map<DataSetType, Class<?>> warehouseEntities = Map.of(
                 DataSetType.SALES, SalesOrderLine.class,
+                DataSetType.COST_DETAIL, CostDetail.class,
                 DataSetType.ACCOUNT_RECEIVABLE, AccountReceivableLine.class,
                 DataSetType.PURCHASE, PurchaseOrderLine.class,
                 DataSetType.ACCOUNT_PAYABLE, AccountPayableLine.class,
@@ -122,6 +124,7 @@ class SchemaMappingPresetCatalogTests {
     void everyWarehouseFieldRecognizesItsBusinessKeyAndPhysicalColumnName() {
         for (DataSetType type : new DataSetType[]{
                 DataSetType.SALES,
+                DataSetType.COST_DETAIL,
                 DataSetType.ACCOUNT_RECEIVABLE,
                 DataSetType.PURCHASE,
                 DataSetType.ACCOUNT_PAYABLE,

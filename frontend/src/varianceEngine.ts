@@ -1,4 +1,6 @@
-import { AnalysisAdjacencyEntry, AnalysisNode } from './analysisGraph';
+import {
+  AnalysisAdjacencyEntry, AnalysisNode, COST_OF_GOODS_SOLD_NODE_ID,
+} from './analysisGraph';
 
 export type SeverityLevel = 'sync' | 'minor' | 'moderate' | 'major' | 'favorable';
 
@@ -158,6 +160,9 @@ const MATERIAL_NAMES: Record<string, string> = {
 };
 
 export const resolveMaterialName = (inventoryId: string): string => {
+  if (inventoryId === COST_OF_GOODS_SOLD_NODE_ID) {
+    return 'Cost of Goods Sold';
+  }
   for (const [key, name] of Object.entries(MATERIAL_NAMES)) {
     if (inventoryId.includes(key)) {
       return name;
@@ -427,38 +432,44 @@ export const reconcileDualBom = (
   });
 
   // Material ledger table items
-  const ledgerItems: MaterialLedgerItem[] = dualNodes.map((n) => {
-    let status: MaterialLedgerItem['status'] = 'Normal';
-    if (n.severity === 'major') status = 'Over-issued';
-    else if (n.severity === 'moderate') status = 'Scrap Extra';
-    else if (n.severity === 'favorable') status = 'Released';
-    else if (n.severity === 'minor') status = 'Over-cost';
+  const ledgerItems: MaterialLedgerItem[] = dualNodes
+    .filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID)
+    .map((n) => {
+      let status: MaterialLedgerItem['status'] = 'Normal';
+      if (n.severity === 'major') status = 'Over-issued';
+      else if (n.severity === 'moderate') status = 'Scrap Extra';
+      else if (n.severity === 'favorable') status = 'Released';
+      else if (n.severity === 'minor') status = 'Over-cost';
 
-    return {
-      id: n.id,
-      workOrder: n.workOrder,
-      materialCode: n.id,
-      description: n.name,
-      batchLot: n.lotNo,
-      station: n.station.split(' ')[0],
-      bomQty: n.standardQty,
-      actualQty: n.actualQty,
-      unitCost: n.unitCost,
-      totalCost: n.actualCost,
-      varianceDelta: n.costDelta,
-      status,
-      severity: n.severity,
-      node: n,
-    };
-  });
+      return {
+        id: n.id,
+        workOrder: n.workOrder,
+        materialCode: n.id,
+        description: n.name,
+        batchLot: n.lotNo,
+        station: n.station.split(' ')[0],
+        bomQty: n.standardQty,
+        actualQty: n.actualQty,
+        unitCost: n.unitCost,
+        totalCost: n.actualCost,
+        varianceDelta: n.costDelta,
+        status,
+        severity: n.severity,
+        node: n,
+      };
+    });
 
   const rootNodes = dualNodes.filter((n) => n.level === 0);
+  const costOfGoodsSold = dualNodes.find(
+    (node) => node.id === COST_OF_GOODS_SOLD_NODE_ID,
+  );
+  const netVariance = costOfGoodsSold?.costDelta ?? totalCostVariance;
 
   // Overall Risk Assessment
   let riskTier = 'Nominal In-Spec';
-  if (penetratedCount >= 3 || totalCostVariance > 1000) {
+  if (penetratedCount >= 3 || netVariance > 1000) {
     riskTier = 'Tier-1 High Risk';
-  } else if (penetratedCount > 0 || totalCostVariance > 300) {
+  } else if (penetratedCount > 0 || netVariance > 300) {
     riskTier = 'Tier-2 Moderate Risk';
   }
 
@@ -467,7 +478,7 @@ export const reconcileDualBom = (
     nodesById,
     rootNodes,
     ledgerItems,
-    netVariance: totalCostVariance,
+    netVariance,
     penetratedNodesCount: penetratedCount,
     riskTier,
   };

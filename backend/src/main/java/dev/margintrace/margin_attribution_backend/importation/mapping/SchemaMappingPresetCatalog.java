@@ -26,6 +26,7 @@ public class SchemaMappingPresetCatalog {
     public SchemaMappingPresetCatalog() {
         EnumMap<DataSetType, DataSetDefinition> presets = new EnumMap<>(DataSetType.class);
         register(presets, sales());
+        register(presets, costDetails());
         register(presets, accountReceivables());
         register(presets, purchases());
         register(presets, accountPayables());
@@ -94,6 +95,22 @@ public class SchemaMappingPresetCatalog {
                 requiredNumeric("lineTotalSalesAmount", "product_total_price", "productTotalPrice",
                         "line total sales amount", "line sales amount", "total price", "sales amount", "amount",
                         "行销售金额", "销售总价", "销售金额", "含税金额", "总价", "金额"));
+    }
+
+    private static DataSetDefinition costDetails() {
+        return dataSet(DataSetType.COST_DETAIL, "cost_details",
+                Set.of("cost_detail", "cost details", "销售成本", "销售成本明细", "主营业务成本明细"),
+                requiredText("salesOrderNo", "sale_order_no", "saleOrderNo", "sale order no",
+                        "sales order no", "sales order number", "so no", "销售单号", "销售订单号", "销售订单编号"),
+                requiredDate("date", "date", "cost date", "posting date", "销售成本日期", "过账日期", "日期"),
+                requiredText("movementNo", "movement_no", "movement no", "cost movement no",
+                        "inventory movement no", "成本移动号", "库存移动号", "出入库单号"),
+                requiredText("productNo", "product_no", "product no", "product number", "item no",
+                        "item code", "sku", "产品编号", "产品编码", "商品编号", "商品编码"),
+                requiredNumeric("productQuantity", "product_num", "productNum", "product quantity",
+                        "quantity", "qty", "costed quantity", "产品数量", "商品数量", "销售数量"),
+                requiredNumeric("totalCost", "total_cost", "totalCost", "total cost", "cost amount",
+                        "cost of goods sold", "销售成本", "主营业务成本", "总成本", "成本金额"));
     }
 
     private static DataSetDefinition accountReceivables() {

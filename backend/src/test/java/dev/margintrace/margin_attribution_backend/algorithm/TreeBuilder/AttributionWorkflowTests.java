@@ -8,6 +8,7 @@ import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage
 import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
 import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.CostDetailRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
@@ -54,8 +55,11 @@ class AttributionWorkflowTests {
                 "findAllByProductNoAndDateBetweenAndMaterialNoIsNotNullOrderByDateAscIdAsc",
                 arguments -> usages.getOrDefault(arguments[0], List.of()));
 
+        CostDetailRepository costs = repository(CostDetailRepository.class,
+                "sumTotalCostBetween", arguments -> new BigDecimal("9000.00"));
+
         AttributionWorkflow workflow = new AttributionWorkflow(new ReadDataHandler(sales,
-                new EdgeBuildHandler(production, usage, new CsrGraphHandler())));
+                new EdgeBuildHandler(production, usage, costs, new CsrGraphHandler())));
         CsrGraph graph = workflow.trace(DATE, DATE);
 
         List<String> productRelationships = new ArrayList<>();
@@ -69,26 +73,31 @@ class AttributionWorkflowTests {
         }
         assertThat(productRelationships).containsExactlyInAnyOrder(
                 "A001-B001", "B001-C001", "B001-C002", "A001-B002",
-                "A002-B003", "A002-B004", "B003-C003", "B004-C003", "B004-C004");
+                "A002-B003", "A002-B004", "B003-C003", "B004-C003", "B004-C004",
+                "__COGS__-A001", "__COGS__-A002");
 
         assertThat(graph.nodes()).containsExactly(
                 produced("A001"), produced("A002"),
                 consumed("B001"), consumed("B002"),
                 consumed("B003"), consumed("B004"),
                 consumed("C001"), consumed("C002"),
-                new Node("C003", BigDecimal.valueOf(2), BigDecimal.valueOf(20)), consumed("C004"));
+                new Node("C003", BigDecimal.valueOf(2), BigDecimal.valueOf(20)), consumed("C004"),
+                new Node("__COGS__", BigDecimal.ONE, new BigDecimal("9000.00")));
         assertThat(graph.offset()).containsExactly(
-                0, 0, 0, 1, 2, 3, 4, 5, 6, 8, 9);
-        assertThat(graph.successors()).containsExactly(0, 0, 1, 1, 2, 2, 4, 5, 5);
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 11);
+        assertThat(graph.successors()).containsExactly(10, 10, 0, 0, 1, 1, 2, 2, 4, 5, 5);
 
         BillOfMaterialRepository bom = repository(BillOfMaterialRepository.class,
                 "findAllByProductNoIn", arguments -> List.of());
         AnalysisResults analysis = new Analyser(workflow, bom, production, sales).analyser(DATE, DATE);
         assertThat(analysis.getResults()).hasSize(10);
+        List<String> tracedRelationships = productRelationships.stream()
+                .filter(relationship -> !relationship.startsWith("__COGS__-"))
+                .toList();
         assertThat(analysis.getResults().stream()
                 .flatMap(entry -> entry.downstream().stream()
                         .map(downstream -> downstream.inventoryId() + "-" + entry.upstream().inventoryId())))
-                .containsExactlyInAnyOrderElementsOf(productRelationships);
+                .containsExactlyInAnyOrderElementsOf(tracedRelationships);
 
         System.out.println("offset = " + Arrays.toString(graph.offset()));
         System.out.println("successors = " + Arrays.toString(graph.successors()));

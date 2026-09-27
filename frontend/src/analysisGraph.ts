@@ -1,3 +1,5 @@
+export const COST_OF_GOODS_SOLD_NODE_ID = '__COGS__';
+
 /** The backend's recorded node values; null cost means unavailable, not zero. */
 export interface AnalysisNode {
   inventoryId: string;
