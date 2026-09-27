@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, FileText, LoaderCircle, RefreshCw } from 'lucide-react';
+import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { AlertCircle, FileText, LoaderCircle, RefreshCw, Upload } from 'lucide-react';
 import { DocumentEditor } from '@onlyoffice/document-editor-react';
 import type { Config } from '@onlyoffice/doceditor-types';
 
@@ -9,11 +9,22 @@ interface OnlyOfficeEditorConfigResponse {
 }
 
 const CONFIG_ENDPOINT = '/api/report-studio/onlyoffice/config';
+const DOCUMENT_ENDPOINT = '/api/report-studio/onlyoffice/document';
 
-export const OnlyOfficeEditorPane: React.FC = () => {
+interface OnlyOfficeEditorPaneProps {
+  onDocumentChanged?: () => void;
+}
+
+export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
+  onDocumentChanged,
+}) => {
   const [editorConfig, setEditorConfig] = useState<OnlyOfficeEditorConfigResponse>();
+  const [editorRevision, setEditorRevision] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>();
+  const [uploadError, setUploadError] = useState<string>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadConfig = useCallback(async () => {
     setIsLoading(true);
@@ -34,6 +45,7 @@ export const OnlyOfficeEditorPane: React.FC = () => {
       }
 
       setEditorConfig(payload);
+      setEditorRevision((current) => current + 1);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -48,6 +60,42 @@ export const OnlyOfficeEditorPane: React.FC = () => {
   useEffect(() => {
     void loadConfig();
   }, [loadConfig]);
+
+  const handleDocumentSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadError(undefined);
+
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const response = await fetch(DOCUMENT_ENDPOINT, {
+        method: 'POST',
+        body,
+      });
+
+      if (!response.ok) {
+        const problem = (await response.json().catch(() => undefined)) as
+          | { detail?: string; message?: string }
+          | undefined;
+        throw new Error(
+          problem?.detail ?? problem?.message ?? `Document upload failed (${response.status})`
+        );
+      }
+
+      await loadConfig();
+      onDocumentChanged?.();
+    } catch (requestError) {
+      setUploadError(
+        requestError instanceof Error ? requestError.message : 'Unable to open the DOCX document'
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -100,11 +148,45 @@ export const OnlyOfficeEditorPane: React.FC = () => {
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
           <FileText className="h-4 w-4 text-blue-600" />
           <span>ONLYOFFICE Document Editor</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={(event) => void handleDocumentSelected(event)}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="ml-1 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-wait disabled:opacity-60"
+          >
+            {isUploading ? (
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Upload className="h-3.5 w-3.5" />
+            )}
+            {isUploading ? 'Opening…' : 'Open DOCX'}
+          </button>
         </div>
         <span className="text-[10px] font-mono text-emerald-700">Connected</span>
       </div>
+      {uploadError && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[11px] text-amber-800">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">{uploadError}</span>
+          <button
+            type="button"
+            onClick={() => setUploadError(undefined)}
+            className="font-semibold hover:text-amber-950"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <div className="min-h-0 flex-1">
         <DocumentEditor
+          key={editorRevision}
           id="margintrace-report-editor"
           documentServerUrl={editorConfig.documentServerUrl}
           config={editorConfig.config}

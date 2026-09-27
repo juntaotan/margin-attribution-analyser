@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   Calculator,
@@ -15,6 +15,21 @@ import { createDefaultDocument } from './defaultTemplate';
 import { parseSemanticPrompt, executeSemanticQuery } from './semanticParser';
 import { OnlyOfficeEditorPane } from './OnlyOfficeEditorPane';
 
+interface DurationInsight {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  duration: string;
+  sentences: string[];
+  message?: string;
+}
+
+const userPromptWithoutDuration = (prompt: string) =>
+  prompt.replace(/^Duration:[^\r\n]*(?:\r?\n)?/i, '');
+
+const durationFromPrompt = (prompt: string) => {
+  const match = prompt.match(/^Duration:\s*([^\r\n]*)/i);
+  return match?.[1]?.trim() || undefined;
+};
+
 export const ReportStudioPage: React.FC = () => {
   // Document State
   const [doc, setDoc] = useState(createDefaultDocument);
@@ -22,6 +37,14 @@ export const ReportStudioPage: React.FC = () => {
   const [controlsLoading, setControlsLoading] = useState(true);
   const [controlsError, setControlsError] = useState<string>();
   const [documentVersion, setDocumentVersion] = useState<number>();
+  const [durationDetectionAttempt, setDurationDetectionAttempt] = useState(0);
+  const [durationInsight, setDurationInsight] = useState<DurationInsight>({
+    status: 'idle',
+    duration: 'Select a tagged placeholder',
+    sentences: [],
+  });
+  const [durationOverrides, setDurationOverrides] = useState<Record<string, string>>({});
+  const durationRequestId = useRef(0);
   // Currently selected content control for inspection in secondary column
   const [activeTokenId, setActiveTokenId] = useState<string>('');
   const placeholderTokens: PlaceholderToken[] = contentControls.map((control) => {
@@ -81,11 +104,103 @@ export const ReportStudioPage: React.FC = () => {
   // When activeTokenId changes, sync the prompt buffer
   useEffect(() => {
     if (activeToken) {
-      setPromptInput(activeToken.prompt);
+      setPromptInput(userPromptWithoutDuration(activeToken.prompt));
+      const storedDuration = durationFromPrompt(activeToken.prompt);
+      if (storedDuration) {
+        setDurationOverrides((current) =>
+          current[activeToken.id]
+            ? current
+            : { ...current, [activeToken.id]: storedDuration }
+        );
+      }
     } else {
       setPromptInput('');
     }
   }, [activeTokenId, activeToken?.prompt]);
+
+  useEffect(() => {
+    const control = contentControls.find((item) => item.id === activeTokenId);
+    const requestId = ++durationRequestId.current;
+    if (!control) {
+      setDurationInsight({
+        status: 'idle',
+        duration: 'Select a tagged placeholder',
+        sentences: [],
+      });
+      return;
+    }
+    if (!control.tag) {
+      setDurationInsight({
+        status: 'error',
+        duration: 'Unavailable',
+        sentences: [],
+        message: 'Add a Tag to this content control before detecting its reporting period.',
+      });
+      return;
+    }
+    const userDuration = durationOverrides[activeTokenId];
+    if (userDuration !== undefined) {
+      setDurationInsight({
+        status: 'ready',
+        duration: userDuration,
+        sentences: [],
+      });
+      return;
+    }
+
+    const abortController = new AbortController();
+    setDurationInsight({
+      status: 'loading',
+      duration: 'Detecting…',
+      sentences: [],
+    });
+
+    void fetch('/api/report-studio/onlyoffice/content-controls/duration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ tag: control.tag }),
+      signal: abortController.signal,
+    })
+      .then(async (response) => {
+        const payload = (await response.json()) as {
+          duration?: string;
+          sentences?: string[];
+          analyzed?: boolean;
+          message?: string;
+          detail?: string;
+        };
+        if (!response.ok) {
+          throw new Error(payload.detail ?? `Duration detection failed (${response.status})`);
+        }
+        if (durationRequestId.current !== requestId) return;
+        setDurationInsight({
+          status: payload.analyzed ? 'ready' : 'error',
+          duration: payload.duration ?? 'Not specified',
+          sentences: payload.sentences ?? [],
+          message: payload.message,
+        });
+      })
+      .catch((requestError) => {
+        if (abortController.signal.aborted || durationRequestId.current !== requestId) return;
+        setDurationInsight({
+          status: 'error',
+          duration: 'Unavailable',
+          sentences: [],
+          message:
+            requestError instanceof Error
+              ? requestError.message
+              : 'Unable to detect the reporting period',
+        });
+      });
+
+    return () => abortController.abort();
+  }, [
+    activeTokenId,
+    documentVersion,
+    contentControls,
+    durationDetectionAttempt,
+    durationOverrides,
+  ]);
 
   // Context for semantic parser
   const parserContext = {
@@ -95,8 +210,13 @@ export const ReportStudioPage: React.FC = () => {
   };
 
   // Re-parse when promptInput changes in secondary column
+  const effectiveDuration =
+    durationOverrides[activeTokenId] ?? durationInsight.duration;
+  const packagedPrompt = `Duration: ${effectiveDuration}${
+    promptInput.trim() ? `\n${promptInput}` : ''
+  }`;
   const currentSemanticPlan: SemanticExecutionPlan | undefined = activeToken
-    ? parseSemanticPrompt(promptInput || activeToken.prompt, parserContext)
+    ? parseSemanticPrompt(packagedPrompt, parserContext)
     : undefined;
 
   // Handle Secondary Column: Test & Execute Query
@@ -105,7 +225,7 @@ export const ReportStudioPage: React.FC = () => {
     const queryResult = executeSemanticQuery(currentSemanticPlan);
     const updatedToken: PlaceholderToken = {
       ...activeToken,
-      prompt: promptInput,
+      prompt: packagedPrompt,
       status: 'executed',
       semanticPlan: currentSemanticPlan,
       resolvedValue: queryResult.value,
@@ -145,7 +265,7 @@ export const ReportStudioPage: React.FC = () => {
   return (
     <div className="flex h-full w-full min-h-0 overflow-hidden bg-slate-100 font-sans">
       <main className="min-w-0 flex-1 bg-slate-100">
-        <OnlyOfficeEditorPane />
+        <OnlyOfficeEditorPane onDocumentChanged={() => void loadContentControls()} />
       </main>
 
       <aside className="w-96 lg:w-[420px] xl:w-[450px] bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar shadow-lg">
@@ -232,7 +352,10 @@ export const ReportStudioPage: React.FC = () => {
                     <button
                       key={control.id}
                       type="button"
-                      onClick={() => setActiveTokenId(control.id)}
+                      onClick={() => {
+                        setActiveTokenId(control.id);
+                        setDurationDetectionAttempt((current) => current + 1);
+                      }}
                       className={`w-full rounded-lg border px-3 py-2 text-left transition-all ${
                         activeTokenId === control.id
                           ? 'border-blue-500 bg-blue-50 shadow-2xs'
@@ -295,13 +418,61 @@ export const ReportStudioPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <textarea
-                    rows={3}
-                    value={promptInput}
-                    onChange={(e) => setPromptInput(e.target.value)}
-                    placeholder="Enter natural language instructions (e.g. source table, filter criteria, calculation formula)..."
-                    className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-blue-500 focus:ring-1 focus:ring-blue-500 font-sans leading-relaxed shadow-2xs"
-                  />
+                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xs focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+                    <div
+                      className={`flex items-center gap-1.5 border-b px-2.5 py-2 font-mono text-[11px] ${
+                        durationInsight.status === 'error'
+                          ? 'border-amber-200 bg-amber-50 text-amber-800'
+                          : 'border-blue-100 bg-blue-50 text-blue-800'
+                      }`}
+                    >
+                      {durationInsight.status === 'loading' && (
+                        <LoaderCircle className="h-3 w-3 shrink-0 animate-spin" />
+                      )}
+                      <span className="font-semibold">Duration:</span>
+                      <input
+                        type="text"
+                        value={effectiveDuration}
+                        onChange={(event) => {
+                          durationRequestId.current += 1;
+                          setDurationOverrides((current) => ({
+                            ...current,
+                            [activeTokenId]: event.target.value,
+                          }));
+                          setDurationInsight((current) => ({
+                            ...current,
+                            status: 'ready',
+                            duration: event.target.value,
+                            message: undefined,
+                          }));
+                        }}
+                        disabled={!activeToken}
+                        aria-label="Reporting duration"
+                        className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[11px] text-inherit outline-none placeholder:text-slate-400"
+                        placeholder="Enter or correct the reporting period"
+                      />
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={promptInput}
+                      onChange={(e) => setPromptInput(e.target.value)}
+                      placeholder="Enter natural language instructions (e.g. source table, filter criteria, calculation formula)..."
+                      className="w-full resize-y border-0 bg-white p-2.5 text-xs leading-relaxed text-slate-800 outline-none"
+                    />
+                  </div>
+                  {durationInsight.message && (
+                    <p className="text-[10px] leading-relaxed text-amber-700">
+                      {durationInsight.message}
+                    </p>
+                  )}
+                  {durationInsight.sentences[0] && (
+                    <p
+                      className="truncate text-[10px] text-slate-400"
+                      title={durationInsight.sentences.join('\n')}
+                    >
+                      Context: {durationInsight.sentences[0]}
+                    </p>
+                  )}
 
                   {/* Preset prompt pills */}
                   <div className="pt-1">

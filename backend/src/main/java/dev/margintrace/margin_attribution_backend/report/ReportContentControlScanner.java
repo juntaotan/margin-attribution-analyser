@@ -14,9 +14,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -45,6 +47,36 @@ public class ReportContentControlScanner {
         return controls.values().stream()
                 .map(MutableContentControl::toDescriptor)
                 .toList();
+    }
+
+    public List<String> contextsForTag(byte[] documentBytes, String requestedTag) throws IOException {
+        if (requestedTag == null || requestedTag.isBlank()) {
+            return List.of();
+        }
+
+        Set<String> contexts = new LinkedHashSet<>();
+        try (ZipInputStream archive = new ZipInputStream(new ByteArrayInputStream(documentBytes))) {
+            ZipEntry entry;
+            while ((entry = archive.getNextEntry()) != null) {
+                if (!entry.isDirectory() && isWordContentPart(entry.getName())) {
+                    Document document = parseXml(readCurrentEntry(archive));
+                    NodeList controls = document.getElementsByTagNameNS(WORD_NAMESPACE, "sdt");
+                    for (int index = 0; index < controls.getLength(); index++) {
+                        Element control = (Element) controls.item(index);
+                        Element properties = directChild(control, "sdtPr");
+                        if (properties != null
+                                && requestedTag.equals(propertyValue(properties, "tag"))) {
+                            String context = extractMarkedSentence(control);
+                            if (!context.isBlank()) {
+                                contexts.add(context);
+                            }
+                        }
+                    }
+                }
+                archive.closeEntry();
+            }
+        }
+        return List.copyOf(contexts);
     }
 
     private int scanPart(
@@ -159,6 +191,126 @@ public class ReportContentControlScanner {
         return preview.length() <= PREVIEW_LIMIT
                 ? preview
                 : preview.substring(0, PREVIEW_LIMIT - 1) + "…";
+    }
+
+    private String extractMarkedSentence(Element control) {
+        Element paragraph = ancestor(control, "p");
+        if (paragraph == null) {
+            return targetMarker(control);
+        }
+
+        StringBuilder markedText = new StringBuilder();
+        appendMarkedText(paragraph, control, markedText);
+        String fullText = normalizeWhitespace(markedText.toString());
+        int controlStart = fullText.indexOf("[[TARGET ");
+        if (controlStart < 0) {
+            return fullText;
+        }
+        int markerEnd = fullText.indexOf("]]", controlStart);
+        int controlEnd = markerEnd < 0 ? controlStart : markerEnd + 2;
+        int sentenceStart = 0;
+        for (int index = controlStart - 1; index >= 0; index--) {
+            if (isSentenceBoundary(fullText, index)) {
+                sentenceStart = index + 1;
+                break;
+            }
+        }
+
+        int sentenceEnd = fullText.length();
+        for (int index = controlEnd; index < fullText.length(); index++) {
+            if (isSentenceBoundary(fullText, index)) {
+                sentenceEnd = index + 1;
+                break;
+            }
+        }
+        return fullText.substring(sentenceStart, sentenceEnd).trim();
+    }
+
+    private void appendMarkedText(Node node, Element targetControl, StringBuilder output) {
+        if (node instanceof Element element
+                && WORD_NAMESPACE.equals(element.getNamespaceURI())
+                && "sdt".equals(element.getLocalName())) {
+            output.append(element == targetControl ? targetMarker(element) : controlMarker(element));
+            return;
+        }
+        if (node instanceof Element element
+                && WORD_NAMESPACE.equals(element.getNamespaceURI())
+                && "t".equals(element.getLocalName())) {
+            output.append(element.getTextContent());
+            return;
+        }
+        for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling()) {
+            appendMarkedText(child, targetControl, output);
+        }
+    }
+
+    private String targetMarker(Element control) {
+        return contentControlMarker("TARGET", control);
+    }
+
+    private String controlMarker(Element control) {
+        return contentControlMarker("CONTROL", control);
+    }
+
+    private String contentControlMarker(String markerType, Element control) {
+        Element properties = directChild(control, "sdtPr");
+        String tag = properties == null ? "" : propertyValue(properties, "tag");
+        String alias = properties == null ? "" : propertyValue(properties, "alias");
+        String value = normalizeWhitespace(extractText(control));
+        return " [[" + markerType
+                + " tag=\"" + markerValue(tag)
+                + "\" alias=\"" + markerValue(alias)
+                + "\" value=\"" + markerValue(value)
+                + "\"]] ";
+    }
+
+    private String markerValue(String value) {
+        return value.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replaceAll("[\\r\\n]+", " ")
+                .trim();
+    }
+
+    private Element ancestor(Element element, String localName) {
+        for (Node parent = element.getParentNode(); parent != null; parent = parent.getParentNode()) {
+            if (parent instanceof Element parentElement
+                    && WORD_NAMESPACE.equals(parentElement.getNamespaceURI())
+                    && localName.equals(parentElement.getLocalName())) {
+                return parentElement;
+            }
+        }
+        return null;
+    }
+
+    private String extractText(Element element) {
+        NodeList textNodes = element.getElementsByTagNameNS(WORD_NAMESPACE, "t");
+        StringBuilder text = new StringBuilder();
+        for (int index = 0; index < textNodes.getLength(); index++) {
+            text.append(textNodes.item(index).getTextContent());
+        }
+        return text.toString();
+    }
+
+    private String normalizeWhitespace(String value) {
+        return value.replaceAll("\\s+", " ").trim();
+    }
+
+    private boolean isSentenceBoundary(String text, int index) {
+        char character = text.charAt(index);
+        if (character == '。' || character == '！' || character == '？') {
+            return true;
+        }
+        if (character != '.' && character != '!' && character != '?') {
+            return false;
+        }
+        if (character == '.'
+                && index > 0
+                && index + 1 < text.length()
+                && Character.isDigit(text.charAt(index - 1))
+                && Character.isDigit(text.charAt(index + 1))) {
+            return false;
+        }
+        return index + 1 == text.length() || Character.isWhitespace(text.charAt(index + 1));
     }
 
     public record ContentControlDescriptor(

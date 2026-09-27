@@ -10,11 +10,13 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -22,6 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ReportDocumentStore {
 
     private static final String DEFAULT_DOCUMENT_KEY = "report-studio/default/management-commentary.docx";
+    private static final String DEFAULT_DOCUMENT_TITLE_KEY = "report-studio/default/title.txt";
+    private static final String DEFAULT_DOCUMENT_TITLE = "Management Commentary.docx";
 
     private final MinioClient minioClient;
     private final AtomicLong version = new AtomicLong(1L);
@@ -46,15 +50,37 @@ public class ReportDocumentStore {
 
     public synchronized void saveDefaultDocument(byte[] content) throws Exception {
         ensureBucketExists();
-        try (ByteArrayInputStream input = new ByteArrayInputStream(content)) {
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(DEFAULT_DOCUMENT_KEY)
-                    .stream(input, (long) content.length, -1L)
-                    .contentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    .build());
-        }
+        putObject(
+                DEFAULT_DOCUMENT_KEY,
+                content,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         version.incrementAndGet();
+    }
+
+    public synchronized void replaceDefaultDocument(byte[] content, String title) throws Exception {
+        ensureBucketExists();
+        putObject(
+                DEFAULT_DOCUMENT_KEY,
+                content,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        putObject(
+                DEFAULT_DOCUMENT_TITLE_KEY,
+                title.getBytes(StandardCharsets.UTF_8),
+                MediaType.TEXT_PLAIN_VALUE);
+        version.incrementAndGet();
+    }
+
+    public synchronized String currentTitle() throws Exception {
+        ensureBucketExists();
+        try (InputStream input = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(bucket)
+                .object(DEFAULT_DOCUMENT_TITLE_KEY)
+                .build())) {
+            String title = new String(input.readAllBytes(), StandardCharsets.UTF_8).trim();
+            return title.isBlank() ? DEFAULT_DOCUMENT_TITLE : title;
+        } catch (Exception missingTitle) {
+            return DEFAULT_DOCUMENT_TITLE;
+        }
     }
 
     public long currentVersion() {
@@ -65,6 +91,17 @@ public class ReportDocumentStore {
         boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
         if (!exists) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+        }
+    }
+
+    private void putObject(String objectKey, byte[] content, String contentType) throws Exception {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(content)) {
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(objectKey)
+                    .stream(input, (long) content.length, -1L)
+                    .contentType(contentType)
+                    .build());
         }
     }
 
