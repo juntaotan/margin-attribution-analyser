@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@onlyoffice/document-editor-react": "^2.2.0",
     "@xyflow/react": "^12.4.4",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
