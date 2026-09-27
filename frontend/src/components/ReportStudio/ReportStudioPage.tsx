@@ -12,7 +12,10 @@ import {
   Sparkles,
 } from 'lucide-react';
 import {
+  ApplyPlaceholderResponse,
   DocumentContentControl,
+  GeneratePlaceholderResponse,
+  PlaceholderConfig,
   PlaceholderToken,
   SemanticExecutionPlan,
   SemanticQueryResult,
@@ -50,10 +53,33 @@ export const ReportStudioPage: React.FC = () => {
   });
   const [durationOverrides, setDurationOverrides] = useState<Record<string, string>>({});
   const durationRequestId = useRef(0);
+  const [persistedConfigs, setPersistedConfigs] = useState<Record<string, PlaceholderConfig>>({});
+  const [activeRunId, setActiveRunId] = useState<string>();
+  const [activeRunRevision, setActiveRunRevision] = useState<number>();
   // Currently selected content control for inspection in secondary column
   const [activeTokenId, setActiveTokenId] = useState<string>('');
   const placeholderTokens: PlaceholderToken[] = contentControls.map((control) => {
+    const persisted = control.tag ? persistedConfigs[control.tag] : undefined;
     const existingToken = doc.tokens[control.id];
+    if (persisted) {
+      const firstVal = persisted.lastRun?.result?.rows?.[0]?.[persisted.lastRun.result.columns[0]];
+      let resolvedValue = firstVal != null ? String(firstVal) : undefined;
+      if (resolvedValue && persisted.format === 'percentage' && !resolvedValue.endsWith('%')) {
+        resolvedValue += '%';
+      }
+      return {
+        id: control.id,
+        label: control.alias || control.tag,
+        prompt: persisted.prompt || '',
+        status: persisted.lastRun?.status === 'SUCCEEDED' || persisted.lastRun?.status === 'APPLIED'
+          ? 'executed'
+          : (persisted.lastRun?.status === 'FAILED' ? 'error' : (persisted.executionPlan ? 'analyzed' : 'draft')),
+        semanticPlan: persisted.executionPlan,
+        resolvedValue: resolvedValue ?? existingToken?.resolvedValue,
+        unit: persisted.format === 'percentage' ? '%' : undefined,
+        updatedAt: persisted.updatedAt ? new Date(persisted.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
+      };
+    }
     return existingToken
       ? { ...existingToken, id: control.id, label: control.alias }
       : {
@@ -98,6 +124,29 @@ export const ReportStudioPage: React.FC = () => {
       const controls = Array.isArray(payload.controls) ? payload.controls : [];
       setContentControls(controls);
       setDocumentVersion(payload.documentVersion);
+
+      // Sync & batch load persisted placeholder configs from PostgreSQL
+      try {
+        const syncItems = controls
+          .filter((c) => c.tag)
+          .map((c) => ({ tag: c.tag, alias: c.alias }));
+        const configRes = await fetch('/api/report-studio/placeholders/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ documentId: 'default', placeholders: syncItems }),
+        });
+        if (configRes.ok) {
+          const configs = (await configRes.json()) as PlaceholderConfig[];
+          const map: Record<string, PlaceholderConfig> = {};
+          configs.forEach((cfg) => {
+            if (cfg.tag) map[cfg.tag] = cfg;
+          });
+          setPersistedConfigs(map);
+        }
+      } catch (err) {
+        console.warn('Failed to sync persisted placeholder configs:', err);
+      }
+
       setActiveTokenId((currentId) =>
         controls.some((control) => control.id === currentId)
           ? currentId
@@ -118,26 +167,68 @@ export const ReportStudioPage: React.FC = () => {
     void loadContentControls();
   }, [loadContentControls]);
 
-  // When activeTokenId changes, sync the prompt buffer
+  // Synchronize state when activeControl or persistedConfigs changes
   useEffect(() => {
-    if (activeToken) {
-      setPromptInput(userPromptWithoutDuration(activeToken.prompt));
-      const storedDuration = durationFromPrompt(activeToken.prompt);
-      if (storedDuration) {
-        setDurationOverrides((current) =>
-          current[activeToken.id]
-            ? current
-            : { ...current, [activeToken.id]: storedDuration }
-        );
+    if (!activeControl) {
+      setPromptInput('');
+      setGeneratedSemanticPlan(undefined);
+      setQueryResult(undefined);
+      setActiveRunId(undefined);
+      setActiveRunRevision(undefined);
+      setQueryError(undefined);
+      setApplySuccess(undefined);
+      setApplyError(undefined);
+      return;
+    }
+
+    const persisted = activeControl.tag ? persistedConfigs[activeControl.tag] : undefined;
+    if (persisted) {
+      setPromptInput(userPromptWithoutDuration(persisted.prompt || ''));
+      if (persisted.duration) {
+        setDurationOverrides((current) => ({
+          ...current,
+          [activeControl.id]: persisted.duration!,
+        }));
+        setDurationInsight({
+          status: 'ready',
+          duration: persisted.duration,
+          sentences: [],
+        });
+      }
+      setGeneratedSemanticPlan(persisted.executionPlan);
+      setQueryResult(persisted.lastRun?.result);
+      setActiveRunId(persisted.lastRun?.id);
+      setActiveRunRevision(persisted.lastRun?.configRevision);
+      if (persisted.lastRun?.status === 'FAILED') {
+        setQueryError(persisted.lastRun.errorMessage);
+      } else {
+        setQueryError(undefined);
+      }
+      if (persisted.lastRun?.status === 'APPLIED') {
+        setApplySuccess('Saved to the source document');
+      } else {
+        setApplySuccess(undefined);
       }
     } else {
-      setPromptInput('');
+      setPromptInput(activeToken?.prompt ? userPromptWithoutDuration(activeToken.prompt) : '');
+      const storedDuration = activeToken?.prompt ? durationFromPrompt(activeToken.prompt) : undefined;
+      if (storedDuration) {
+        setDurationOverrides((current) => ({
+          ...current,
+          [activeControl.id]: storedDuration,
+        }));
+      }
+      setGeneratedSemanticPlan(activeToken?.semanticPlan);
+      setQueryResult(undefined);
+      setActiveRunId(undefined);
+      setActiveRunRevision(undefined);
+      setQueryError(undefined);
+      setApplySuccess(undefined);
     }
-  }, [activeTokenId, activeToken?.prompt]);
+  }, [activeTokenId, persistedConfigs]);
 
   useEffect(() => {
     const control = contentControls.find((item) => item.id === activeTokenId);
-    const requestId = ++durationRequestId.current;
     if (!control) {
       setDurationInsight({
         status: 'idle',
@@ -146,6 +237,13 @@ export const ReportStudioPage: React.FC = () => {
       });
       return;
     }
+
+    const persisted = control.tag ? persistedConfigs[control.tag] : undefined;
+    if (persisted?.duration) {
+      return;
+    }
+
+    const requestId = ++durationRequestId.current;
     const abortController = new AbortController();
     setDurationInsight({
       status: 'loading',
@@ -202,6 +300,7 @@ export const ReportStudioPage: React.FC = () => {
     documentVersion,
     contentControls,
     durationDetectionAttempt,
+    persistedConfigs,
   ]);
 
   const effectiveDuration =
@@ -209,9 +308,19 @@ export const ReportStudioPage: React.FC = () => {
   const packagedPrompt =
     "Duration: " + effectiveDuration + (promptInput.trim() ? "\n" + promptInput : "");
 
+  const persisted = activeControl?.tag ? persistedConfigs[activeControl.tag] : undefined;
+  const isPromptDirty = Boolean(
+    activeRunId &&
+    ((persisted?.prompt && persisted.prompt.trim() !== packagedPrompt.trim()) ||
+     (persisted?.revision != null && activeRunRevision != null && persisted.revision !== activeRunRevision))
+  );
+
   const handleGenerateBlueprint = async () => {
-    if (!activeToken) return;
+    if (!activeControl) return;
+    const tag = activeControl.tag || activeControl.id;
+    const alias = activeControl.alias;
     const requestId = ++blueprintRequestId.current;
+
     setBlueprintLoading(true);
     setBlueprintError(undefined);
     setGeneratedSemanticPlan(undefined);
@@ -222,77 +331,86 @@ export const ReportStudioPage: React.FC = () => {
 
     try {
       const response = await fetch(
-        "/api/report-studio/onlyoffice/content-controls/blueprint",
+        "/api/report-studio/placeholders/generate",
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ prompt: packagedPrompt }),
+          body: JSON.stringify({
+            documentId: "default",
+            tag,
+            alias,
+            prompt: packagedPrompt,
+          }),
         }
       );
-      const payload = (await response.json()) as SemanticExecutionPlan & { detail?: string };
+      const payload = (await response.json()) as GeneratePlaceholderResponse & { detail?: string };
       if (!response.ok) {
-        throw new Error(payload.detail ?? `Blueprint generation failed (${response.status})`);
+        throw new Error(payload.detail ?? payload.error ?? `Generate failed (${response.status})`);
       }
       if (blueprintRequestId.current !== requestId) return;
 
-      const analyzedToken: PlaceholderToken = {
-        ...activeToken,
+      setGeneratedSemanticPlan(payload.blueprint);
+      setActiveRunId(payload.runId);
+      setActiveRunRevision(payload.revision);
+
+      if (payload.result) {
+        setQueryResult(payload.result);
+      }
+      if (payload.error) {
+        setQueryError(payload.error);
+      }
+
+      const updatedConfig: PlaceholderConfig = {
+        id: payload.configId,
+        documentId: "default",
+        tag,
+        alias,
         prompt: packagedPrompt,
-        status: "analyzed",
-        semanticPlan: payload,
-        updatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        duration: effectiveDuration,
+        executionPlan: payload.blueprint,
+        revision: payload.revision,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastRun: {
+          id: payload.runId,
+          configRevision: payload.revision,
+          promptSnapshot: packagedPrompt,
+          planSnapshot: payload.blueprint,
+          executedSql: payload.result?.sql || "",
+          result: payload.result,
+          status: payload.error ? "FAILED" : "SUCCEEDED",
+          errorMessage: payload.error,
+          executedAt: new Date().toISOString(),
+        },
       };
-      setDoc((currentDocument) => ({
-        ...currentDocument,
+
+      setPersistedConfigs((curr) => ({
+        ...curr,
+        [tag]: updatedConfig,
+      }));
+
+      const firstValue = payload.result?.rows?.[0]?.[payload.result.columns[0]];
+      let resolved = firstValue != null ? String(firstValue) : "";
+      if (resolved && payload.blueprint.format === "percentage" && !resolved.endsWith("%")) {
+        resolved += "%";
+      }
+
+      setDoc((currentDoc) => ({
+        ...currentDoc,
         tokens: {
-          ...currentDocument.tokens,
-          [activeTokenId]: analyzedToken,
+          ...currentDoc.tokens,
+          [activeControl.id]: {
+            id: activeControl.id,
+            label: activeControl.alias,
+            prompt: packagedPrompt,
+            status: payload.error ? "error" : "executed",
+            semanticPlan: payload.blueprint,
+            resolvedValue: resolved,
+            unit: payload.blueprint.format === "percentage" ? "%" : undefined,
+            updatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
         },
       }));
-      setGeneratedSemanticPlan(payload);
-      setQueryLoading(true);
-
-      try {
-        const queryResponse = await fetch(
-          "/api/report-studio/onlyoffice/content-controls/blueprint/execute",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify(payload),
-          }
-        );
-        const queryPayload = (await queryResponse.json()) as SemanticQueryResult & {
-          detail?: string;
-        };
-        if (!queryResponse.ok) {
-          throw new Error(
-            queryPayload.detail ?? `Query execution failed (${queryResponse.status})`
-          );
-        }
-        if (blueprintRequestId.current !== requestId) return;
-
-        setQueryResult(queryPayload);
-        const firstValue = queryPayload.rows[0]?.[queryPayload.columns[0]];
-        setDoc((currentDocument) => ({
-          ...currentDocument,
-          tokens: {
-            ...currentDocument.tokens,
-            [activeTokenId]: {
-              ...analyzedToken,
-              status: "executed",
-              resolvedValue: firstValue == null ? "" : String(firstValue),
-              unit: payload.format === "percentage" ? "%" : undefined,
-            },
-          },
-        }));
-      } catch (requestError) {
-        if (blueprintRequestId.current !== requestId) return;
-        setQueryError(
-          requestError instanceof Error ? requestError.message : "Unable to execute query"
-        );
-      } finally {
-        if (blueprintRequestId.current === requestId) setQueryLoading(false);
-      }
     } catch (requestError) {
       if (blueprintRequestId.current !== requestId) return;
       setBlueprintError(
@@ -304,21 +422,21 @@ export const ReportStudioPage: React.FC = () => {
   };
 
   const handleApplyResult = async () => {
-    if (!queryResult || !generatedSemanticPlan || !activeControl?.alias) return;
+    if (!activeRunId || !activeControl?.alias) return;
 
-    const firstValue = queryResult.rows[0]?.[queryResult.columns[0]];
-    if (firstValue == null) {
-      setApplyError("There is no result value to save");
+    if (isPromptDirty) {
+      setApplyError("Prompt has changed since this result was generated. Generate again before applying.");
       return;
     }
 
-    let value = String(firstValue);
-    if (generatedSemanticPlan.format === "percentage" && !value.trim().endsWith("%")) {
-      value += "%";
+    const firstValue = queryResult?.rows?.[0]?.[queryResult.columns[0]];
+    let displayVal = firstValue != null ? String(firstValue) : "";
+    if (displayVal && generatedSemanticPlan?.format === "percentage" && !displayVal.endsWith("%")) {
+      displayVal += "%";
     }
 
     const confirmed = window.confirm(
-      'Save "' + value + '" to the content control with Alias "' +
+      'Save "' + (displayVal || 'result') + '" to the content control with Alias "' +
         activeControl.alias + '"? The document will reload.'
     );
     if (!confirmed) return;
@@ -329,18 +447,14 @@ export const ReportStudioPage: React.FC = () => {
 
     try {
       const response = await fetch(
-        "/api/report-studio/onlyoffice/content-controls/apply",
+        "/api/report-studio/placeholders/apply",
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ alias: activeControl.alias, value }),
+          body: JSON.stringify({ runId: activeRunId, alias: activeControl.alias }),
         }
       );
-      const payload = (await response.json()) as {
-        documentVersion?: number;
-        updatedControls?: number;
-        detail?: string;
-      };
+      const payload = (await response.json()) as ApplyPlaceholderResponse & { detail?: string };
       if (!response.ok) {
         throw new Error(payload.detail ?? `Save failed (${response.status})`);
       }
@@ -387,15 +501,25 @@ export const ReportStudioPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            {activeToken && (
+            {activeControl && (
               <span
                 className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
-                  activeToken.status === 'executed'
+                  persisted?.lastRun?.status === 'APPLIED'
+                    ? 'bg-teal-100 text-teal-800'
+                    : persisted?.lastRun?.status === 'SUCCEEDED' || activeToken?.status === 'executed'
                     ? 'bg-emerald-100 text-emerald-800'
+                    : persisted?.lastRun?.status === 'FAILED'
+                    ? 'bg-rose-100 text-rose-800'
                     : 'bg-amber-100 text-amber-800'
                 }`}
               >
-                {activeToken.status === 'executed' ? 'Ready / Executed' : 'Pending Execution'}
+                {persisted?.lastRun?.status === 'APPLIED'
+                  ? 'Applied to Document'
+                  : persisted?.lastRun?.status === 'SUCCEEDED' || activeToken?.status === 'executed'
+                  ? 'Ready / Executed'
+                  : persisted?.lastRun?.status === 'FAILED'
+                  ? 'Execution Failed'
+                  : 'Pending Execution'}
               </span>
             )}
           </div>
@@ -451,20 +575,12 @@ export const ReportStudioPage: React.FC = () => {
               <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
                 {contentControls.map((control) => {
                   const token = placeholderTokens.find((item) => item.id === control.id);
+                  const controlPersisted = control.tag ? persistedConfigs[control.tag] : undefined;
                   return (
                     <button
                       key={control.id}
                       type="button"
                       onClick={() => {
-                        setDurationOverrides((current) => {
-                          if (!(control.id in current)) return current;
-                          const next = { ...current };
-                          delete next[control.id];
-                          return next;
-                        });
-                        setGeneratedSemanticPlan(undefined);
-                        setQueryResult(undefined);
-                        setQueryError(undefined);
                         setApplyError(undefined);
                         setApplySuccess(undefined);
                         blueprintRequestId.current += 1;
@@ -489,6 +605,11 @@ export const ReportStudioPage: React.FC = () => {
                         {control.tag || control.alias}
                       </span>
                       <span className="flex shrink-0 items-center gap-1">
+                        {controlPersisted?.lastRun?.status === 'APPLIED' && (
+                          <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-medium text-teal-800">
+                            Applied
+                          </span>
+                        )}
                         {control.occurrences > 1 && (
                           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">
                             ×{control.occurrences}
@@ -623,11 +744,7 @@ export const ReportStudioPage: React.FC = () => {
                     ) : (
                       <Sparkles className="h-3.5 w-3.5" />
                     )}
-                    {blueprintLoading
-                      ? queryLoading
-                        ? "Executing Query…"
-                        : "Generating Blueprint…"
-                      : "Generate Blueprint"}
+                    {blueprintLoading ? "Generating & Executing…" : "Generate Blueprint"}
                   </button>
                   {blueprintError && (
                     <p className="text-[10px] leading-relaxed text-red-600">
@@ -701,7 +818,7 @@ export const ReportStudioPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => void handleApplyResult()}
-                      disabled={applyLoading || !queryResult || !activeControl?.alias}
+                      disabled={applyLoading || !activeRunId || !activeControl?.alias || isPromptDirty}
                       className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
                     >
                       {applyLoading ? (
@@ -711,6 +828,11 @@ export const ReportStudioPage: React.FC = () => {
                       )}
                       {applyLoading ? "Saving..." : "Apply"}
                     </button>
+                    {isPromptDirty && (
+                      <p className="mt-2 text-[10px] text-amber-700 leading-relaxed">
+                        Prompt has changed since this result was generated. Generate again before applying.
+                      </p>
+                    )}
                     {applySuccess && (
                       <p className="mt-2 text-[10px] text-emerald-700">{applySuccess}</p>
                     )}

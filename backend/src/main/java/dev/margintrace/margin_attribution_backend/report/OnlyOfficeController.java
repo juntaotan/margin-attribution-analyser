@@ -45,6 +45,7 @@ public class OnlyOfficeController {
     private final ReportBlueprintService reportBlueprintService;
     private final ReportQueryService reportQueryService;
     private final ReportContentControlUpdater contentControlUpdater;
+    private final ReportPlaceholderService reportPlaceholderService;
     private final Set<String> issuedDocumentKeys = ConcurrentHashMap.newKeySet();
     private final Set<String> supersededDocumentKeys = ConcurrentHashMap.newKeySet();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -190,13 +191,22 @@ public class OnlyOfficeController {
     public synchronized Map<String, Object> applyContentControl(
             @RequestBody ApplyContentControlRequest request) throws Exception {
         try {
+            if (request != null && request.runId() != null) {
+                ReportPlaceholderService.ApplyResult result =
+                        reportPlaceholderService.applyRun(request.runId(), request.alias());
+                invalidateIssuedDocumentKeys();
+                return Map.of(
+                        "documentVersion", result.documentVersion(),
+                        "updatedControls", result.updatedControls(),
+                        "runId", result.runId().toString());
+            }
+
             ReportContentControlUpdater.UpdateResult update =
                     contentControlUpdater.replaceContentByAlias(
                             documentStore.loadOrCreateDefaultDocument(),
                             request == null ? null : request.alias(),
                             request == null ? null : request.value());
-            supersededDocumentKeys.addAll(issuedDocumentKeys);
-            issuedDocumentKeys.clear();
+            invalidateIssuedDocumentKeys();
             documentStore.saveDefaultDocument(update.documentBytes());
             return Map.of(
                     "documentVersion", documentStore.currentVersion(),
@@ -204,6 +214,11 @@ public class OnlyOfficeController {
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
+    }
+
+    public synchronized void invalidateIssuedDocumentKeys() {
+        supersededDocumentKeys.addAll(issuedDocumentKeys);
+        issuedDocumentKeys.clear();
     }
 
     @PostMapping("/callback")
@@ -267,7 +282,10 @@ public class OnlyOfficeController {
     public record BlueprintRequest(String prompt) {
     }
 
-    public record ApplyContentControlRequest(String alias, String value) {
+    public record ApplyContentControlRequest(java.util.UUID runId, String alias, String value) {
+        public ApplyContentControlRequest(String alias, String value) {
+            this(null, alias, value);
+        }
     }
 
     public record DurationAnalysisRequest(String tag, String wordId, String alias) {

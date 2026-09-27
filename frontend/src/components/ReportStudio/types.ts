@@ -64,3 +64,49 @@ export interface ReportDocument {
   blocks: ReportBlock[];
   tokens: Record<string, PlaceholderToken>;
 }
+
+export interface PlaceholderRun {
+  id: string;
+  configRevision: number;
+  promptSnapshot: string;
+  planSnapshot: SemanticExecutionPlan;
+  executedSql: string;
+  result?: SemanticQueryResult;
+  status: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'APPLIED';
+  errorMessage?: string;
+  executedAt: string;
+  appliedAt?: string;
+}
+
+export interface PlaceholderConfig {
+  id: string;
+  documentId: string;
+  tag: string;
+  alias?: string;
+  prompt?: string;
+  duration?: string;
+  executionPlan?: SemanticExecutionPlan;
+  generatedSql?: string;
+  format?: OutputFormat;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+  lastRun?: PlaceholderRun;
+}
+
+export interface GeneratePlaceholderResponse {
+  configId: string;
+  runId: string;
+  revision: number;
+  blueprint: SemanticExecutionPlan;
+  result?: SemanticQueryResult;
+  error?: string;
+}
+
+export interface ApplyPlaceholderResponse {
+  documentVersion: number;
+  updatedControls: number;
+  runId: string;
+  appliedValue: string;
+}
+

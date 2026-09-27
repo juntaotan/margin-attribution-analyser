@@ -61,8 +61,7 @@ public class ReportQueryService {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Transactional(readOnly = true)
-    public QueryResult execute(ReportBlueprint blueprint) {
+    public String generateSql(ReportBlueprint blueprint) {
         if (blueprint == null) {
             throw new IllegalArgumentException("A generated Blueprint is required");
         }
@@ -84,10 +83,24 @@ public class ReportQueryService {
             query.append(" WHERE (").append(String.join(") AND (", filters)).append(")");
         }
         query.append(" LIMIT ").append(MAX_ROWS);
+        return query.toString();
+    }
+
+    @Transactional(readOnly = true)
+    public QueryResult execute(ReportBlueprint blueprint) {
+        String sql = generateSql(blueprint);
+        return executeSql(sql);
+    }
+
+    @Transactional(readOnly = true)
+    public QueryResult executeSql(String sql) {
+        if (sql == null || sql.isBlank()) {
+            throw new IllegalArgumentException("A valid SQL query is required");
+        }
 
         try {
             List<Map<String, Object>> databaseRows = jdbcTemplate.query(
-                    query.toString(),
+                    sql,
                     statement -> {
                         statement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
                         statement.setMaxRows(MAX_ROWS);
@@ -99,7 +112,7 @@ public class ReportQueryService {
             List<String> columns = rows.isEmpty()
                     ? List.of("result")
                     : new ArrayList<>(rows.getFirst().keySet());
-            return new QueryResult(query.toString(), columns, rows, rows.size());
+            return new QueryResult(sql, columns, rows, rows.size());
         } catch (DataAccessException exception) {
             String detail = exception.getMostSpecificCause().getMessage();
             throw new IllegalArgumentException(
