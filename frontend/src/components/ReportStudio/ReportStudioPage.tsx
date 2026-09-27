@@ -129,25 +129,6 @@ export const ReportStudioPage: React.FC = () => {
       });
       return;
     }
-    if (!control.tag) {
-      setDurationInsight({
-        status: 'error',
-        duration: 'Unavailable',
-        sentences: [],
-        message: 'Add a Tag to this content control before detecting its reporting period.',
-      });
-      return;
-    }
-    const userDuration = durationOverrides[activeTokenId];
-    if (userDuration !== undefined) {
-      setDurationInsight({
-        status: 'ready',
-        duration: userDuration,
-        sentences: [],
-      });
-      return;
-    }
-
     const abortController = new AbortController();
     setDurationInsight({
       status: 'loading',
@@ -158,7 +139,7 @@ export const ReportStudioPage: React.FC = () => {
     void fetch('/api/report-studio/onlyoffice/content-controls/duration', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ tag: control.tag }),
+      body: JSON.stringify({ tag: control.tag, wordId: control.wordId, alias: control.alias }),
       signal: abortController.signal,
     })
       .then(async (response) => {
@@ -173,9 +154,14 @@ export const ReportStudioPage: React.FC = () => {
           throw new Error(payload.detail ?? `Duration detection failed (${response.status})`);
         }
         if (durationRequestId.current !== requestId) return;
+        const detectedDuration = payload.duration ?? 'Not specified';
+        setDurationOverrides((current) => ({
+          ...current,
+          [control.id]: detectedDuration,
+        }));
         setDurationInsight({
           status: payload.analyzed ? 'ready' : 'error',
-          duration: payload.duration ?? 'Not specified',
+          duration: detectedDuration,
           sentences: payload.sentences ?? [],
           message: payload.message,
         });
@@ -199,7 +185,6 @@ export const ReportStudioPage: React.FC = () => {
     documentVersion,
     contentControls,
     durationDetectionAttempt,
-    durationOverrides,
   ]);
 
   // Context for semantic parser
@@ -353,6 +338,12 @@ export const ReportStudioPage: React.FC = () => {
                       key={control.id}
                       type="button"
                       onClick={() => {
+                        setDurationOverrides((current) => {
+                          if (!(control.id in current)) return current;
+                          const next = { ...current };
+                          delete next[control.id];
+                          return next;
+                        });
                         setActiveTokenId(control.id);
                         setDurationDetectionAttempt((current) => current + 1);
                       }}

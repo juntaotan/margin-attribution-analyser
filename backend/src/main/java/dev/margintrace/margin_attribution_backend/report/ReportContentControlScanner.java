@@ -50,7 +50,18 @@ public class ReportContentControlScanner {
     }
 
     public List<String> contextsForTag(byte[] documentBytes, String requestedTag) throws IOException {
-        if (requestedTag == null || requestedTag.isBlank()) {
+        return contextsForControl(documentBytes, requestedTag, null, null);
+    }
+
+    public List<String> contextsForControl(
+            byte[] documentBytes,
+            String requestedTag,
+            String requestedWordId,
+            String requestedAlias) throws IOException {
+        String tag = normalizedSelector(requestedTag);
+        String wordId = normalizedSelector(requestedWordId);
+        String alias = normalizedSelector(requestedAlias);
+        if (tag.isBlank() && wordId.isBlank() && alias.isBlank()) {
             return List.of();
         }
 
@@ -64,8 +75,7 @@ public class ReportContentControlScanner {
                     for (int index = 0; index < controls.getLength(); index++) {
                         Element control = (Element) controls.item(index);
                         Element properties = directChild(control, "sdtPr");
-                        if (properties != null
-                                && requestedTag.equals(propertyValue(properties, "tag"))) {
+                        if (properties != null && matchesControl(properties, tag, wordId, alias)) {
                             String context = extractMarkedSentence(control);
                             if (!context.isBlank()) {
                                 contexts.add(context);
@@ -77,6 +87,20 @@ public class ReportContentControlScanner {
             }
         }
         return List.copyOf(contexts);
+    }
+
+    private boolean matchesControl(Element properties, String tag, String wordId, String alias) {
+        if (!tag.isBlank()) {
+            return tag.equals(propertyValue(properties, "tag"));
+        }
+        if (!wordId.isBlank()) {
+            return wordId.equals(propertyValue(properties, "id"));
+        }
+        return alias.equals(propertyValue(properties, "alias"));
+    }
+
+    private String normalizedSelector(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private int scanPart(

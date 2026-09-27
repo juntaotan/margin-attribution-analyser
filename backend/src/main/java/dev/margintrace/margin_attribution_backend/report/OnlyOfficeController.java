@@ -148,7 +148,10 @@ public class OnlyOfficeController {
     public ReportDurationService.DurationAnalysis analyzeDuration(
             @RequestBody DurationAnalysisRequest request) throws Exception {
         try {
-            return reportDurationService.analyze(request == null ? null : request.tag());
+            return reportDurationService.analyze(
+                    request == null ? null : request.tag(),
+                    request == null ? null : request.wordId(),
+                    request == null ? null : request.alias());
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
@@ -212,6 +215,6 @@ public class OnlyOfficeController {
         return fileName.length() <= 200 ? fileName : fileName.substring(fileName.length() - 200);
     }
 
-    public record DurationAnalysisRequest(String tag) {
+    public record DurationAnalysisRequest(String tag, String wordId, String alias) {
     }
 }
