@@ -14,6 +14,14 @@ For a backend running in Docker, bind `llama-server` to `0.0.0.0` instead. The C
 
 An existing llama-server started with `--embeddings` is not a chat server. Keep it for embeddings and start a second llama-server with a chat model on port 8081, without `--embeddings` or `--reranking`. The report uses chat completions.
 
+## Runtime connection settings
+
+Open `/settings` to configure the llama.cpp hostname or IP address, port, and model alias. **Test connection** calls llama.cpp's `/health` endpoint with the values currently entered; it does not save them or change the active AI runtime. **Save settings** writes the values to PostgreSQL and atomically reloads all three LangChain4j AI Services, so the backend does not need to restart.
+
+The environment variables `LLAMA_BASE_URL` and `LLAMA_MODEL` remain the startup defaults. Once a row has been saved, the PostgreSQL settings take precedence after future backend restarts. When the backend runs in Docker, `127.0.0.1` means the backend container itself; use `host.docker.internal` for llama.cpp running on the Docker host, or use another address reachable from the backend container.
+
+The deploy Compose configuration runs Flyway migration V4 and creates `ai_provider_settings` automatically. `compose.dev.yaml` currently pins Flyway to V2 for its remote database workflow, so that profile must have migration V4 applied before this settings feature can be used.
+
 The current sample periods have equal quantities and topology but different material cost. They should be classified as **单位成本变化**. This is a fourth outcome in addition to overuse, suspected replacement, and BOM change. The data do not support calling the sample an overuse or a replacement.
 
 ## Classification boundaries

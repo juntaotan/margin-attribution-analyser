@@ -3,6 +3,7 @@ import { Network, Database, Settings, FileText } from 'lucide-react';
 import { DataPreparation } from './DataPreparation';
 import { DualBomAnalysisPage } from './components/DualBom/DualBomAnalysisPage';
 import { ReportStudioPage } from './components/ReportStudio/ReportStudioPage';
+import { SettingsPage } from './components/Settings/SettingsPage';
 
 const getInitialRoute = (): string => {
   const path = window.location.pathname;
@@ -139,9 +140,7 @@ export const App: React.FC = () => {
         {currentRoute === '/data-prep' ? (
           <DataPreparation />
         ) : currentRoute === '/settings' ? (
-          <main className="flex-1 bg-slate-50 flex items-center justify-center text-slate-400 text-xs font-mono">
-            [Settings &amp; Parameters Panel Placeholder]
-          </main>
+          <SettingsPage />
         ) : currentRoute === '/report-studio' ? (
           <ReportStudioPage />
         ) : (
