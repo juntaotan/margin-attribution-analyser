@@ -28,6 +28,16 @@ export interface PlaceholderToken {
   updatedAt?: string;
 }
 
+export interface DocumentContentControl {
+  id: string;
+  tag: string;
+  wordId: string;
+  alias: string;
+  preview: string;
+  occurrences: number;
+  tagged: boolean;
+}
+
 export type BlockType = 'h1' | 'h2' | 'paragraph' | 'divider' | 'callout';
 
 export interface ReportBlock {
@@ -47,4 +57,3 @@ export interface ReportDocument {
   blocks: ReportBlock[];
   tokens: Record<string, PlaceholderToken>;
 }
-

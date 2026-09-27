@@ -17,6 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,6 +30,7 @@ public class OnlyOfficeController {
 
     private final OnlyOfficeJwtSigner jwtSigner;
     private final ReportDocumentStore documentStore;
+    private final ReportContentControlScanner contentControlScanner;
     private final HttpClient httpClient = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
@@ -92,6 +94,17 @@ public class OnlyOfficeController {
                 .body(content);
     }
 
+    @GetMapping("/content-controls")
+    public Map<String, Object> contentControls() throws Exception {
+        byte[] content = documentStore.loadOrCreateDefaultDocument();
+        List<ReportContentControlScanner.ContentControlDescriptor> controls =
+                contentControlScanner.scan(content);
+        return Map.of(
+                "documentVersion", documentStore.currentVersion(),
+                "controls", controls
+        );
+    }
+
     @PostMapping("/callback")
     public Map<String, Integer> callback(
             @RequestParam String accessToken,
@@ -100,8 +113,10 @@ public class OnlyOfficeController {
         int status = callback.get("status") instanceof Number number ? number.intValue() : 0;
 
         if ((status == 2 || status == 6) && callback.get("url") instanceof String documentUrl) {
-            URI uri = URI.create(documentUrl);
-            verifyOnlyOfficeDownloadUrl(uri);
+            URI uri = OnlyOfficeDownloadUrlResolver.resolve(
+                    publicUrl,
+                    onlyOfficeInternalUrl,
+                    URI.create(documentUrl));
             HttpResponse<byte[]> response = httpClient.send(
                     HttpRequest.newBuilder(uri).GET().build(),
                     HttpResponse.BodyHandlers.ofByteArray());
@@ -117,13 +132,6 @@ public class OnlyOfficeController {
     private void verifyAccessToken(String accessToken) {
         if (!Objects.equals(jwtSigner.accessToken(ACCESS_PURPOSE), accessToken)) {
             throw new IllegalArgumentException("Invalid report document access token");
-        }
-    }
-
-    private void verifyOnlyOfficeDownloadUrl(URI documentUri) {
-        URI configuredUri = URI.create(onlyOfficeInternalUrl);
-        if (!Objects.equals(documentUri.getHost(), configuredUri.getHost())) {
-            throw new IllegalArgumentException("Unexpected ONLYOFFICE document download host");
         }
     }
 

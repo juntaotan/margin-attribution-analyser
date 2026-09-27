@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
-import { Edit3, Sparkles, Database, Calculator, Filter, Layers } from 'lucide-react';
-import { PlaceholderToken, SemanticExecutionPlan } from './types';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  AlertCircle,
+  Calculator,
+  Database,
+  Edit3,
+  Filter,
+  Layers,
+  LoaderCircle,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
+import { DocumentContentControl, PlaceholderToken, SemanticExecutionPlan } from './types';
 import { createDefaultDocument } from './defaultTemplate';
 import { parseSemanticPrompt, executeSemanticQuery } from './semanticParser';
 import { OnlyOfficeEditorPane } from './OnlyOfficeEditorPane';
@@ -8,18 +18,74 @@ import { OnlyOfficeEditorPane } from './OnlyOfficeEditorPane';
 export const ReportStudioPage: React.FC = () => {
   // Document State
   const [doc, setDoc] = useState(createDefaultDocument);
-  // Currently selected token for inspection in secondary column
-  const [activeTokenId, setActiveTokenId] = useState<string>('token_ppv');
+  const [contentControls, setContentControls] = useState<DocumentContentControl[]>([]);
+  const [controlsLoading, setControlsLoading] = useState(true);
+  const [controlsError, setControlsError] = useState<string>();
+  const [documentVersion, setDocumentVersion] = useState<number>();
+  // Currently selected content control for inspection in secondary column
+  const [activeTokenId, setActiveTokenId] = useState<string>('');
+  const placeholderTokens: PlaceholderToken[] = contentControls.map((control) => {
+    const existingToken = doc.tokens[control.id];
+    return existingToken
+      ? { ...existingToken, id: control.id, label: control.alias }
+      : {
+          id: control.id,
+          label: control.alias,
+          prompt: '',
+          status: 'draft',
+        };
+  });
   // Secondary column prompt input buffer
-  const activeToken = doc.tokens[activeTokenId];
+  const activeToken = placeholderTokens.find((token) => token.id === activeTokenId);
   const [promptInput, setPromptInput] = useState<string>(activeToken?.prompt || '');
 
+  const loadContentControls = useCallback(async () => {
+    setControlsLoading(true);
+    setControlsError(undefined);
+
+    try {
+      const response = await fetch('/api/report-studio/onlyoffice/content-controls', {
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        throw new Error(`Placeholder scan failed (${response.status})`);
+      }
+
+      const payload = (await response.json()) as {
+        documentVersion: number;
+        controls: DocumentContentControl[];
+      };
+      const controls = Array.isArray(payload.controls) ? payload.controls : [];
+      setContentControls(controls);
+      setDocumentVersion(payload.documentVersion);
+      setActiveTokenId((currentId) =>
+        controls.some((control) => control.id === currentId)
+          ? currentId
+          : (controls[0]?.id ?? '')
+      );
+    } catch (requestError) {
+      setControlsError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to scan document placeholders'
+      );
+    } finally {
+      setControlsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadContentControls();
+  }, [loadContentControls]);
+
   // When activeTokenId changes, sync the prompt buffer
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeToken) {
       setPromptInput(activeToken.prompt);
+    } else {
+      setPromptInput('');
     }
-  }, [activeTokenId]);
+  }, [activeTokenId, activeToken?.prompt]);
 
   // Context for semantic parser
   const parserContext = {
@@ -47,13 +113,13 @@ export const ReportStudioPage: React.FC = () => {
       updatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setDoc({
-      ...doc,
+    setDoc((currentDocument) => ({
+      ...currentDocument,
       tokens: {
-        ...doc.tokens,
+        ...currentDocument.tokens,
         [activeTokenId]: updatedToken,
       },
-    });
+    }));
   };
 
   // Quick Preset Prompts
@@ -113,29 +179,105 @@ export const ReportStudioPage: React.FC = () => {
 
           {/* Secondary Column Body */}
           <div className="p-4 space-y-4 flex-1">
-            {/* 1. Placeholder Selector Bar */}
+            {/* 1. Content controls discovered in the saved Word document */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
-                Document Data Placeholders
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.values(doc.tokens).map((tok) => (
-                  <button
-                    key={tok.id}
-                    type="button"
-                    onClick={() => setActiveTokenId(tok.id)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all flex items-center gap-1 ${
-                      activeTokenId === tok.id
-                        ? 'bg-blue-600 text-white shadow-2xs font-semibold'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span>{`{{${tok.label}}}`}</span>
-                    {tok.resolvedValue && (
-                      <span className="text-[10px] opacity-80">({tok.resolvedValue})</span>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                    Document Data Placeholders
+                  </label>
+                  <p className="mt-0.5 text-[10px] text-slate-400">
+                    {documentVersion
+                      ? `Saved document v${documentVersion} · ${contentControls.length} controls`
+                      : 'Scanning saved Word content controls'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadContentControls()}
+                  disabled={controlsLoading}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+                  title="Save the document in ONLYOFFICE, then refresh this list"
+                >
+                  {controlsLoading ? (
+                    <LoaderCircle className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" />
+                  )}
+                  Refresh
+                </button>
+              </div>
+
+              {controlsError && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-800">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{controlsError}</span>
+                </div>
+              )}
+
+              {!controlsLoading && !controlsError && contentControls.length === 0 && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center">
+                  <p className="text-xs font-semibold text-slate-600">No content controls found</p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
+                    Create a control and enter its Alias in ONLYOFFICE, save the document, then
+                    refresh this list.
+                  </p>
+                </div>
+              )}
+
+              <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
+                {contentControls.map((control) => {
+                  const token = placeholderTokens.find((item) => item.id === control.id);
+                  return (
+                    <button
+                      key={control.id}
+                      type="button"
+                      onClick={() => setActiveTokenId(control.id)}
+                      className={`w-full rounded-lg border px-3 py-2 text-left transition-all ${
+                        activeTokenId === control.id
+                          ? 'border-blue-500 bg-blue-50 shadow-2xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                    <span className="flex items-center justify-between gap-2">
+                      <span
+                        className={`truncate text-xs font-semibold ${
+                          activeTokenId === control.id ? 'text-blue-800' : 'text-slate-700'
+                        }`}
+                      >
+                        {control.alias}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1">
+                        {control.occurrences > 1 && (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">
+                            ×{control.occurrences}
+                          </span>
+                        )}
+                        {!control.tagged && (
+                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
+                            No Tag
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="mt-1 flex items-center justify-between gap-2 text-[10px]">
+                      <span className="truncate font-mono text-slate-400">
+                        {control.tag || `Word ID: ${control.wordId || 'unassigned'}`}
+                      </span>
+                      {token?.resolvedValue && (
+                        <span className="shrink-0 font-mono text-emerald-700">
+                          {token.resolvedValue}
+                        </span>
+                      )}
+                    </span>
+                    {control.preview && (
+                      <span className="mt-1 block truncate text-[10px] text-slate-400">
+                        {control.preview}
+                      </span>
                     )}
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
