@@ -109,6 +109,31 @@ CREATE TABLE sales_order
 
 CREATE INDEX idx_sales_product_no ON sales_order (product_no);
 
+CREATE TABLE cost_details
+(
+    id            BIGINT GENERATED ALWAYS AS IDENTITY,
+    sale_order_no VARCHAR(100)   NOT NULL,
+    date          DATE           NOT NULL,
+    movement_no   VARCHAR(100)   NOT NULL,
+    product_no    VARCHAR(100)   NOT NULL,
+    product_num   NUMERIC(18, 6) NOT NULL,
+    total_cost    NUMERIC(18, 6) NOT NULL,
+
+    CONSTRAINT pk_cost_details PRIMARY KEY (id, date),
+    CONSTRAINT uk_cost_details_sale_movement_product
+        UNIQUE (sale_order_no, movement_no, product_no, date),
+    CONSTRAINT fk_cost_details_sales_order
+        FOREIGN KEY (sale_order_no, product_no)
+        REFERENCES sales_order (sale_order_no, product_no),
+    CONSTRAINT ck_cost_details_product_quantity CHECK (product_num > 0),
+    CONSTRAINT ck_cost_details_total_cost CHECK (total_cost >= 0)
+)
+PARTITION BY HASH (date);
+
+CREATE INDEX idx_cost_details_product_no ON cost_details (product_no);
+CREATE INDEX idx_cost_details_sale_order_no ON cost_details (sale_order_no);
+CREATE INDEX idx_cost_details_movement_no ON cost_details (movement_no);
+
 CREATE TABLE account_receivables
 (
     id                    BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -185,6 +210,7 @@ DECLARE
 BEGIN
     FOREACH parent_table IN ARRAY ARRAY[
         'inventory_usage',
+        'cost_details',
         'account_receivables',
         'account_payables'
     ]
