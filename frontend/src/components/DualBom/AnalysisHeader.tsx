@@ -13,21 +13,21 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
   onShare,
 }) => {
   return (
-    <div className="w-full bg-white border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-y-2 shrink-0">
+    <div className="w-full bg-white border-b border-slate-200/80 px-4 py-2 flex flex-wrap items-center justify-between gap-y-2 shrink-0">
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-2.5 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+            <span className="w-5 h-5 rounded bg-slate-100 text-slate-800 border border-slate-200/80 flex items-center justify-center font-bold text-xs font-mono">
               Δ
             </span>
             <h1 className="text-sm font-bold tracking-tight text-slate-900">
               Dual-BOM MAS Variance Analysis System
             </h1>
           </div>
-          <span className="text-[11px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 border border-slate-200">
+          <span className="text-[11px] font-mono bg-[#f8fafc] px-1.5 py-0.5 rounded text-slate-600 border border-slate-200/80">
             v4.8.2-PROD
           </span>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[11px] font-medium">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50/60 text-emerald-800 border border-emerald-200/70 rounded text-[11px] font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>Engine: Connected / In-Spec</span>
           </div>
@@ -41,7 +41,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
         <button
           type="button"
           onClick={onPrint || (() => window.print())}
-          className="h-7 px-2 bg-white hover:bg-slate-50 border border-slate-200 rounded text-slate-600 hover:text-slate-900 flex items-center transition-colors shadow-xs"
+          className="h-7 px-2 bg-white hover:bg-slate-50 border border-slate-200/80 rounded text-slate-600 hover:text-slate-900 flex items-center transition-colors shadow-2xs"
           title="Print Topology"
         >
           <Printer className="w-3.5 h-3.5" />
@@ -49,7 +49,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
         <button
           type="button"
           onClick={onShare}
-          className="h-7 px-2 bg-white hover:bg-slate-50 border border-slate-200 rounded text-slate-600 hover:text-slate-900 flex items-center transition-colors shadow-xs"
+          className="h-7 px-2 bg-white hover:bg-slate-50 border border-slate-200/80 rounded text-slate-600 hover:text-slate-900 flex items-center transition-colors shadow-2xs"
           title="Share Workbench"
         >
           <Share2 className="w-3.5 h-3.5" />
@@ -57,7 +57,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
         <button
           type="button"
           onClick={onExport}
-          className="h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-xs flex items-center gap-1.5 shadow-xs transition-colors"
+          className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded font-medium text-xs flex items-center gap-1.5 shadow-xs transition-colors border border-slate-800"
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
           <span>Export Analysis</span>

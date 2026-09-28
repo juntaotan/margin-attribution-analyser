@@ -255,9 +255,9 @@ export const SettingsPage: React.FC = () => {
   const incomplete = !host.trim() || !port || !model.trim();
 
   return (
-    <main className="flex-1 overflow-y-auto bg-slate-50 p-6 custom-scrollbar">
+    <main className="flex-1 overflow-y-auto bg-[#f6f8fa] p-6 custom-scrollbar">
       <div className="mx-auto max-w-3xl space-y-5">
-        <div className="border-b border-slate-200 pb-3">
+        <div className="border-b border-slate-200/80 pb-3">
           <h2 className="text-base font-bold text-slate-800">
             Settings &amp; Parameters
           </h2>
@@ -266,10 +266,10 @@ export const SettingsPage: React.FC = () => {
           </p>
         </div>
 
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+        <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
           <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
-              <Cpu className="h-4 w-4" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-100 text-slate-700">
+              <Cpu className="h-4 w-4 text-sky-600" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800">
@@ -295,7 +295,7 @@ export const SettingsPage: React.FC = () => {
                   placeholder="host.docker.internal"
                   autoComplete="off"
                   disabled={disabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50"
+                  className="w-full rounded-lg border border-slate-300/80 bg-white px-3 py-2.5 font-mono text-sm text-slate-800 outline-none transition focus:border-slate-600 focus:ring-1 focus:ring-slate-300 disabled:bg-[#f8fafc] shadow-2xs"
                 />
               </label>
 
@@ -308,7 +308,7 @@ export const SettingsPage: React.FC = () => {
                   value={port}
                   onChange={(event) => setPort(event.target.value)}
                   disabled={disabled}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50"
+                  className="w-full rounded-lg border border-slate-300/80 bg-white px-3 py-2.5 font-mono text-sm text-slate-800 outline-none transition focus:border-slate-600 focus:ring-1 focus:ring-slate-300 disabled:bg-[#f8fafc] shadow-2xs"
                 />
               </label>
             </div>
@@ -323,14 +323,14 @@ export const SettingsPage: React.FC = () => {
                 placeholder="local"
                 autoComplete="off"
                 disabled={disabled}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50"
+                className="w-full rounded-lg border border-slate-300/80 bg-white px-3 py-2.5 font-mono text-sm text-slate-800 outline-none transition focus:border-slate-600 focus:ring-1 focus:ring-slate-300 disabled:bg-[#f8fafc] shadow-2xs"
               />
               <span className="block text-[11px] text-slate-400">
                 Must match the alias advertised by llama.cpp.
               </span>
             </label>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+            <div className="rounded-lg border border-slate-200/80 bg-[#f8fafc] px-3 py-2 text-[11px] text-slate-500">
               <div>
                 <span className="font-semibold text-slate-600">Active URL: </span>
                 <span className="font-mono">
@@ -347,13 +347,13 @@ export const SettingsPage: React.FC = () => {
                 role="status"
                 className={'flex items-start gap-2 rounded-lg border px-3 py-2.5 text-xs ' + (
                   notice.success
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-amber-200 bg-amber-50 text-amber-800'
+                    ? 'border-emerald-200/80 bg-emerald-50/70 text-emerald-800'
+                    : 'border-amber-200/80 bg-amber-50/70 text-amber-800'
                 )}
               >
                 {notice.success
-                  ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  : <XCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+                  ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />}
                 <span>{notice.message}</span>
               </div>
             )}
@@ -363,7 +363,7 @@ export const SettingsPage: React.FC = () => {
                 type="button"
                 onClick={testConnection}
                 disabled={disabled || incomplete}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300/80 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 shadow-2xs"
               >
                 {action === 'test'
                   ? <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -373,7 +373,7 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={disabled || incomplete}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs border border-slate-800"
               >
                 {action === 'save'
                   ? <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -385,10 +385,10 @@ export const SettingsPage: React.FC = () => {
         </section>
 
         {/* Management Report Template Section */}
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+        <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
           <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-600">
-              <FileText className="h-4 w-4" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-100 text-slate-700">
+              <FileText className="h-4 w-4 text-sky-600" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
@@ -397,7 +397,7 @@ export const SettingsPage: React.FC = () => {
                 </h3>
                 {templateMeta && (
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
-                    templateMeta.isCustom ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-600'
+                    templateMeta.isCustom ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/80'
                   }`}>
                     {templateMeta.isCustom ? 'Custom Template' : 'Built-in System Master'}
                   </span>
@@ -411,11 +411,11 @@ export const SettingsPage: React.FC = () => {
 
           <div className="p-5 space-y-4">
             {/* Template Info Card */}
-            <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+            <div className="rounded-lg border border-slate-200/80 bg-[#f8fafc] p-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-                    <FileCheck className="h-5 w-5" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 border border-slate-200/80">
+                    <FileCheck className="h-5 w-5 text-sky-600" />
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-slate-800 flex items-center gap-2">
@@ -437,13 +437,13 @@ export const SettingsPage: React.FC = () => {
                     type="button"
                     onClick={handleDownloadTemplate}
                     disabled={templateLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-xs disabled:opacity-50 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300/80 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs disabled:opacity-50 cursor-pointer"
                   >
                     <Download className="h-3.5 w-3.5 text-slate-500" />
                     Download Master
                   </button>
 
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold text-white transition shadow-xs cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white transition shadow-xs cursor-pointer border border-slate-800">
                     {templateUploading ? (
                       <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                     ) : (

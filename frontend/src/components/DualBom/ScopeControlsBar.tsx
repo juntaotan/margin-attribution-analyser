@@ -35,7 +35,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
   onRunAnalysis,
 }) => {
   return (
-    <div className="w-full px-4 py-2 bg-slate-50 flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-200 text-xs shrink-0">
+    <div className="w-full px-4 py-2 bg-[#f8fafc] flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-200/80 text-xs shrink-0">
       {/* Analysis periods */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* Date Range */}
@@ -43,7 +43,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
             Start Date:
           </span>
-          <div className="flex items-center bg-white border border-slate-200 px-2 py-0.5 rounded gap-1 font-mono text-xs text-slate-800 shadow-xs">
+          <div className="flex items-center bg-white border border-slate-300/80 hover:border-slate-400 focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 px-2 py-0.5 rounded gap-1 font-mono text-xs text-slate-800 shadow-2xs transition-colors">
             <Calendar className="w-3 h-3 text-slate-400 pointer-events-none" />
             <input
               type="date"
@@ -58,7 +58,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
             End Date:
           </span>
-          <div className="flex items-center bg-white border border-slate-200 px-2 py-0.5 rounded gap-1 font-mono text-xs text-slate-800 shadow-xs">
+          <div className="flex items-center bg-white border border-slate-300/80 hover:border-slate-400 focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 px-2 py-0.5 rounded gap-1 font-mono text-xs text-slate-800 shadow-2xs transition-colors">
             <Calendar className="w-3 h-3 text-slate-400 pointer-events-none" />
             <input
               type="date"
@@ -69,20 +69,20 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-wrap border-l border-slate-200 pl-3">
+      <div className="flex items-center gap-2 flex-wrap border-l border-slate-200/80 pl-3">
         <span className="text-[10px] font-bold text-slate-500 uppercase">Compare period:</span>
         <input type="date" aria-label="Comparable period start" value={comparablePeriodFrom}
           onChange={(event) => setComparablePeriodFrom(event.target.value)}
-          className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-mono text-xs" />
+          className="bg-white border border-slate-300/80 hover:border-slate-400 focus:border-slate-600 focus:ring-1 focus:ring-slate-300 rounded px-1.5 py-0.5 font-mono text-xs shadow-2xs transition-colors" />
         <span className="text-slate-400">to</span>
         <input type="date" aria-label="Comparable period end" value={comparablePeriodTo}
           onChange={(event) => setComparablePeriodTo(event.target.value)}
-          className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-mono text-xs" />
+          className="bg-white border border-slate-300/80 hover:border-slate-400 focus:border-slate-600 focus:ring-1 focus:ring-slate-300 rounded px-1.5 py-0.5 font-mono text-xs shadow-2xs transition-colors" />
         <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase">
           Material θ:
           <input type="number" aria-label="Material cost threshold" min="0" step="any"
             value={leafThreshold} onChange={(event) => setLeafThreshold(Number(event.target.value))}
-            className="w-20 bg-white border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono text-xs text-slate-800" />
+            className="w-20 bg-white border border-slate-300/80 hover:border-slate-400 focus:border-slate-600 focus:ring-1 focus:ring-slate-300 rounded px-1.5 py-0.5 text-right font-mono text-xs text-slate-800 shadow-2xs transition-colors" />
         </label>
       </div>
 
@@ -93,7 +93,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
             Cost stop θ:
           </span>
-          <div className="flex items-center bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
+          <div className="flex items-center bg-white border border-slate-300/80 hover:border-slate-400 focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 rounded px-1.5 py-0.5 shadow-2xs transition-colors">
             <span className="text-slate-400 font-mono text-xs pr-1">$</span>
             <input
               type="number"
@@ -110,7 +110,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
         <button
           type="button"
           onClick={onRunAnalysis}
-          className="h-6 px-3 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-all"
+          className="h-6 px-3 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-colors border border-slate-800"
         >
           <Play className={`w-3 h-3 fill-current ${isAnalyzing ? 'animate-spin' : ''}`} />
           <span>{isAnalyzing ? 'Run Again' : 'Run Analysis'}</span>

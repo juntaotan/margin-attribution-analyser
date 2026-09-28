@@ -9,7 +9,7 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #f8fafc;
+  background-color: #f6f8fa;
   color: #0f172a;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -48,8 +48,8 @@ body {
 }
 
 .react-flow__edge:hover .react-flow__edge-path {
-  stroke: #2563eb !important;
-  stroke-width: 2.5px !important;
+  stroke: #0284c7 !important;
+  stroke-width: 2px !important;
 }
 
 .react-flow__controls-button {

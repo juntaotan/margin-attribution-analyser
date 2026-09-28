@@ -111,7 +111,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
   if (!selectedNode) {
     return (
       <>
-        <aside className="w-full lg:w-96 xl:w-96 bg-white flex flex-col shrink-0 border-t lg:border-t-0 border-slate-200 p-6 text-center justify-center items-center text-slate-400">
+        <aside className="w-full lg:w-96 xl:w-96 bg-white flex flex-col shrink-0 border-t lg:border-t-0 border-slate-200/80 p-6 text-center justify-center items-center text-slate-400">
           <Crosshair className="w-10 h-10 text-slate-300 stroke-1 mb-2" />
           <p className="text-xs font-semibold text-slate-600">No Node Selected</p>
           <p className="text-[11px] text-slate-400 mt-1 max-w-[220px]">
@@ -123,12 +123,12 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
               type="button"
               onClick={handleOpenReportStudio}
               disabled={isNavigatingToStudio}
-              className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+              className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60 border border-slate-800"
             >
               {isNavigatingToStudio ? (
                 <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
               )}
               <span>{isNavigatingToStudio ? 'Opening Report Studio…' : 'Open in Report Studio'}</span>
             </button>
@@ -136,7 +136,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
             <button
               type="button"
               onClick={() => setIsCommentaryModalOpen(true)}
-              className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full py-1.5 px-3 bg-[#f8fafc] hover:bg-slate-100 text-slate-700 border border-slate-300/80 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             >
               <FileText className="w-3.5 h-3.5 text-slate-500" />
               <span>Export &amp; Preview Options</span>
@@ -160,27 +160,27 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
   const isOverrun = (selectedNode.costDelta ?? 0) > 0;
 
   return (
-    <aside className="w-full lg:w-96 xl:w-96 bg-white flex flex-col shrink-0 border-t lg:border-t-0 border-slate-200 overflow-y-auto">
+    <aside className="w-full lg:w-96 xl:w-96 bg-white flex flex-col shrink-0 border-t lg:border-t-0 border-slate-200/80 overflow-y-auto">
       {/* ================= Upper 50%: Node Inspector Specification ================= */}
-      <div className="p-3.5 border-b border-slate-200 flex flex-col bg-white">
+      <div className="p-3.5 border-b border-slate-200/80 flex flex-col bg-white">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
           <div className="truncate pr-2">
-            <span className="font-mono text-xs font-bold text-blue-700 flex items-center gap-1">
-              <Crosshair className="w-3.5 h-3.5 text-blue-600" />
+            <span className="font-mono text-xs font-bold text-sky-700 flex items-center gap-1">
+              <Crosshair className="w-3.5 h-3.5 text-sky-600" />
               {selectedNode.id} Spec
             </span>
             <h4 className="text-xs font-bold text-slate-900 truncate" title={selectedNode.name}>
               {selectedNode.name}
             </h4>
           </div>
-          <span className="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-slate-600 shrink-0">
+          <span className="font-mono text-[10px] bg-[#f8fafc] px-2 py-0.5 rounded border border-slate-200/80 text-slate-600 shrink-0">
             {selectedNode.ecn}
           </span>
         </div>
 
         {/* 4-Grid Metrics */}
         <div className="grid grid-cols-2 gap-2 font-mono text-xs mb-2.5">
-          <div className="bg-slate-50 p-2 rounded border border-slate-200">
+          <div className="bg-[#f8fafc] p-2 rounded border border-slate-200/80">
             <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
               Standard Qty
             </span>
@@ -192,8 +192,8 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
           <div
             className={`p-2 rounded border ${
               isOverrun
-                ? 'bg-rose-50 border-rose-200 text-rose-700'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                ? 'bg-rose-50/80 border-rose-200/80 text-rose-700'
+                : 'bg-emerald-50/80 border-emerald-200/80 text-emerald-700'
             }`}
           >
             <span className="block text-[10px] uppercase font-bold tracking-wider opacity-80">
@@ -210,7 +210,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
             </span>
           </div>
 
-          <div className="bg-slate-50 p-2 rounded border border-slate-200">
+          <div className="bg-[#f8fafc] p-2 rounded border border-slate-200/80">
             <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
               Baseline Cost
             </span>
@@ -222,8 +222,8 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
           <div
             className={`p-2 rounded border ${
               isOverrun
-                ? 'bg-rose-50 border-rose-200 text-rose-700'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                ? 'bg-rose-50/80 border-rose-200/80 text-rose-700'
+                : 'bg-emerald-50/80 border-emerald-200/80 text-emerald-700'
             }`}
           >
             <span className="block text-[10px] uppercase font-bold tracking-wider opacity-80">
@@ -236,7 +236,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
         </div>
 
         {/* Hierarchy Context */}
-        <div className="bg-slate-50 p-2 rounded border border-slate-200 text-xs mb-2">
+        <div className="bg-[#f8fafc] p-2 rounded border border-slate-200/80 text-xs mb-2">
           <div className="flex justify-between items-center text-[11px] mb-1 font-mono">
             <span className="text-slate-500">
               Station: <strong className="text-slate-800">{selectedNode.station}</strong>
@@ -252,26 +252,26 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
 
       </div>
 
-      <div className="p-3.5 flex-1 flex flex-col bg-slate-50/60">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+      <div className="p-3.5 flex-1 flex flex-col bg-[#f8fafc]">
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
               AI Root-Cause Audit Report
             </span>
             <div className="flex items-center gap-1.5">
-              {loadingReport && <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />}
+              {loadingReport && <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />}
               <button
                 type="button"
                 onClick={() => setIsCommentaryModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 border border-blue-200 rounded transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-slate-700 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-300/80 rounded transition-colors shadow-2xs"
                 title="Open Management Commentary Report"
               >
-                <FileText className="w-3 h-3 text-blue-600" />
+                <FileText className="w-3 h-3 text-slate-500" />
                 <span>Commentary</span>
               </button>
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded p-3 mt-3 text-xs">
+          <div className="bg-white border border-slate-200/80 rounded p-3 mt-3 text-xs shadow-2xs">
             <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
               Analysis report summary
             </h5>
@@ -284,7 +284,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
                   {report.evidence.map((item, index) => <li key={index}>{item}</li>)}
                 </ul>
                 {report.aiGenerated && report.summary && (
-                  <p className="mt-3 rounded bg-blue-50 border border-blue-100 p-2 text-blue-900 leading-relaxed">
+                  <p className="mt-3 rounded bg-sky-50/60 border border-sky-100 p-2 text-sky-950 leading-relaxed">
                     <span className="font-bold">llama.cpp summary: </span>{report.summary}
                   </p>
                 )}
@@ -293,7 +293,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
             )}
             {!loadingReport && (reportError || (report && !report.aiGenerated)) && (
               <button type="button" onClick={() => setRetryCount((count) => count + 1)}
-                className="mt-2 text-blue-700 hover:underline font-semibold block">
+                className="mt-2 text-sky-700 hover:underline font-semibold block">
                 Retry AI summary
               </button>
             )}
@@ -304,12 +304,12 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
                 type="button"
                 onClick={handleOpenReportStudio}
                 disabled={isNavigatingToStudio}
-                className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+                className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60 border border-slate-800"
               >
                 {isNavigatingToStudio ? (
                   <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
                 )}
                 <span>{isNavigatingToStudio ? 'Opening Report Studio…' : 'Open in Report Studio'}</span>
               </button>
@@ -317,7 +317,7 @@ export const AuditSidebar: React.FC<AuditSidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCommentaryModalOpen(true)}
-                className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full py-1.5 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/80 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
               >
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
                 <span>Export &amp; Preview Options</span>

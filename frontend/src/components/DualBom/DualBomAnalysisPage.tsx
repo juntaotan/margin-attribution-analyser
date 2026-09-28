@@ -258,12 +258,12 @@ export const DualBomAnalysisPage: React.FC = () => {
         {/* Left Area: Symmetrical Tree Structure + Resizable Material Ledger */}
         <div
           ref={leftAreaRef}
-          className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-slate-200 ${
+          className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-slate-200/80 ${
             isDraggingSplitter ? 'select-none cursor-row-resize' : ''
           }`}
         >
           {analysisError && (
-            <div className="m-3 p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700 shrink-0">
+            <div className="m-3 p-2.5 bg-rose-50 border border-rose-200/80 rounded text-xs text-rose-700 shrink-0">
               Notice: {analysisError}
             </div>
           )}
@@ -273,7 +273,7 @@ export const DualBomAnalysisPage: React.FC = () => {
               {/* SECTION 1: Dual-BOM True Tree Canvas (Default 70% Vertical Height Space, adjustable) */}
               <div
                 style={{ height: `${treeHeightPct}%` }}
-                className="min-h-0 overflow-y-auto overflow-x-auto border-b border-slate-200 flex flex-col shrink-0"
+                className="min-h-0 overflow-y-auto overflow-x-auto border-b border-slate-200/80 flex flex-col shrink-0"
               >
                 <DualBomTreeCanvas
                   actualGraph={graphSnapshot.actual}
@@ -291,20 +291,20 @@ export const DualBomAnalysisPage: React.FC = () => {
               <div
                 onMouseDown={handleSplitterMouseDown}
                 onDoubleClick={() => setTreeHeightPct(70)}
-                className={`h-3 bg-slate-100 hover:bg-blue-100 active:bg-blue-200 border-y border-slate-200 cursor-row-resize flex items-center justify-center transition-colors group relative z-20 select-none shrink-0 ${
-                  isDraggingSplitter ? 'bg-blue-200 border-blue-400' : ''
+                className={`h-3 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-300 border-y border-slate-200/80 cursor-row-resize flex items-center justify-center transition-colors group relative z-20 select-none shrink-0 ${
+                  isDraggingSplitter ? 'bg-slate-200 border-slate-400' : ''
                 }`}
                 title="Drag up or down to adjust table height (Double-click to reset to 70%)"
               >
                 <div className="flex items-center gap-1">
-                  <div className="w-10 h-1 rounded-full bg-slate-300 group-hover:bg-blue-500 group-active:bg-blue-600 transition-colors" />
+                  <div className="w-10 h-1 rounded-full bg-slate-300 group-hover:bg-slate-500 group-active:bg-slate-600 transition-colors" />
                 </div>
                 {/* Visual indicator / tooltip */}
                 <div
                   className={`absolute right-4 text-[10px] font-mono font-medium px-2 py-0.5 rounded shadow-sm transition-opacity pointer-events-none ${
                     isDraggingSplitter
                       ? 'bg-slate-900 text-white opacity-100'
-                      : 'bg-white text-slate-500 border border-slate-200 opacity-0 group-hover:opacity-100'
+                      : 'bg-white text-slate-500 border border-slate-200/80 opacity-0 group-hover:opacity-100'
                   }`}
                 >
                   Tree: {Math.round(treeHeightPct)}% / Table: {Math.round(100 - treeHeightPct)}% (Drag to resize)

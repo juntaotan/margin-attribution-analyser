@@ -86,10 +86,10 @@ function layoutGraph(
       style: {
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
-        border: `2px solid ${highlighted ? '#e11d48' : selectedNodeId === node.id ? '#2563eb' : '#cbd5e1'}`,
-        background: highlighted ? '#fff1f2' : '#fff',
-        borderRadius: 8,
-        boxShadow: highlighted ? '0 0 0 3px #ffe4e6' : undefined,
+        border: `1.5px solid ${highlighted ? '#e11d48' : selectedNodeId === node.id ? '#0284c7' : '#d0d7de'}`,
+        background: highlighted ? '#fff1f2' : '#ffffff',
+        borderRadius: 6,
+        boxShadow: highlighted ? '0 0 0 2px rgba(225, 29, 72, 0.2)' : selectedNodeId === node.id ? '0 0 0 2px rgba(2, 132, 199, 0.25)' : '0 1px 2px 0 rgba(15, 23, 42, 0.04)',
       },
     };
   });
@@ -115,8 +115,8 @@ const GraphPane: React.FC<GraphPaneProps> = ({
   const nodesById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph]);
 
   return (
-    <div className="min-w-0 min-h-[360px] flex-1 flex flex-col border-r border-slate-200 last:border-r-0">
-      <div className="shrink-0 px-3 py-2 bg-white border-b border-slate-200 text-xs font-bold text-slate-700">
+    <div className="min-w-0 min-h-[360px] flex-1 flex flex-col border-r border-slate-200/80 last:border-r-0">
+      <div className="shrink-0 px-3 py-2 bg-[#f8fafc] border-b border-slate-200/80 text-xs font-bold text-slate-700">
         {label} <span className="ml-2 font-normal text-slate-500">{graph.nodes.length} nodes</span>
       </div>
       <div className="flex-1 min-h-0" aria-label={`${label} CSR graph`}>
@@ -136,7 +136,7 @@ const GraphPane: React.FC<GraphPaneProps> = ({
               if (node) onSelectNode(node);
             }}
           >
-            <Background gap={18} color="#e2e8f0" />
+            <Background gap={20} color="#cbd5e1" size={1} />
             <Controls showInteractive={false} />
           </ReactFlow>
         )}
@@ -149,7 +149,7 @@ export const DualBomTreeCanvas: React.FC<DualBomTreeCanvasProps> = ({
   actualGraph, comparableGraph, actualLabel, comparableLabel,
   highlightedNodeIds, highlightedEdgeIds, selectedNodeId, onSelectNode,
 }) => (
-  <section className="w-full h-full min-h-[400px] flex bg-slate-50">
+  <section className="w-full h-full min-h-[400px] flex bg-[#f6f8fa]">
     <GraphPane graph={comparableGraph} label={comparableLabel}
       highlightedNodeIds={EMPTY_IDS} highlightedEdgeIds={EMPTY_IDS}
       selectedNodeId={selectedNodeId} onSelectNode={onSelectNode} />

@@ -168,9 +168,9 @@ export const DataPreparation: React.FC = () => {
       </div>
 
       {/* ROW 1: Mode Selection & Import Box */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-          <Server className="w-4 h-4 text-blue-600" />
+          <Server className="w-4 h-4 text-sky-600" />
           1. Data Import
         </label>
 
@@ -183,19 +183,19 @@ export const DataPreparation: React.FC = () => {
           </span>
           <div className="flex flex-wrap gap-4">
             {/* Internal Database (Default) */}
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100/70">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-800 bg-[#f8fafc] px-3 py-2 rounded-lg border border-slate-200/80 hover:bg-slate-100/70">
               <input
                 type="radio"
                 name="dbMode"
                 checked={dbMode === 'internal'}
                 onChange={() => setDbMode('internal')}
-                className="text-blue-600 focus:ring-blue-500"
+                className="text-sky-600 focus:ring-sky-500"
               />
               <span>Internal Database (Default)</span>
             </label>
 
             {/* External Database (Reserved) */}
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-dashed border-slate-300 hover:bg-slate-100/70">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-500 bg-[#f8fafc] px-3 py-2 rounded-lg border border-dashed border-slate-300/80 hover:bg-slate-100/70">
               <input
                 type="radio"
                 name="dbMode"
@@ -241,10 +241,10 @@ export const DataPreparation: React.FC = () => {
               event.preventDefault();
               handleFile(event.dataTransfer.files[0]);
             }}
-            className="border-2 border-dashed border-slate-200 rounded-xl p-5 bg-slate-50/60 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-center space-y-2 cursor-pointer"
+            className="border-2 border-dashed border-slate-300/80 rounded-xl p-5 bg-[#f8fafc] hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center text-center space-y-2 cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-              <FolderOpen className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-700">
+              <FolderOpen className="w-5 h-5 text-sky-600" />
             </div>
 
             <div className="space-y-1">
@@ -336,10 +336,10 @@ export const DataPreparation: React.FC = () => {
       </div>
 
       {/* ROW 2: Recognition Results */}
-      <fieldset disabled={!fileReady} aria-label="Recognition Results" className={`min-w-0 p-4 rounded-xl border border-slate-200 shadow-xs space-y-4 ${fileReady ? 'bg-white' : 'bg-slate-100 opacity-50 grayscale'}`}>
+      <fieldset disabled={!fileReady} aria-label="Recognition Results" className={`min-w-0 p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-4 ${fileReady ? 'bg-white' : 'bg-slate-100 opacity-50 grayscale'}`}>
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-blue-600" />
+            <Layers className="w-4 h-4 text-sky-600" />
             2. Recognition Results
           </label>
           <span className="text-[11px] text-slate-400 font-mono">
@@ -351,9 +351,9 @@ export const DataPreparation: React.FC = () => {
           <span className="text-xs font-medium text-slate-500 sm:pt-3">Identified Module</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3" role="group" aria-label="Identified module">
             {(Object.entries(MODULE_LABELS) as [BusinessModule, string][]).map(([module, label]) => (
-              <label key={module} className={`flex items-center justify-between gap-3 p-3 rounded-lg border text-xs font-semibold ${selectedPartition === module ? 'bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/30' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+              <label key={module} className={`flex items-center justify-between gap-3 p-3 rounded-lg border text-xs font-semibold ${selectedPartition === module ? 'bg-sky-50 border-sky-500 text-sky-950 ring-1 ring-sky-500/30' : 'bg-[#f8fafc] border-slate-200/80 text-slate-600'}`}>
                 {label}
-                <input type="radio" name="identified-module" checked={selectedPartition === module} disabled aria-label={label} className="accent-blue-600" />
+                <input type="radio" name="identified-module" checked={selectedPartition === module} disabled aria-label={label} className="accent-sky-600" />
               </label>
             ))}
           </div>
@@ -361,7 +361,7 @@ export const DataPreparation: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-center border-t border-slate-100 pt-4">
           <span className="text-xs font-medium text-slate-500">Target Table Mapping</span>
-          <div className="max-w-md rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-400">
+          <div className="max-w-md rounded-lg border border-slate-200/80 bg-[#f8fafc] px-3 py-2.5 text-xs text-slate-500">
             {recognition?.table ?? (fileReady ? 'No matching table — rename the file to a supported table name or alias.' : 'Pending identification')}
           </div>
         </div>
@@ -373,7 +373,7 @@ export const DataPreparation: React.FC = () => {
           type="button"
           onClick={handleImport}
           disabled={!fileReady || !selectedPartition || isUploading || Boolean(activeJob && !isTerminalImportStatus(activeJob.status))}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-slate-800"
         >
           <Play className="w-4 h-4 fill-white" />
           <span>{isUploading ? 'Uploading…' : activeJob && !isTerminalImportStatus(activeJob.status) ? 'Processing…' : 'Import Again'}</span>
@@ -385,10 +385,10 @@ export const DataPreparation: React.FC = () => {
       </div>
 
       {/* ROW 4: Import History */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200/80 flex items-center justify-between bg-[#f8fafc]">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+            <FileSpreadsheet className="w-4 h-4 text-sky-600" />
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               Import Records
             </h3>
@@ -400,7 +400,7 @@ export const DataPreparation: React.FC = () => {
 
         {importRecords.length === 0 ? (
           <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+            <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400">
               <Database className="w-6 h-6 stroke-1 text-slate-400" />
             </div>
             <div className="space-y-1">
@@ -415,7 +415,7 @@ export const DataPreparation: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left font-mono">
-              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 text-[11px]">
+              <thead className="bg-[#f1f5f9] text-slate-600 border-b border-slate-200 text-[11px]">
                 <tr>
                   <th className="py-2.5 px-4">#</th>
                   <th className="py-2.5 px-4">File</th>
@@ -437,10 +437,10 @@ export const DataPreparation: React.FC = () => {
                     <td className="py-2.5 px-4">{new Date(record.createdAt).toLocaleString()}</td>
                     <td className="py-2.5 px-4 text-center">
                       <span className={`px-2 py-0.5 rounded border text-[10px] ${record.status === 'WRITE_SUCCESS'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
                         : isTerminalImportStatus(record.status)
-                          ? 'bg-red-50 text-red-700 border-red-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                          ? 'bg-rose-50 text-rose-700 border-rose-200/80'
+                          : 'bg-sky-50 text-sky-800 border-sky-200/80'}`}>
                         {record.status === 'WRITE_SUCCESS' ? `Imported (${record.importedRows})` : record.stage.replace(/_/g, ' ')}
                       </span>
                     </td>

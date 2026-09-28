@@ -40,10 +40,18 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-50 text-slate-800 font-sans select-none overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-[#f6f8fa] text-slate-800 font-sans select-none overflow-hidden">
       {/* 1. Global Navigation Top Bar */}
-      <header className="h-11 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
+      <header className="h-11 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-xs text-slate-400">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden">
+            <img
+              src="/Logo.svg"
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full scale-[2.5] object-contain"
+            />
+          </span>
           <span className="font-bold text-slate-800 tracking-tight text-sm">
             MarginTrace
           </span>
@@ -67,7 +75,7 @@ export const App: React.FC = () => {
       {/* Main Layout (Sidebar + Content Area) */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* 2. Left Sidebar Navigation */}
-        <aside className="w-56 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0">
+        <aside className="w-56 bg-[#fafbfc] border-r border-slate-200/80 flex flex-col justify-between shrink-0">
           <div className="p-3">
             <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Navigation
@@ -79,8 +87,8 @@ export const App: React.FC = () => {
                 onClick={() => navigate('/margin-topology')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
                   currentRoute === '/margin-topology'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200/80 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                    ? 'bg-slate-100/90 text-slate-900 border border-slate-200/90 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium'
                 }`}
               >
                 <Network className="w-4 h-4 text-blue-600 shrink-0" />
@@ -93,8 +101,8 @@ export const App: React.FC = () => {
                 onClick={() => navigate('/report-studio')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
                   currentRoute === '/report-studio'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200/80 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                    ? 'bg-slate-100/90 text-slate-900 border border-slate-200/90 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium'
                 }`}
               >
                 <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
@@ -107,8 +115,8 @@ export const App: React.FC = () => {
                 onClick={() => navigate('/data-prep')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
                   currentRoute === '/data-prep'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200/80 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                    ? 'bg-slate-100/90 text-slate-900 border border-slate-200/90 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium'
                 }`}
               >
                 <Database className="w-4 h-4 text-slate-500 shrink-0" />
@@ -121,8 +129,8 @@ export const App: React.FC = () => {
                 onClick={() => navigate('/settings')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
                   currentRoute === '/settings'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200/80 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                    ? 'bg-slate-100/90 text-slate-900 border border-slate-200/90 font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium'
                 }`}
               >
                 <Settings className="w-4 h-4 text-slate-500 shrink-0" />
@@ -131,7 +139,7 @@ export const App: React.FC = () => {
             </nav>
           </div>
 
-          <div className="p-3 border-t border-slate-100 text-[11px] text-slate-400 text-center font-mono">
+          <div className="p-3 border-t border-slate-200/60 text-[11px] text-slate-400 text-center font-mono">
             HMLV Engine v4.8.2
           </div>
         </aside>

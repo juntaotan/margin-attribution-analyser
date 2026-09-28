@@ -283,25 +283,25 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-100/50 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-[#f8fafc] custom-scrollbar">
           {/* Section 1: Template Status Banner */}
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs">
+          <div className="bg-white border border-slate-200/80 rounded-lg p-4 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
-                  <FileCheck className="h-4 w-4" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 border border-slate-200/80">
+                  <FileCheck className="h-4 w-4 text-sky-600" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-800">
                       Active Master Template:
                     </span>
-                    <span className="text-xs font-mono text-indigo-700 font-medium">
+                    <span className="text-xs font-mono text-slate-800 font-medium">
                       {loadingTemplate ? 'Loading template…' : templateMeta?.filename || 'master-template.docx'}
                     </span>
                     {templateMeta && (
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        templateMeta.isCustom ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-600'
+                        templateMeta.isCustom ? 'bg-purple-50 text-purple-700 border border-purple-200/80' : 'bg-slate-100 text-slate-600 border border-slate-200/80'
                       }`}>
                         {templateMeta.isCustom ? 'Custom Template' : 'System Standard Master'}
                       </span>
@@ -314,7 +314,7 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-[11px] font-semibold">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50/70 text-emerald-800 border border-emerald-200/80 rounded-md text-[11px] font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   {templateMeta ? `${templateMeta.matchedCount}/${templateMeta.totalExpected} Core Placeholders Ready` : 'Checking placeholders...'}
                 </span>
@@ -323,10 +323,10 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
           </div>
 
           {/* Section 2: Data Extraction & Placeholder Preview */}
-          <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-2xs space-y-4">
+          <div className="bg-white border border-slate-200/80 rounded-lg p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
+                <Calendar className="w-4 h-4 text-sky-600" />
                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Reporting Parameters &amp; Placeholder Injection Preview
                 </h4>
@@ -486,7 +486,7 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
+        <div className="px-6 py-3.5 bg-[#f8fafc] border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
           <div className="text-slate-500 text-[11px] flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>Ready: Document generation clones the Data Lake master template and preserves all corporate styling.</span>
@@ -496,7 +496,7 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-md font-medium transition cursor-pointer"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/80 rounded-md font-medium transition cursor-pointer shadow-2xs"
             >
               Cancel
             </button>
@@ -505,12 +505,12 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
               type="button"
               onClick={handleOpenInStudio}
               disabled={isOpeningInStudio || isExporting}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md font-semibold transition shadow-xs disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-800 border border-slate-300/80 rounded-md font-semibold transition shadow-2xs disabled:opacity-60 cursor-pointer"
             >
               {isOpeningInStudio ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Edit3 className="w-3.5 h-3.5" />
+                <Edit3 className="w-3.5 h-3.5 text-slate-600" />
               )}
               <span>{isOpeningInStudio ? 'Loading into Studio…' : 'Edit in Report Studio'}</span>
             </button>
@@ -519,7 +519,7 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
               type="button"
               onClick={handleExportDocx}
               disabled={isExporting || isOpeningInStudio}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-md font-semibold transition shadow-xs disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white rounded-md font-semibold transition shadow-xs disabled:opacity-60 cursor-pointer border border-slate-800"
             >
               {isExporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

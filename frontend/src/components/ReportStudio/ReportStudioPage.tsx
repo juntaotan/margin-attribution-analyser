@@ -507,20 +507,20 @@ export const ReportStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full min-h-0 overflow-hidden font-sans" style={{ backgroundColor: "#f3f3f3" }}>
-      <main className="min-w-0 flex-1" style={{ backgroundColor: "#f3f3f3" }}>
+    <div className="flex h-full w-full min-h-0 overflow-hidden font-sans" style={{ backgroundColor: "#f6f8fa" }}>
+      <main className="min-w-0 flex-1" style={{ backgroundColor: "#f6f8fa" }}>
         <OnlyOfficeEditorPane
           reloadKey={editorReloadKey}
           onDocumentChanged={() => void loadContentControls()}
         />
       </main>
 
-      <aside className="w-96 lg:w-[420px] xl:w-[450px] border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar shadow-lg" style={{ backgroundColor: "#f3f3f3" }}>
+      <aside className="w-96 lg:w-[420px] xl:w-[450px] border-l border-slate-200/80 flex flex-col shrink-0 overflow-y-auto custom-scrollbar" style={{ backgroundColor: "#fafbfc" }}>
           {/* Header */}
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0" style={{ backgroundColor: "#f3f3f3" }}>
+          <div className="p-4 border-b border-slate-200/80 flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                <Sparkles className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 border border-slate-200/80 flex items-center justify-center font-bold">
+                <Sparkles className="w-4 h-4 text-sky-600" />
               </div>
               <div>
                 <h3 className="text-xs font-bold text-slate-900">
@@ -622,14 +622,14 @@ export const ReportStudioPage: React.FC = () => {
                       }}
                       className={`w-full rounded-lg border px-3 py-2 text-left transition-all ${
                         activeTokenId === control.id
-                          ? 'border-blue-500 bg-blue-50 shadow-2xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                          ? 'border-sky-500 bg-sky-50/60 shadow-2xs'
+                          : 'border-slate-200/80 bg-white hover:border-slate-300 hover:bg-slate-50/70'
                       }`}
                     >
                     <span className="flex items-center justify-between gap-2">
                       <span
                         className={`truncate text-xs font-semibold ${
-                          activeTokenId === control.id ? 'text-blue-800' : 'text-slate-700'
+                          activeTokenId === control.id ? 'text-sky-900' : 'text-slate-700'
                         }`}
                       >
                         {control.tag || control.alias}
@@ -676,7 +676,7 @@ export const ReportStudioPage: React.FC = () => {
             {activeToken ? (
               <>
                 {/* 2. Prompt Input Box */}
-                <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                <div className="space-y-2 bg-[#f8fafc] p-3.5 rounded-xl border border-slate-200/80">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Edit3 className="w-3.5 h-3.5 text-blue-600" />
