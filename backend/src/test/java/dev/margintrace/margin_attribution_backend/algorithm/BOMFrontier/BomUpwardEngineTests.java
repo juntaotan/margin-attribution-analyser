@@ -1,7 +1,9 @@
 package dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
+import dev.margintrace.margin_attribution_backend.algorithm.model.GraphEdge;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
+import dev.margintrace.margin_attribution_backend.algorithm.model.PropagationPath;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -267,6 +269,25 @@ class BomUpwardEngineTests {
         assertArrayEquals(new int[0], prepared.graph().terminalNodes());
         assertArrayEquals(new int[]{0, 0, 0}, prepared.graph().offsets());
         assertArrayEquals(new int[0], engine.run(prepared.graph(), prepared.threshold()));
+    }
+
+    @Test
+    void reconcilerReconstructsEverySelectedLeafPathToTheBoundary() {
+        CsrGraph actual = csr(new Node[]{node("M1", "2"), node("M2", "3"),
+                node("S", "0"), node("P", "10")}, edges(0, 2, 1, 2, 2, 3));
+        CsrGraph comparable = csr(new Node[]{node("P", "0"), node("S", "0"),
+                node("M2", "0"), node("M1", "0")}, edges());
+
+        List<PropagationPath> paths = new BomFrontierReconciler().reconcile(
+                actual, comparable, decimal("1"), decimal("5"));
+
+        assertEquals(List.of(
+                new PropagationPath(List.of(0, 2, 3),
+                        List.of(new GraphEdge(0, 2, 0), new GraphEdge(2, 3, 2)),
+                        PropagationPath.EndReason.THRESHOLD_EXCEEDED, decimal("10.000000")),
+                new PropagationPath(List.of(1, 2, 3),
+                        List.of(new GraphEdge(1, 2, 1), new GraphEdge(2, 3, 2)),
+                        PropagationPath.EndReason.THRESHOLD_EXCEEDED, decimal("10.000000"))), paths);
     }
 
     /** Builds raw engine arrays from material-to-product edges without changing result multiplicity. */

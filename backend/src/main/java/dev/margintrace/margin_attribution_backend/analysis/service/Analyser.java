@@ -2,11 +2,10 @@ package dev.margintrace.margin_attribution_backend.analysis.service;
 
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
-import dev.margintrace.margin_attribution_backend.algorithm.BOMPruner.GradBOMReconciler;
+import dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier.BomFrontierReconciler;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.algorithm.model.PropagationPath;
-import dev.margintrace.margin_attribution_backend.algorithm.model.ReconciliationResult;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisAdjacencyEntry;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAnalysisResponse;
@@ -43,7 +42,7 @@ public class Analyser {
     private final ProductionRepository productionRepository;
     private final SalesOrderLineRepository salesOrderLineRepository;
     private final MarginAttributionAlgorithm pathFinder = new MarginAttributionAlgorithm();
-    private final GradBOMReconciler reconciler = new GradBOMReconciler();
+    private final BomFrontierReconciler reconciler = new BomFrontierReconciler();
 
     /** Emits the exact CSR snapshots used by the reconciler before calculating paths. */
     public void streamReconciliation(
@@ -59,23 +58,21 @@ public class Analyser {
                 StreamCsrGraph.from(actualGraph, analysisId, "actual"),
                 StreamCsrGraph.from(comparableGraph, analysisId, "comparable")));
 
-        ReconciliationResult result = reconciler.reconcile(
+        List<PropagationPath> paths = reconciler.reconcile(
                 actualGraph, comparableGraph, leafThreshold, stopThreshold);
-        List<ReconciliationStreamPath> paths = result.paths().stream()
-                .filter(path -> path.endReason() == PropagationPath.EndReason.THRESHOLD_EXCEEDED)
+        List<ReconciliationStreamPath> streamPaths = paths.stream()
                 .map(path -> ReconciliationStreamPath.from(path, analysisId))
                 .toList();
-        emit.accept(ReconciliationStreamEvent.diff(analysisId, paths));
+        emit.accept(ReconciliationStreamEvent.diff(analysisId, streamPaths));
     }
 
     /** Returns complete threshold-triggered paths with recorded node values for the UI. */
     public ReconciliationAnalysisResponse reconcileGraphs(
             CsrGraph actualGraph, CsrGraph comparableGraph,
             BigDecimal leafThreshold, BigDecimal stopThreshold) {
-        ReconciliationResult result = reconciler.reconcile(
+        List<PropagationPath> reconciledPaths = reconciler.reconcile(
                 actualGraph, comparableGraph, leafThreshold, stopThreshold);
-        List<ReconciliationPathEntry> paths = result.paths().stream()
-                .filter(path -> path.endReason() == PropagationPath.EndReason.THRESHOLD_EXCEEDED)
+        List<ReconciliationPathEntry> paths = reconciledPaths.stream()
                 .map(path -> new ReconciliationPathEntry(
                         path.positions().stream().map(position -> actualGraph.nodes()[position]).toList(),
                         path.edges(), path.endReason(), path.endingCostDifference()))

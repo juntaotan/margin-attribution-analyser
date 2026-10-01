@@ -15,6 +15,7 @@ import java.util.Map;
  * conversion to long micro-units is exact and must fit the signed long range.
  */
 public final class BomGraphPreparer {
+    static final int VALUE_SCALE = 6;
 
     /** The graph and encoded threshold consumed by the upward traversal. */
     public record PreparedPruning(BomUpwardGraph graph, long threshold) {
@@ -94,6 +95,6 @@ public final class BomGraphPreparer {
 
     /** Converts a database-scale amount to exact signed long micro-units. */
     private static long microUnits(BigDecimal amount) {
-        return amount.movePointRight(6).longValueExact();
+        return amount.movePointRight(VALUE_SCALE).longValueExact();
     }
 }
