@@ -1,228 +1,140 @@
-#define CL_HPP_TARGET_OPENCL_VERSION 200
-#define CL_HPP_MINIMUM_OPENCL_VERSION 120
-#define CL_HPP_ENABLE_EXCEPTIONS
+#include "bom_upward_engine.hpp"
 
-#include <CL/opencl.hpp>
-
-#include <cstdint>
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include <algorithm>
 #include <stdexcept>
-#include <string>
-#include <vector>
 
+// Define a constant for undiscovered nodes to confirm that the node has not 
+// been processed yet.
 namespace {
+constexpr cl_uint UNDISCOVERED = 0xFFFFFFFFu;
+}
 
-// Read cl source file into string
-std::string readTextFile(const std::string& path) {
-    std::ifstream input(path);
-
-    if (!input) {
-        throw std::runtime_error("Cannot open kernel: " + path);
-    }
-
-    std::ostringstream content;
-    content << input.rdbuf();
-    return content.str();
+BomUpwardEngine::BomUpwardEngine(
+    const cl::Context& context,
+    const cl::CommandQueue& queue,
+    const cl::Program& program
+)
+    : context_(context),
+      queue_(queue),
+      kernel_(program, "process_frontier")
+{
 }
 
 
-cl::Device chooseDevice() {
-    std::vector<cl::Platform> platforms;
-    cl::Platform::get(&platforms);
+std::vector<cl_uint> BomUpwardEngine::run(
+    const BomUpwardGraph& graph,
+    const cl_ulong threshold
+) {
+    const cl_uint node_count = static_cast<cl_uint>(graph.node_values.size());
 
-    if (platforms.empty()) {
-        throw std::runtime_error("No OpenCL platform found");
+    if (node_count == 0 || graph.terminal_nodes.empty()) {
+        return {};
     }
 
-    for (const auto& platform : platforms) {
-        std::vector<cl::Device> devices;
-        platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
-
-        if (!devices.empty()) {
-            return devices.front();
-        }
+    // Basic validation
+    if (graph.offsets.size() != node_count + 1 ||
+        graph.reverse_offsets.size() != node_count + 1 ||
+        graph.node_comparable.size() != node_count) {
+        throw std::runtime_error("Invalid BOM graph dimensions.");
     }
 
-    throw std::runtime_error("No OpenCL device found");
-}
+    // Static graph buffers
+    cl::Buffer offsets_buffer(context_,
+        CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        graph.offsets.size() * sizeof(cl_uint),
+        const_cast<cl_uint*>(graph.offsets.data())
+    );
+    cl::Buffer reverse_offsets_buffer(
+        context_,
+        CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        graph.reverse_offsets.size() * sizeof(cl_uint),
+        const_cast<cl_uint*>(graph.reverse_offsets.data())
+    );
+    cl::Buffer reverse_successors_buffer(
+        context_,
+        CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        graph.reverse_successors.size() * sizeof(cl_uint),
+        const_cast<cl_uint*>(graph.reverse_successors.data())
+    );
+    cl::Buffer node_values_buffer(
+        context_,
+        CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        graph.node_values.size() * sizeof(cl_long),
+        const_cast<cl_long*>(graph.node_values.data())
+    );
+    cl::Buffer node_comparable_buffer(
+        context_,
+        CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+        graph.node_comparable.size() * sizeof(cl_uchar),
+        const_cast<cl_uchar*>(graph.node_comparable.data())
+    );
 
-} // namespace
+    // Dynamic propagation state
+    cl::Buffer remaining_buffer(context_,CL_MEM_READ_WRITE,node_count * sizeof(cl_uint));
+    cl::Buffer frontier_a(context_, CL_MEM_READ_WRITE, node_count * sizeof(cl_uint));
+    cl::Buffer frontier_b(context_,CL_MEM_READ_WRITE,node_count * sizeof(cl_uint));
+    cl::Buffer next_frontier_count_buffer(context_,CL_MEM_READ_WRITE,sizeof(cl_uint));
+    cl::Buffer result_nodes_buffer(context_,CL_MEM_READ_WRITE,node_count * sizeof(cl_uint));
+    cl::Buffer result_count_buffer(context_,CL_MEM_READ_WRITE,sizeof(cl_uint));
 
-int main() {
-    try {
-        // ------------------------------------------------------------
-        // 1. 创建 Device、Context、CommandQueue
-        // ------------------------------------------------------------
-        const cl::Device device = chooseDevice();
-        const cl::Context context(device);
-        const cl::CommandQueue queue(context, device);
+    // Initialise state
+    // Initialise remaining_buffer
+    queue_.enqueueFillBuffer(remaining_buffer,UNDISCOVERED,0,node_count * sizeof(cl_uint));
+    const cl_uint zero = 0;
+    // Initialise result_count_buffer
+    queue_.enqueueFillBuffer(result_count_buffer,zero,0,sizeof(cl_uint));
 
-        std::cout
-            << "Device: "
-            << device.getInfo<CL_DEVICE_NAME>()
-            << '\n';
+    // First frontier is all terminal nodes
+    queue_.enqueueWriteBuffer(
+        frontier_a,
+        CL_TRUE,
+        0,
+        graph.terminal_nodes.size() * sizeof(cl_uint),
+        graph.terminal_nodes.data()
+    );
 
-        // ------------------------------------------------------------
-        // 2. 读取并编译 OpenCL kernel
-        // ------------------------------------------------------------
-        const std::string source =
-            readTextFile(OPENCL_KERNEL_PATH);
+    cl::Buffer current_frontier = frontier_a;
+    cl::Buffer next_frontier = frontier_b;
 
-        cl::Program program(context, source);
+    // Start to propagate values from terminal nodes to their ancestors.
+    cl_uint current_count = static_cast<cl_uint>(graph.terminal_nodes.size());
+    while (current_count > 0) {
 
-        try {
-            program.build({device});
-        } catch (const cl::Error&) {
-            std::cerr
-                << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device)
-                << '\n';
-            throw;
-        }
+        // next_frontier is empty at the beginning of every round.
+        queue_.enqueueFillBuffer(next_frontier_count_buffer,zero,0,sizeof(cl_uint));
 
-        cl::Kernel kernel(program, "initialise_nodes");
+        // Kernel arguments: Must match process_frontier(...) exactly
+        kernel_.setArg(0, offsets_buffer);
+        kernel_.setArg(1, reverse_offsets_buffer);
+        kernel_.setArg(2, reverse_successors_buffer);
+        kernel_.setArg(3, current_frontier);
+        kernel_.setArg(4, next_frontier);
+        kernel_.setArg(5, next_frontier_count_buffer);
+        kernel_.setArg(6, remaining_buffer);
+        kernel_.setArg(7, threshold);
+        kernel_.setArg(8, node_values_buffer);
+        kernel_.setArg(9, node_comparable_buffer);
+        kernel_.setArg(10, current_count);
+        kernel_.setArg(11, result_nodes_buffer);
+        kernel_.setArg(12, result_count_buffer);
 
-        // ------------------------------------------------------------
-        // 3. Host 端 SoA 测试数据
-        //
-        // A = 0, B = 1, C = 2, P = 3
-        // A/B/C 是 terminal；P 需要等待三个直接下级。
-        // ------------------------------------------------------------
-        const std::vector<float> nodeValue{
-            10.0f, // A
-            20.0f, // B
-            30.0f, // C
-            40.0f  // P
-        };
+        queue_.enqueueNDRangeKernel(kernel_,cl::NullRange,cl::NDRange(current_count),cl::NullRange);
+        cl_uint next_count = 0;
+        queue_.enqueueReadBuffer(next_frontier_count_buffer,CL_TRUE,0,sizeof(cl_uint),&next_count);
 
-        const std::vector<std::uint32_t> expectedChildren{
-            0, // A
-            0, // B
-            0, // C
-            3  // P
-        };
+        current_count = next_count;
 
-        const std::size_t nodeCount = nodeValue.size();
-
-        // ------------------------------------------------------------
-        // 4. 创建设备 Buffer
-        //
-        // 输入 buffer 使用 READ_ONLY。
-        // 输出/状态 buffer 使用 READ_WRITE。
-        // ------------------------------------------------------------
-        cl::Buffer nodeValueBuffer(
-            context,
-            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-            sizeof(float) * nodeCount,
-            const_cast<float*>(nodeValue.data())
-        );
-
-        cl::Buffer expectedBuffer(
-            context,
-            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-            sizeof(std::uint32_t) * nodeCount,
-            const_cast<std::uint32_t*>(expectedChildren.data())
-        );
-
-        cl::Buffer resultBuffer(
-            context,
-            CL_MEM_READ_WRITE,
-            sizeof(float) * nodeCount
-        );
-
-        cl::Buffer remainingBuffer(
-            context,
-            CL_MEM_READ_WRITE,
-            sizeof(std::uint32_t) * nodeCount
-        );
-
-        cl::Buffer stateBuffer(
-            context,
-            CL_MEM_READ_WRITE,
-            sizeof(std::uint32_t) * nodeCount
-        );
-
-        // ------------------------------------------------------------
-        // 5. 按照 kernel 参数顺序绑定 buffer
-        // ------------------------------------------------------------
-        kernel.setArg(0, nodeValueBuffer);
-        kernel.setArg(1, expectedBuffer);
-        kernel.setArg(2, resultBuffer);
-        kernel.setArg(3, remainingBuffer);
-        kernel.setArg(4, stateBuffer);
-        kernel.setArg(
-            5,
-            static_cast<cl_uint>(nodeCount)
-        );
-
-        // ------------------------------------------------------------
-        // 6. 启动 nodeCount 个 work-item
-        //
-        // gid 0 处理 A
-        // gid 1 处理 B
-        // gid 2 处理 C
-        // gid 3 处理 P
-        // ------------------------------------------------------------
-        queue.enqueueNDRangeKernel(
-            kernel,
-            cl::NullRange,
-            cl::NDRange(nodeCount),
-            cl::NullRange
-        );
-
-        // ------------------------------------------------------------
-        // 7. 将三个输出 buffer 读回 Host
-        // ------------------------------------------------------------
-        std::vector<float> result(nodeCount);
-        std::vector<std::uint32_t> remaining(nodeCount);
-        std::vector<std::uint32_t> state(nodeCount);
-
-        queue.enqueueReadBuffer(
-            resultBuffer,
-            CL_TRUE,
-            0,
-            sizeof(float) * nodeCount,
-            result.data()
-        );
-
-        queue.enqueueReadBuffer(
-            remainingBuffer,
-            CL_TRUE,
-            0,
-            sizeof(std::uint32_t) * nodeCount,
-            remaining.data()
-        );
-
-        queue.enqueueReadBuffer(
-            stateBuffer,
-            CL_TRUE,
-            0,
-            sizeof(std::uint32_t) * nodeCount,
-            state.data()
-        );
-
-        // ------------------------------------------------------------
-        // 8. 验证传输结果
-        // ------------------------------------------------------------
-        for (std::size_t node = 0; node < nodeCount; ++node) {
-            std::cout
-                << "node=" << node
-                << " result=" << result[node]
-                << " remaining=" << remaining[node]
-                << " state=" << state[node]
-                << '\n';
-        }
-
-        return 0;
-    } catch (const cl::Error& error) {
-        std::cerr
-            << "OpenCL error: "
-            << error.what()
-            << " (" << error.err() << ")\n";
-        return 1;
-    } catch (const std::exception& error) {
-        std::cerr << error.what() << '\n';
-        return 1;
+        std::swap(current_frontier, next_frontier);
     }
+
+    // Read final results
+    cl_uint result_count = 0;
+    queue_.enqueueReadBuffer(result_count_buffer,CL_TRUE,0,sizeof(cl_uint),&result_count);
+    std::vector<cl_uint> results(result_count);
+
+    if (result_count > 0) {
+        queue_.enqueueReadBuffer(result_nodes_buffer,CL_TRUE,0,result_count * sizeof(cl_uint),results.data());
+    }
+
+    return results;
 }

@@ -94,3 +94,6 @@ build/
 
 # example file
 *.xlsx
+
+# OpenCL
+build/
