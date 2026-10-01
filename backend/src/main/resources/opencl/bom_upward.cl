@@ -1,41 +1,43 @@
-// OpenCL C 1.2-compatible core for bottom-up BOM propagation.
-//
-// Execution model:
-//   1. initialize_query_state is launched once per query.
-//   2. process_frontier is launched repeatedly by the C++ host.
-//   3. A work-item processes one node from current_frontier.
-//   4. The last resolved direct child enqueues its parent in next_frontier.
-//
-// The scheduling code is complete. The domain-specific comparison is isolated
-// in evaluate_node(), so later BOM rules can change without rewriting the
-// frontier machinery.
 
-__kernel void bom_upward(
-    __global const uint* offsets,
-    __global const uint* successors,
+// Define a special value to represent an undiscovered node in the graph.
+#define UNDISCOVERED 0xFFFFFFFFu
+
+__kernel void process_frontier(
+    __global const uint* offsets,            // CSR Graph from products to materials
+    __global const uint* successors,         // CSR Graph from products to materials
+    __global const uint* reverse_offsets,    // Reversed CSR Graph from materials to products
+    __global const uint* reverse_successors, // Reversed CSR Graph from materials to products
     __global const uint* terminal_nodes,
-    __global uint* expected_children,
-    __global uint* arrived_children,
+    __global uint* remaining_nodes_count,
+
     const float comparison_value,
     const float significance_level,
-    const uint node_count
+
+    const uint work_item_count
 ) {
-    // Which node is this work-item responsible for?
-    const uint node = (uint)get_global_id(0);
-    if (node >= node_count) {
+    // Get the current work item index
+    const uint work_item = (uint)get_global_id(0);
+    if (work_item >= work_item_count) {
         return;
     }
+
     // Get the successors of this node, which represent its semi-products or products.
-    const uint current_node = terminal_nodes[node];
-    const uint begin = offsets[current_node];
-    const uint end = offsets[current_node + 1u];
-
-    uint next_node = 0;
-    
-    for (uint edge = begin; edge < end; ++edge) {
-        next_node = successors[edge];
+    const uint current_item = terminal_nodes[work_item];
+    const uint begin_idx = reverse_offsets[current_item];
+    const uint end_idx = reverse_offsets[current_item + 1u];
+    for (uint edge = begin_idx; edge < end_idx; ++edge) {
+        // Get the successor node.
+        const uint parent_item = reverse_successors[edge];
+        // Get the amount of child nodes for this successor node.
+        const uint begin_idx_child = offsets[parent_item];
+        const uint end_idx_child = offsets[parent_item + 1u];
+        const uint child_count = end_idx_child - begin_idx_child;
+        // Store the amount of child nodes for this successor node, using CAS to ensure that only 
+        // one work item writes to it.
+        const uint old_value = atomic_cmpxchg(
+            (volatile __global uint*)&remaining_nodes_count[parent_item],
+            UNDISCOVERED,
+            child_count
+        );
     }
-
-    // Get the amount of children this node has
-    const uint child_count = offsets[next_node + 1u] - offsets[next_node];
 }
