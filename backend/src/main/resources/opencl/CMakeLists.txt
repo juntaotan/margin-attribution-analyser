@@ -74,8 +74,13 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+target_compile_definitions(bom_upward_engine_test PRIVATE
+    BOM_UPWARD_KERNEL_PATH="${CMAKE_CURRENT_BINARY_DIR}/bom_upward.cl"
+)
+
 include(GoogleTest)
 
 gtest_discover_tests(
     bom_upward_engine_test
+    PROPERTIES TIMEOUT 60
 )
