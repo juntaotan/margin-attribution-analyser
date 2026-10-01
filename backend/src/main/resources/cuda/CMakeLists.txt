@@ -5,6 +5,14 @@ project(margin_attribution_analyser LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 
+add_executable(
+    cuda_benchmark
+
+    benchmark/cuda/cuda_benchmark.cu
+
+    backend/src/main/resources/cuda/cuda_bom_upward_engine.cu
+)
+
 find_package(CUDAToolkit REQUIRED)
 
 add_library(cuda_backend
