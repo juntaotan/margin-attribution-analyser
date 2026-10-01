@@ -13,12 +13,21 @@ struct BomUpwardGraph {
     std::vector<uint8_t> node_comparable;
 };
 
+// Host-observed phases for one complete CUDA invocation.
+struct CudaBomUpwardTimings {
+    double input_ms{};
+    double compute_ms{};
+    double output_ms{};
+    double total_ms{};
+};
+
 // Schedules bottom-up BOM propagation and collects nodes meeting the threshold.
 class CudaBomUpwardEngine {
 public:
     // Traverse a database-built graph from its terminals; result order is unspecified.
     std::vector<uint32_t> run(
         const BomUpwardGraph& graph,
-        uint64_t threshold
+        uint64_t threshold,
+        CudaBomUpwardTimings* timings = nullptr
     );
 };

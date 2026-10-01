@@ -10,6 +10,14 @@ import java.util.Arrays;
  */
 public final class BomUpwardEngine {
 
+    /** Per-run timings used by the cross-backend benchmark. */
+    public record RunTimings(double inputMs, double computeMs, double outputMs, double totalMs) {
+    }
+
+    /** Selected nodes together with the measured execution phases. */
+    public record ProfiledRun(int[] nodes, RunTimings timings) {
+    }
+
     /**
      * Traverses from terminals toward products and returns qualifying products in traversal order.
      * The threshold is unsigned, as in OpenCL's {@code cl_ulong}; the absolute value of
@@ -21,6 +29,13 @@ public final class BomUpwardEngine {
      * @return selected node indices in traversal order; each eligible node is selected at most once
      */
     public int[] run(BomUpwardGraph graph, long threshold) {
+        return profile(graph, threshold).nodes();
+    }
+
+    /** Runs the same algorithm while separating setup, traversal, and result-copy time. */
+    public ProfiledRun profile(BomUpwardGraph graph, long threshold) {
+        long totalStart = System.nanoTime();
+        long inputStart = totalStart;
         int nodeCount = graph.nodeValues().length;
         int[] remaining = new int[nodeCount];
         int[] queue = new int[nodeCount];
@@ -35,7 +50,9 @@ public final class BomUpwardEngine {
         for (int terminal : graph.terminalNodes()) {
             queue[queueTail++] = terminal;
         }
+        long inputEnd = System.nanoTime();
 
+        long computeStart = inputEnd;
         int resultCount = 0;
         while (queueHead < queueTail) {
             int material = queue[queueHead++];
@@ -53,7 +70,19 @@ public final class BomUpwardEngine {
                 }
             }
         }
+        long computeEnd = System.nanoTime();
 
-        return Arrays.copyOf(results, resultCount);
+        long outputStart = computeEnd;
+        int[] selectedNodes = Arrays.copyOf(results, resultCount);
+        long outputEnd = System.nanoTime();
+        return new ProfiledRun(selectedNodes, new RunTimings(
+                milliseconds(inputEnd - inputStart),
+                milliseconds(computeEnd - computeStart),
+                milliseconds(outputEnd - outputStart),
+                milliseconds(outputEnd - totalStart)));
+    }
+
+    private static double milliseconds(long nanoseconds) {
+        return nanoseconds / 1_000_000.0;
     }
 }

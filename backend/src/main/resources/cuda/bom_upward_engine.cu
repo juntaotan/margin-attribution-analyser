@@ -2,6 +2,7 @@
 
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
+#include <chrono>
 #include <stdexcept>
 #include <utility>
 
@@ -11,8 +12,11 @@
 // Run each frontier on the default stream, reading its successor count before swapping.
 std::vector<uint32_t> CudaBomUpwardEngine::run(
     const BomUpwardGraph& graph,
-    const uint64_t threshold
+    const uint64_t threshold,
+    CudaBomUpwardTimings* timings
 ) {
+    using Clock = std::chrono::steady_clock;
+    const auto total_start = Clock::now();
     const auto node_count = graph.node_values.size();
     if (node_count == 0 || graph.terminal_nodes.empty()) {
         return {};
@@ -36,6 +40,10 @@ std::vector<uint32_t> CudaBomUpwardEngine::run(
     thrust::device_vector<uint32_t> next_count(1, 0), result_count(1, 0);
     thrust::device_vector<uint32_t> result_nodes(node_count);
     thrust::copy(graph.terminal_nodes.begin(), graph.terminal_nodes.end(), frontier_a.begin());
+    if (const auto error = cudaDeviceSynchronize(); error != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(error));
+    }
+    const auto input_end = Clock::now();
 
     auto* current_frontier = thrust::raw_pointer_cast(frontier_a.data());
     auto* next_frontier = thrust::raw_pointer_cast(frontier_b.data());
@@ -67,9 +75,20 @@ std::vector<uint32_t> CudaBomUpwardEngine::run(
         current_count = next_count[0];
         std::swap(current_frontier, next_frontier);
     }
+    const auto compute_end = Clock::now();
 
     const uint32_t count = result_count[0];
     std::vector<uint32_t> results(count);
     thrust::copy_n(result_nodes.begin(), count, results.begin());
+    const auto output_end = Clock::now();
+    if (timings != nullptr) {
+        const auto milliseconds = [](auto duration) {
+            return std::chrono::duration<double, std::milli>(duration).count();
+        };
+        timings->input_ms = milliseconds(input_end - total_start);
+        timings->compute_ms = milliseconds(compute_end - input_end);
+        timings->output_ms = milliseconds(output_end - compute_end);
+        timings->total_ms = milliseconds(output_end - total_start);
+    }
     return results;
 }

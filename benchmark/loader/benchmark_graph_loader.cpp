@@ -1,4 +1,4 @@
-#include "bom_upward_engine.cuh"
+#include "benchmark_graph_loader.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -60,7 +60,7 @@ std::vector<T> read_binary_array(
 
 
 void validate_graph(
-    const BomUpwardGraph& graph
+    const BenchmarkGraph& graph
 ) {
     if (graph.offsets.empty()) {
         throw std::runtime_error(
@@ -188,10 +188,10 @@ void validate_graph(
 } // namespace
 
 
-BomUpwardGraph BenchmarkGraphLoader::load(
+BenchmarkGraph BenchmarkGraphLoader::load(
     const std::filesystem::path& dataset_directory
 ) {
-    BomUpwardGraph graph;
+    BenchmarkGraph graph;
 
     graph.offsets =
         read_binary_array<uint32_t>(

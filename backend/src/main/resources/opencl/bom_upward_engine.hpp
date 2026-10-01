@@ -21,6 +21,14 @@ struct BomUpwardGraph {
     std::vector<cl_uchar> node_comparable;
 };
 
+// Host-observed phases for one complete OpenCL invocation.
+struct BomUpwardTimings {
+    double input_ms{};
+    double compute_ms{};
+    double output_ms{};
+    double total_ms{};
+};
+
 class BomUpwardEngine {
 public:
     BomUpwardEngine(
@@ -31,7 +39,8 @@ public:
 
     std::vector<cl_uint> run(
         const BomUpwardGraph& graph,
-        cl_ulong threshold
+        cl_ulong threshold,
+        BomUpwardTimings* timings = nullptr
     );
 
 private:

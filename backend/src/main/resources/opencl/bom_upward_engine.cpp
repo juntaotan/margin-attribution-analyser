@@ -1,6 +1,7 @@
 #include "bom_upward_engine.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <stdexcept>
 
 // Define a constant for undiscovered nodes to confirm that the node has not 
@@ -23,8 +24,11 @@ BomUpwardEngine::BomUpwardEngine(
 
 std::vector<cl_uint> BomUpwardEngine::run(
     const BomUpwardGraph& graph,
-    const cl_ulong threshold
+    const cl_ulong threshold,
+    BomUpwardTimings* timings
 ) {
+    using Clock = std::chrono::steady_clock;
+    const auto total_start = Clock::now();
     const cl_uint node_count = static_cast<cl_uint>(graph.node_values.size());
 
     if (node_count == 0 || graph.terminal_nodes.empty()) {
@@ -98,6 +102,7 @@ std::vector<cl_uint> BomUpwardEngine::run(
 
     // Start to propagate values from terminal nodes to their ancestors.
     cl_uint current_count = static_cast<cl_uint>(graph.terminal_nodes.size());
+    const auto input_end = Clock::now();
     while (current_count > 0) {
 
         // next_frontier is empty at the beginning of every round.
@@ -126,6 +131,7 @@ std::vector<cl_uint> BomUpwardEngine::run(
 
         std::swap(current_frontier, next_frontier);
     }
+    const auto compute_end = Clock::now();
 
     // Read final results
     cl_uint result_count = 0;
@@ -134,6 +140,17 @@ std::vector<cl_uint> BomUpwardEngine::run(
 
     if (result_count > 0) {
         queue_.enqueueReadBuffer(result_nodes_buffer,CL_TRUE,0,result_count * sizeof(cl_uint),results.data());
+    }
+
+    const auto output_end = Clock::now();
+    if (timings != nullptr) {
+        const auto milliseconds = [](auto duration) {
+            return std::chrono::duration<double, std::milli>(duration).count();
+        };
+        timings->input_ms = milliseconds(input_end - total_start);
+        timings->compute_ms = milliseconds(compute_end - input_end);
+        timings->output_ms = milliseconds(output_end - compute_end);
+        timings->total_ms = milliseconds(output_end - total_start);
     }
 
     return results;

@@ -101,3 +101,4 @@ build/
 
 # Benchmark
 datasets/
+benchmark/results/
