@@ -98,3 +98,6 @@ build/
 # OpenCL
 build/
 !backend/src/main/resources/opencl/test/README.md
+
+# Benchmark
+datasets/
