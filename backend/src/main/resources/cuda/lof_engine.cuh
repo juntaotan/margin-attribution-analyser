@@ -11,6 +11,9 @@ struct Neighbourhoods {
 class distance_calculator {
 public:
     // Return the Euclidean distance between two feature vectors.
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     static float distance(const float* vector_a, const float* vector_b, int dimension);
 };
 
@@ -24,4 +27,7 @@ class lof_calculator {
 public:
     // Return one LOF score per order in the same order as the input vectors.
     static std::vector<float> calculate(const float* all_vectors, int num_vectors, int dimension, int k);
+
+    // Run four GPU stages for N contiguous four-feature orders and return their LOF scores.
+    static std::vector<float> calculate_cuda(const float* all_vectors, int num_vectors, int k);
 };

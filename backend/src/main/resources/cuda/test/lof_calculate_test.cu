@@ -1,12 +1,21 @@
 #include "lof_engine.cuh"
 
+#include <cuda_runtime.h>
 #include <array>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <string_view>
 
 // Verify the seven supplied orders against independently calculated LOF values.
-int main() {
+int main(int argc, char* argv[]) {
+    // The optional CUDA mode compares device scores with the CPU reference.
+    const bool use_cuda = argc == 2 && std::string_view(argv[1]) == "--cuda";
+    if (argc > 2 || (argc == 2 && !use_cuda)) {
+        std::cerr << "Usage: lof_calculate_test [--cuda]\n";
+        return 1;
+    }
+
     constexpr int order_count = 7;
     constexpr int dimension = 4;
     constexpr int k = 2;
@@ -28,15 +37,32 @@ int main() {
         0.875f, 0.875f, 3.552414237f
     };
     const std::array<const char*, order_count> names = {"A", "B", "C", "D", "E", "F", "G"};
-    const auto scores = lof_calculator::calculate(orders.data(), order_count, dimension, k);
+    const auto reference_scores = lof_calculator::calculate(orders.data(), order_count, dimension, k);
+
+    // A missing device must be reported as unverified rather than passed.
+    if (use_cuda) {
+        int device_count = 0;
+        const cudaError_t error = cudaGetDeviceCount(&device_count);
+        if (error != cudaSuccess || device_count == 0) {
+            std::cerr << "GPU unavailable: "
+                      << (error == cudaSuccess ? "no CUDA device" : cudaGetErrorString(error)) << '\n';
+            return 2;
+        }
+    }
+
+    const auto scores = use_cuda
+        ? lof_calculator::calculate_cuda(orders.data(), order_count, k)
+        : reference_scores;
 
     bool all_correct = true;
     std::cout << std::fixed << std::setprecision(6);
+    std::cout << (use_cuda ? "CUDA" : "CPU") << " LOF test\n";
     std::cout << "Point  LOF       Expected  Result\n";
 
     // Print and check the LOF value of each order.
     for (int index = 0; index < order_count; ++index) {
-        const bool correct = std::fabs(scores[index] - expected[index]) < 1e-4f;
+        const bool correct = std::fabs(scores[index] - expected[index]) < 1e-4f
+            && std::fabs(scores[index] - reference_scores[index]) < 1e-4f;
         all_correct &= correct;
         std::cout << names[index] << "      "
                   << scores[index]
