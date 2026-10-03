@@ -21,7 +21,7 @@ target_link_libraries(cuda_backend
 add_executable(lof_calculate_test test/lof_calculate_test.cu)
 target_link_libraries(lof_calculate_test PRIVATE cuda_backend)
 
-# Keep the 200-call pressure run as an explicit executable.
+# Keep the 14,000-point batch test as an explicit executable.
 add_executable(lof_engine_test test/lof_engine_test.cu)
 target_link_libraries(lof_engine_test PRIVATE cuda_backend)
 

@@ -33,6 +33,10 @@ target_link_libraries(
     OpenCL::OpenCL
 )
 
+add_library(lof_opencl_engine lof_engine.cpp)
+target_include_directories(lof_opencl_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(lof_opencl_engine PUBLIC OpenCL::OpenCL)
+
 # --------------------------------------------------
 # Copy OpenCL kernel to build directory
 # --------------------------------------------------
@@ -43,44 +47,60 @@ configure_file(
     COPYONLY
 )
 
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/lof_calculate.cl
+    ${CMAKE_CURRENT_BINARY_DIR}/lof_calculate.cl
+    COPYONLY
+)
+
+# Run the 14,000-point batch test explicitly.
+add_executable(lof_engine_test test/lof_engine_test.cpp)
+target_link_libraries(lof_engine_test PRIVATE lof_opencl_engine)
+target_compile_definitions(lof_engine_test PRIVATE
+    LOF_KERNEL_PATH="${CMAKE_CURRENT_BINARY_DIR}/lof_calculate.cl"
+)
+
 # --------------------------------------------------
 # GoogleTest
 # --------------------------------------------------
 
-include(FetchContent)
+include(CTest)
+if(BUILD_TESTING)
+    include(FetchContent)
 
-FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.18.0.zip
-)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.18.0.zip
+    )
 
-FetchContent_MakeAvailable(googletest)
+    FetchContent_MakeAvailable(googletest)
 
-enable_testing()
+    enable_testing()
 
-# --------------------------------------------------
-# Tests
-# --------------------------------------------------
+    # --------------------------------------------------
+    # Tests
+    # --------------------------------------------------
 
-add_executable(
-    bom_upward_engine_test
-    test/bom_upward_engine_test.cpp
-)
+    add_executable(
+        bom_upward_engine_test
+        test/bom_upward_engine_test.cpp
+    )
 
-target_link_libraries(
-    bom_upward_engine_test
-    PRIVATE
-    bom_upward_engine
-    GTest::gtest_main
-)
+    target_link_libraries(
+        bom_upward_engine_test
+        PRIVATE
+        bom_upward_engine
+        GTest::gtest_main
+    )
 
-target_compile_definitions(bom_upward_engine_test PRIVATE
-    BOM_UPWARD_KERNEL_PATH="${CMAKE_CURRENT_BINARY_DIR}/bom_upward.cl"
-)
+    target_compile_definitions(bom_upward_engine_test PRIVATE
+        BOM_UPWARD_KERNEL_PATH="${CMAKE_CURRENT_BINARY_DIR}/bom_upward.cl"
+    )
 
-include(GoogleTest)
+    include(GoogleTest)
 
-gtest_discover_tests(
-    bom_upward_engine_test
-    PROPERTIES TIMEOUT 60
-)
+    gtest_discover_tests(
+        bom_upward_engine_test
+        PROPERTIES TIMEOUT 60
+    )
+endif()

@@ -1,4 +1,18 @@
-# BomUpwardEngine Tests
+# OpenCL Tests
+
+## LOF engine test
+
+The LOF test first verifies the original seven A–G scores. It then makes 13,999 nearby, distinct normal orders around A–F and adds one G. All 14,000 four-feature orders share one global neighbor search with `k = 2`. It warms up once, times one complete call, checks every score is finite and G has the highest LOF, then prints batch time and points per second. Run it from the repository root:
+
+```sh
+cmake -S backend/src/main/resources/opencl -B /tmp/lof-opencl-build -DBUILD_TESTING=OFF
+cmake --build /tmp/lof-opencl-build --target lof_engine_test -j
+/tmp/lof-opencl-build/lof_engine_test
+```
+
+The executable reports an unavailable device and exits without a timing result when no OpenCL device is present.
+
+## BomUpwardEngine tests
 
 The tests run on a real OpenCL device. They require OpenCL headers and runtime libraries, a working ICD and device, CMake, and a C++17 compiler. Initial configuration downloads GoogleTest unless local sources are supplied through `FETCHCONTENT_SOURCE_DIR_GOOGLETEST`. Tests fail when no device is available; they do not skip or report success.
 
