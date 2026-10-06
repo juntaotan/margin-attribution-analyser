@@ -34,21 +34,21 @@ CREATE INDEX idx_import_job_status ON import_job (status);
 -- =========================================================
 -- Production and inventory
 -- =========================================================
-CREATE TABLE production_order
+-- One row per material code. Descriptive attributes may be absent in source ERP exports.
+CREATE TABLE material_master
 (
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    production_order_no VARCHAR(100)   NOT NULL,
-    date                DATE           NOT NULL,
-    product_no          VARCHAR(100)   NOT NULL,
-    product_num         NUMERIC(18, 6) NOT NULL,
-    product_department  VARCHAR(50)    NOT NULL,
-    bom_no              VARCHAR(100)   NOT NULL,
+    material_no    VARCHAR(100) NOT NULL,
+    material_name  VARCHAR(200),
+    material_type  VARCHAR(30),
+    base_uom       VARCHAR(16),
+    specification  VARCHAR(255),
+    material_group VARCHAR(100),
+    status         VARCHAR(20),
 
-    CONSTRAINT uk_production_product UNIQUE (production_order_no, product_no),
-    CONSTRAINT ck_production_product_num CHECK (product_num > 0)
-);
-
-CREATE INDEX idx_production_bom_no ON production_order (bom_no);
+    CONSTRAINT pk_material_master PRIMARY KEY (material_no),
+    CONSTRAINT ck_material_no_not_blank CHECK (btrim(material_no) <> '')
+)
+PARTITION BY HASH (material_no);
 
 CREATE TABLE inventory_usage
 (
@@ -65,9 +65,6 @@ CREATE TABLE inventory_usage
 
     CONSTRAINT pk_inventory_usage PRIMARY KEY (id, date),
     CONSTRAINT uk_inventory_material_line UNIQUE (date, movement_no, material_no),
-    CONSTRAINT fk_inventory_usage_production
-        FOREIGN KEY (order_no, product_no)
-        REFERENCES production_order (production_order_no, product_no),
     CONSTRAINT ck_inventory_material_values CHECK (
         material_no IS NULL OR (material_num > 0 AND material_total_cost >= 0)
     )
@@ -90,76 +87,32 @@ CREATE TABLE bill_of_material
 );
 
 -- =========================================================
--- Sales and receivables
+-- Sales and product costs
 -- =========================================================
-CREATE TABLE sales_order
-(
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    sale_order_no       VARCHAR(100)   NOT NULL,
-    date                DATE           NOT NULL,
-    movement_no         VARCHAR(100)   NOT NULL,
-    product_no          VARCHAR(100)   NOT NULL,
-    product_num         NUMERIC(18, 6) NOT NULL,
-    product_total_price NUMERIC(18, 6) NOT NULL,
-
-    CONSTRAINT uk_sale_order_product UNIQUE (sale_order_no, product_no),
-    CONSTRAINT ck_sales_product_quantity CHECK (product_num > 0),
-    CONSTRAINT ck_sales_product_total_amount CHECK (product_total_price >= 0)
-);
-
-CREATE INDEX idx_sales_product_no ON sales_order (product_no);
-
-CREATE TABLE cost_details
+CREATE TABLE sales_details
 (
     id            BIGINT GENERATED ALWAYS AS IDENTITY,
-    sale_order_no VARCHAR(100)   NOT NULL,
     date          DATE           NOT NULL,
     movement_no   VARCHAR(100)   NOT NULL,
     product_no    VARCHAR(100)   NOT NULL,
     product_num   NUMERIC(18, 6) NOT NULL,
+    total_revenue NUMERIC(18, 6) NOT NULL,
     total_cost    NUMERIC(18, 6) NOT NULL,
 
-    CONSTRAINT pk_cost_details PRIMARY KEY (id, date),
-    CONSTRAINT uk_cost_details_sale_movement_product
-        UNIQUE (sale_order_no, movement_no, product_no, date),
-    CONSTRAINT fk_cost_details_sales_order
-        FOREIGN KEY (sale_order_no, product_no)
-        REFERENCES sales_order (sale_order_no, product_no),
-    CONSTRAINT ck_cost_details_product_quantity CHECK (product_num > 0),
-    CONSTRAINT ck_cost_details_total_cost CHECK (total_cost >= 0)
+    CONSTRAINT pk_sales_details PRIMARY KEY (id, date),
+    CONSTRAINT uk_sales_details_movement_product
+        UNIQUE (movement_no, product_no, date),
+    CONSTRAINT ck_sales_details_product_quantity CHECK (product_num > 0),
+    CONSTRAINT ck_sales_details_total_revenue CHECK (total_revenue >= 0),
+    CONSTRAINT ck_sales_details_total_cost CHECK (total_cost >= 0)
 )
 PARTITION BY HASH (date);
 
-CREATE INDEX idx_cost_details_product_no ON cost_details (product_no);
-CREATE INDEX idx_cost_details_sale_order_no ON cost_details (sale_order_no);
-CREATE INDEX idx_cost_details_movement_no ON cost_details (movement_no);
-
-CREATE TABLE account_receivables
-(
-    id                    BIGINT GENERATED ALWAYS AS IDENTITY,
-    date                  DATE           NOT NULL,
-    account_receivable_no VARCHAR(100)   NOT NULL,
-    product_no            VARCHAR(100)   NOT NULL,
-    product_num           NUMERIC(18, 6) NOT NULL,
-    product_total_price   NUMERIC(18, 6) NOT NULL,
-    sale_order_no         VARCHAR(100)   NOT NULL,
-
-    CONSTRAINT pk_account_receivables PRIMARY KEY (id, date),
-    CONSTRAINT uk_account_receivable_sale_product
-        UNIQUE (account_receivable_no, sale_order_no, product_no, date),
-    CONSTRAINT fk_account_receivables_sales_order
-        FOREIGN KEY (sale_order_no, product_no)
-        REFERENCES sales_order (sale_order_no, product_no),
-    CONSTRAINT ck_account_receivable_product_quantity CHECK (product_num > 0),
-    CONSTRAINT ck_account_receivable_product_total_amount CHECK (product_total_price >= 0)
-)
-PARTITION BY HASH (date);
-
-CREATE INDEX idx_account_receivables_product_no ON account_receivables (product_no);
-CREATE INDEX idx_account_receivables_sale_order_no ON account_receivables (sale_order_no);
+CREATE INDEX idx_sales_details_product_no ON sales_details (product_no);
+CREATE INDEX idx_sales_details_movement_no ON sales_details (movement_no);
 
 -- =========================================================
--- Purchases and payables
+-- Purchases
 -- =========================================================
 CREATE TABLE purchases
 (
@@ -177,30 +130,6 @@ CREATE TABLE purchases
 
 CREATE INDEX idx_purchases_material_no ON purchases (product_no);
 
-CREATE TABLE account_payables
-(
-    id                  BIGINT GENERATED ALWAYS AS IDENTITY,
-    date                DATE           NOT NULL,
-    account_payable_no  VARCHAR(100)   NOT NULL,
-    product_no          VARCHAR(100)   NOT NULL,
-    product_num         NUMERIC(18, 6) NOT NULL,
-    product_total_price NUMERIC(18, 6) NOT NULL,
-    purchase_order_no   VARCHAR(100)   NOT NULL,
-
-    CONSTRAINT pk_account_payables PRIMARY KEY (id, date),
-    CONSTRAINT uk_account_payable_purchase_material
-        UNIQUE (account_payable_no, purchase_order_no, product_no, date),
-    CONSTRAINT fk_account_payables_purchases
-        FOREIGN KEY (purchase_order_no, product_no)
-        REFERENCES purchases (purchase_order_no, product_no),
-    CONSTRAINT ck_account_payable_material_quantity CHECK (product_num > 0),
-    CONSTRAINT ck_account_payable_material_total_cost CHECK (product_total_price >= 0)
-)
-PARTITION BY HASH (date);
-
-CREATE INDEX idx_account_payables_material_no ON account_payables (product_no);
-CREATE INDEX idx_account_payables_purchase_order_no ON account_payables (purchase_order_no);
-
 -- Create all hash partitions required by the partitioned warehouse tables.
 DO $$
 DECLARE
@@ -209,10 +138,9 @@ DECLARE
     partition_count CONSTANT INTEGER := 8;
 BEGIN
     FOREACH parent_table IN ARRAY ARRAY[
+        'material_master',
         'inventory_usage',
-        'cost_details',
-        'account_receivables',
-        'account_payables'
+        'sales_details'
     ]
     LOOP
         FOR partition_number IN 0..(partition_count - 1) LOOP

@@ -184,31 +184,31 @@ export function parseSemanticPrompt(
     };
   }
 
-  // 5. Default General Attribution (Revenue / Margin Contribution)
+  // 5. Default to recorded sales margin.
   return {
-    sourceTable: 'sales_order_line',
-    sourceTableLabel: 'sales_order_line (Sales Order Fulfillments)',
+    sourceTable: 'sales_details',
+    sourceTableLabel: 'sales_details (Sales Revenue and Cost)',
     filterConditions: [
-      `material_id = '${mat}'`,
-      `order_date BETWEEN '${actualPeriod}'`,
+      `product_no = '${mat}'`,
+      `date BETWEEN '${actualPeriod}'`,
     ],
     inputFields: [
       {
-        field: 'gross_revenue',
-        label: 'Gross Invoiced Revenue',
-        description: 'Billed sales order revenue net of contractual discounts',
+        field: 'total_revenue',
+        label: 'Sales Revenue',
+        description: 'Recorded revenue for sold products',
       },
       {
-        field: 'cogs_amount',
+        field: 'total_cost',
         label: 'Cost of Goods Sold (COGS)',
-        description: 'Standard and actual inventory costs relieved upon customer delivery',
+        description: 'Recorded product cost',
       },
     ],
-    formula: '((SUM(gross_revenue) - SUM(cogs_amount)) / SUM(gross_revenue)) * 100%',
-    formulaDescription: 'Gross Margin Spread = (Gross Revenue - COGS) ÷ Gross Revenue × 100%',
-    format: 'percentage',
+    formula: 'SUM(total_revenue - total_cost)',
+    formulaDescription: 'Gross Margin = SUM(total_revenue - total_cost)',
+    format: 'currency',
     explanation:
-      'Extracts realized billing revenue and outbound dispatch COGS to evaluate the overall gross margin contribution spread.',
+      'Subtracts recorded product costs from sales revenue for the selected period.',
   };
 }
 

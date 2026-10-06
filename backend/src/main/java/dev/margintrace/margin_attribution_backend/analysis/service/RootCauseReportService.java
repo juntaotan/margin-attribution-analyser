@@ -8,9 +8,9 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportRe
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiErrorMapper;
 import dev.margintrace.margin_attribution_backend.analysis.ai.RootCauseAssistant;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
-import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
+import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +29,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RootCauseReportService {
     private final AttributionWorkflow workflow;
-    private final ProductionRepository productionRepository;
+    private final InventoryUsageRepository inventoryUsageRepository;
     private final BillOfMaterialRepository bomRepository;
     private final RootCauseAssistant rootCauseAssistant;
     private final AiErrorMapper aiErrorMapper;
@@ -98,7 +98,6 @@ public class RootCauseReportService {
         Set<String> comparableParents = parents(comparable, comparablePosition);
         Set<String> allParents = new HashSet<>(actualParents);
         allParents.addAll(comparableParents);
-        boolean bomChanged = false;
         boolean possibleReplacement = false;
         boolean topologyChanged = false;
         boolean overuse = false;
@@ -117,29 +116,13 @@ public class RootCauseReportService {
                 possibleReplacement |= !added.isEmpty() && !removed.isEmpty();
             }
 
-            BomDefinition currentBom = bomFor(parent, request.actualStartDate(), request.actualEndDate());
-            BomDefinition previousBom = bomFor(parent, request.comparableStartDate(), request.comparableEndDate());
-            if (currentBom.numbers().size() == 1 && previousBom.numbers().size() == 1
-                    && currentBom.hasLines() && previousBom.hasLines()
-                    && !currentBom.lines().equals(previousBom.lines())) {
-                bomChanged = true;
-                evidence.add("BOM material lines differ for product " + parent + ": current "
-                        + currentBom.numbers() + ", comparison " + previousBom.numbers() + ".");
-            } else if (!currentBom.numbers().equals(previousBom.numbers())
-                    && !currentBom.numbers().isEmpty() && !previousBom.numbers().isEmpty()) {
-                evidence.add("Production orders for product " + parent
-                        + " reference different BOM numbers, but the available line details do not confirm a BOM content change.");
-            }
+            BomDefinition currentBom = bomFor(parent);
 
             if (actualNode != null && comparableNode != null
                     && actualParents.size() == 1 && comparableParents.size() == 1
                     && actualParents.contains(parent) && comparableParents.contains(parent)) {
-                Node actualOutput = actual.nodes()[actualPositions.get(parent)];
-                Node comparableOutput = comparable.nodes()[comparablePositions.get(parent)];
-                BigDecimal currentOutput = currentBom.outputQuantity().signum() > 0
-                        ? currentBom.outputQuantity() : actualOutput.quantity();
-                BigDecimal previousOutput = previousBom.outputQuantity().signum() > 0
-                        ? previousBom.outputQuantity() : comparableOutput.quantity();
+                BigDecimal currentOutput = outputQuantity(parent, request.actualStartDate(), request.actualEndDate());
+                BigDecimal previousOutput = outputQuantity(parent, request.comparableStartDate(), request.comparableEndDate());
                 if (currentOutput.signum() > 0 && previousOutput.signum() > 0) {
                     BigDecimal currentRate = actualNode.quantity().divide(currentOutput, MathContext.DECIMAL64);
                     BigDecimal previousRate = comparableNode.quantity().divide(previousOutput, MathContext.DECIMAL64);
@@ -164,7 +147,6 @@ public class RootCauseReportService {
             evidence.add("This material feeds multiple products. Its graph quantity is aggregated, so per-product overuse cannot be determined.");
         }
 
-        if (bomChanged) return new Diagnosis("BOM_CHANGE", "BOM change", "Confirmed by records", evidence);
         if (possibleReplacement) return new Diagnosis("MATERIAL_REPLACEMENT", "Suspected material substitution", "Needs verification", evidence);
         if (overuse) return new Diagnosis("OVERUSE", "Material usage exceeds BOM plan", "Confirmed by records", evidence);
         if (topologyChanged) return new Diagnosis("STRUCTURE_CHANGE", "Actual material mix changed", "Confirmed by records", evidence);
@@ -211,24 +193,29 @@ public class RootCauseReportService {
         return materials;
     }
 
-    private BomDefinition bomFor(String product, LocalDate start, LocalDate end) {
+    private BomDefinition bomFor(String product) {
         Set<String> numbers = new HashSet<>();
         Map<String, BigDecimal> lines = new HashMap<>();
-        BigDecimal outputQuantity = BigDecimal.ZERO;
-        for (Production order : productionRepository.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc(
-                product, start, end)) {
-            outputQuantity = outputQuantity.add(order.getCompletedQuantity());
-            if (numbers.add(order.getBomNo())) {
-                for (BillOfMaterial line : bomRepository.findAllByBomNoAndProductNo(order.getBomNo(), product)) {
-                    lines.put(line.getMaterialNo(), line.getMaterialUsage());
-                }
+        for (BillOfMaterial line : bomRepository.findAllByProductNoIn(Set.of(product))) {
+            numbers.add(line.getBomNo());
+            if (numbers.size() == 1) {
+                lines.put(line.getMaterialNo(), line.getMaterialUsage());
             }
         }
-        return new BomDefinition(numbers, lines, outputQuantity);
+        return new BomDefinition(numbers, lines);
     }
 
-    private record BomDefinition(Set<String> numbers, Map<String, BigDecimal> lines, BigDecimal outputQuantity) {
-        boolean hasLines() { return !lines.isEmpty(); }
+    private BigDecimal outputQuantity(String product, LocalDate start, LocalDate end) {
+        Map<String, BigDecimal> byOrder = new HashMap<>();
+        for (InventoryUsage usage : inventoryUsageRepository
+                .findAllByProductNoAndDateBetweenOrderByDateAscIdAsc(product, start, end)) {
+            if (usage.getProductNum() != null) {
+                byOrder.putIfAbsent(usage.getOrderNo(), usage.getProductNum());
+            }
+        }
+        return byOrder.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    private record BomDefinition(Set<String> numbers, Map<String, BigDecimal> lines) { }
     private record Diagnosis(String category, String label, String certainty, List<String> evidence) { }
 }

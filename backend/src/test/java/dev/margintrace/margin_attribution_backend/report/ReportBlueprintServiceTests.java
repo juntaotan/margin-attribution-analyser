@@ -24,15 +24,15 @@ class ReportBlueprintServiceTests {
     @Test
     void validatesAndNormalizesStructuredBlueprint() {
         when(assistant.generate("Revenue")).thenReturn(new ReportBlueprint(
-                "sales_order", "", List.of(" date is within January 2026 "),
+                "sales_details", "", List.of(" date is within January 2026 "),
                 List.of(new BlueprintInputField(
-                        "product_total_price", "Revenue", "Sales line total")),
-                "SUM(product_total_price)", "Sum revenue", "CURRENCY", "Recorded sales"));
+                        "total_revenue", "Revenue", "Sales line total")),
+                "SUM(total_revenue)", "Sum revenue", "CURRENCY", "Recorded sales"));
         ReportBlueprintService service = new ReportBlueprintService(assistant, errorMapper);
 
         ReportBlueprint result = service.generate("Revenue");
 
-        assertThat(result.sourceTableLabel()).isEqualTo("sales_order");
+        assertThat(result.sourceTableLabel()).isEqualTo("sales_details");
         assertThat(result.format()).isEqualTo("currency");
         assertThat(result.filterConditions()).containsExactly("date is within January 2026");
     }

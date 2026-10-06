@@ -53,8 +53,7 @@ public class SchemaMappingHandler extends AbstractImportHandler {
                 && mappedTargetColumns.contains("material_no");
         Set<String> missingRequiredFields = new LinkedHashSet<>();
         for (TargetFieldDefinition field : dataSet.fields()) {
-            if (field.required() && !mappedTargetColumns.contains(field.columnName())
-                    && !(materialUsage && field.columnName().equals("date"))) {
+            if (field.required() && !mappedTargetColumns.contains(field.columnName())) {
                 missingRequiredFields.add(field.fieldKey());
             }
         }

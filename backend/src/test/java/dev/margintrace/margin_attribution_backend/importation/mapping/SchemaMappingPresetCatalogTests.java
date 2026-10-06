@@ -4,14 +4,11 @@ import dev.margintrace.margin_attribution_backend.importation.mapping.model.Data
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
 import dev.margintrace.margin_attribution_backend.importation.model.DataSetType;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
-import dev.margintrace.margin_attribution_backend.warehouse.model.AccountPayableLine;
-import dev.margintrace.margin_attribution_backend.warehouse.model.AccountReceivableLine;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
-import dev.margintrace.margin_attribution_backend.warehouse.model.CostDetail;
+import dev.margintrace.margin_attribution_backend.warehouse.model.SalesDetail;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
-import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
+import dev.margintrace.margin_attribution_backend.warehouse.model.MaterialMaster;
 import dev.margintrace.margin_attribution_backend.warehouse.model.PurchaseOrderLine;
-import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
 import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 import org.junit.jupiter.api.Test;
@@ -35,59 +32,12 @@ class SchemaMappingPresetCatalogTests {
     }
 
     @Test
-    void salesPresetMatchesTheCanonicalDatabaseSchema() {
-        DataSetDefinition sales = catalog.getRequired(DataSetType.SALES);
-
-        assertThat(sales.tableName()).isEqualTo("sales_order");
-        assertThat(sales.fields())
-                .extracting(TargetFieldDefinition::columnName)
-                .containsExactly(
-                        "date",
-                        "movement_no",
-                        "sale_order_no",
-                        "product_no",
-                        "product_num",
-                        "product_total_price"
-                );
-        assertThat(sales.requireField("salesOrderNo").required()).isTrue();
-        assertThat(sales.requireField("lineTotalSalesAmount").dataType()).isEqualTo(DataType.NUMERIC);
-        assertThat(sales.requireField("salesOrderNo").aliases())
-                .contains("salesOrderNo", "saleOrderNo", "sale_order_no", "销售订单号");
-    }
-
-    @Test
-    void accountPayablePresetMapsAccountPayableLineFieldsToPhysicalColumns() {
-        DataSetDefinition accountPayables = catalog.getRequired(DataSetType.ACCOUNT_PAYABLE);
-
-        assertThat(accountPayables.tableName()).isEqualTo("account_payables");
-        assertThat(accountPayables.fields())
-                .extracting(TargetFieldDefinition::fieldKey, TargetFieldDefinition::columnName)
-                .containsExactly(
-                        tuple("date", "date"),
-                        tuple("accountPayableNo", "account_payable_no"),
-                        tuple("materialNo", "product_no"),
-                        tuple("materialQuantity", "product_num"),
-                        tuple("lineTotalCost", "product_total_price"),
-                        tuple("purchaseOrderNo", "purchase_order_no")
-                );
-        assertThat(accountPayables.fields()).allMatch(TargetFieldDefinition::required);
-        assertThat(accountPayables.requireField("materialNo").aliases())
-                .contains("materialNo", "product_no", "material no", "物料编号");
-        assertThat(accountPayables.requireField("materialQuantity").dataType()).isEqualTo(DataType.NUMERIC);
-        assertThat(accountPayables.requireField("lineTotalCost").aliases())
-                .contains("lineTotalCost", "product_total_price", "payable amount", "应付金额");
-    }
-
-    @Test
     void warehousePresetsMatchEveryMappedEntityFieldAndColumn() {
         Map<DataSetType, Class<?>> warehouseEntities = Map.of(
-                DataSetType.SALES, SalesOrderLine.class,
-                DataSetType.COST_DETAIL, CostDetail.class,
-                DataSetType.ACCOUNT_RECEIVABLE, AccountReceivableLine.class,
+                DataSetType.MATERIAL_MASTER, MaterialMaster.class,
+                DataSetType.SALES_DETAIL, SalesDetail.class,
                 DataSetType.PURCHASE, PurchaseOrderLine.class,
-                DataSetType.ACCOUNT_PAYABLE, AccountPayableLine.class,
                 DataSetType.INVENTORY_MOVEMENT, InventoryUsage.class,
-                DataSetType.PRODUCTION, Production.class,
                 DataSetType.BOM, BillOfMaterial.class
         );
 
@@ -123,12 +73,9 @@ class SchemaMappingPresetCatalogTests {
     @Test
     void everyWarehouseFieldRecognizesItsBusinessKeyAndPhysicalColumnName() {
         for (DataSetType type : new DataSetType[]{
-                DataSetType.SALES,
-                DataSetType.COST_DETAIL,
-                DataSetType.ACCOUNT_RECEIVABLE,
+                DataSetType.MATERIAL_MASTER,
+                DataSetType.SALES_DETAIL,
                 DataSetType.PURCHASE,
-                DataSetType.ACCOUNT_PAYABLE,
-                DataSetType.PRODUCTION,
                 DataSetType.BOM,
                 DataSetType.INVENTORY_MOVEMENT
         }) {

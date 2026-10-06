@@ -17,60 +17,40 @@ class SchemaMappingHandlerTests {
     private final SchemaMappingHandler handler = new SchemaMappingHandler(new SchemaMappingPresetCatalog());
 
     @Test
-    void mapsAliasesUsingSelectedTargetRegardlessOfSheetName() {
-        ImportContext context = context("Account Payables", Map.of(
-                "Invoice Date", DataType.DATE,
-                "AP No", DataType.TEXT,
-                "Material Code", DataType.TEXT,
-                "Billed Quantity", DataType.NUMERIC,
-                "Invoice Amount", DataType.NUMERIC,
-                "PO No", DataType.TEXT,
-                "Notes", DataType.TEXT
-        ));
+    void materialMasterRequiresOnlyItsNumber() {
+        ImportContext context = context("物料明细", Map.of("物料编号", DataType.TEXT));
 
         handler.doImport(context);
 
-        assertThat(context.getDataSetDefinition().tableName()).isEqualTo("account_payables");
-        assertThat(context.getColumnMappings())
-                .extractingByKey("AP No")
-                .extracting(TargetFieldDefinition::columnName)
-                .isEqualTo("account_payable_no");
+        assertThat(context.getDataSetDefinition().tableName()).isEqualTo("material_master");
         assertThat(context.getColumnMappings().values())
                 .extracting(TargetFieldDefinition::columnName)
-                .containsExactlyInAnyOrder(
-                        "date",
-                        "account_payable_no",
-                        "product_no",
-                        "product_num",
-                        "product_total_price",
-                        "purchase_order_no"
-                );
-        assertThat(context.getColumnMappings()).doesNotContainKey("Notes");
+                .containsExactly("material_no");
     }
 
     @Test
     void rejectsMissingRequiredWarehouseMappings() {
-        ImportContext context = context("sales", Map.of(
+        ImportContext context = context("sales_details", Map.of(
                 "Sales Order No", DataType.TEXT,
-                "SKU", DataType.TEXT
+                "Product No", DataType.TEXT
         ));
 
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> handler.doImport(context))
-                .withMessageContaining("productQuantity", "lineTotalSalesAmount");
+                .withMessageContaining("productQuantity", "totalRevenue", "totalCost");
     }
 
     @Test
     void rejectsTwoSourceColumnsMappedToTheSameWarehouseColumn() {
         LinkedHashMap<String, DataType> sourceColumns = new LinkedHashMap<>();
         sourceColumns.put("Sales Order No", DataType.TEXT);
-        sourceColumns.put("Sales Date", DataType.DATE);
+        sourceColumns.put("Cost Date", DataType.DATE);
         sourceColumns.put("Movement No", DataType.TEXT);
         sourceColumns.put("SKU", DataType.TEXT);
         sourceColumns.put("Product No", DataType.TEXT);
         sourceColumns.put("Quantity", DataType.NUMERIC);
         sourceColumns.put("Amount", DataType.NUMERIC);
-        ImportContext context = context("sales", sourceColumns);
+        ImportContext context = context("sales_details", sourceColumns);
 
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> handler.doImport(context))
@@ -97,7 +77,7 @@ class SchemaMappingHandlerTests {
 
     @Test
     void rejectsUnconfirmedSelection() {
-        ImportContext context = context("sales", Map.of("SKU", DataType.TEXT));
+        ImportContext context = context("sales_details", Map.of("SKU", DataType.TEXT));
         context.setMappingResult(false);
         assertThatIllegalArgumentException().isThrownBy(() -> handler.doImport(context))
                 .withMessageContaining("confirmed");
@@ -106,7 +86,7 @@ class SchemaMappingHandlerTests {
     @Test
     void doesNotFallBackToSheetNameWhenTargetIsMissing() {
         ImportContext context = context(null, Map.of("SKU", DataType.TEXT));
-        context.setTableStructure(new TableStructure("sales", 0, 0, 0, 1, 1.0));
+        context.setTableStructure(new TableStructure("sales_details", 0, 0, 0, 1, 1.0));
         assertThatIllegalArgumentException().isThrownBy(() -> handler.doImport(context))
                 .withMessageContaining("Table name must not be blank");
     }

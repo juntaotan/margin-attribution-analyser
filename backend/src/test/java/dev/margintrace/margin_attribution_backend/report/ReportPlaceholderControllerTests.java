@@ -105,7 +105,7 @@ class ReportPlaceholderControllerTests {
                 .andExpect(jsonPath("$.configId").value(configId.toString()))
                 .andExpect(jsonPath("$.runId").value(runId.toString()))
                 .andExpect(jsonPath("$.revision").value(1))
-                .andExpect(jsonPath("$.blueprint.sourceTable").value("sales_order"))
+                .andExpect(jsonPath("$.blueprint.sourceTable").value("sales_details"))
                 .andExpect(jsonPath("$.result.rowCount").value(1));
     }
 
@@ -148,11 +148,11 @@ class ReportPlaceholderControllerTests {
 
     private ReportBlueprint sampleBlueprint() {
         return new ReportBlueprint(
-                "sales_order",
-                "Sales orders",
+                "sales_details",
+                "Sales details",
                 List.of(),
-                List.of(new BlueprintInputField("product_total_price", "Revenue", "desc")),
-                "SUM(product_total_price)",
+                List.of(new BlueprintInputField("total_revenue", "Revenue", "desc")),
+                "SUM(total_revenue)",
                 "Total rev",
                 "currency",
                 "explanation");

@@ -8,9 +8,9 @@ import dev.margintrace.margin_attribution_backend.analysis.ai.AiErrorMapper;
 import dev.margintrace.margin_attribution_backend.analysis.ai.RootCauseAssistant;
 import dev.margintrace.margin_attribution_backend.analysis.service.RootCauseReportService;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
-import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
+import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,7 +31,7 @@ class RootCauseReportServiceTests {
     private static final LocalDate PREVIOUS = LocalDate.of(2025, 1, 1);
 
     @Mock private AttributionWorkflow workflow;
-    @Mock private ProductionRepository productions;
+    @Mock private InventoryUsageRepository inventoryUsage;
     @Mock private BillOfMaterialRepository boms;
     @Mock private RootCauseAssistant rootCauseAssistant;
     @Mock private AiErrorMapper aiErrorMapper;
@@ -58,9 +58,11 @@ class RootCauseReportServiceTests {
                         new Node("PRODUCT", decimal("100"), null)),
                 graph(new Node("MAT", decimal("150"), decimal("3000")),
                         new Node("PRODUCT", decimal("100"), null)));
-        when(productions.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc("PRODUCT", CURRENT, CURRENT))
-                .thenReturn(List.of(Production.of("ORDER-26", CURRENT, "PRODUCT", decimal("100"), "D", "BOM-1")));
-        when(boms.findAllByBomNoAndProductNo("BOM-1", "PRODUCT"))
+        when(inventoryUsage.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc("PRODUCT", CURRENT, CURRENT))
+                .thenReturn(List.of(InventoryUsage.of(CURRENT, "MOVE-26", "PRODUCT", decimal("100"), null, "ORDER-26")));
+        when(inventoryUsage.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc("PRODUCT", PREVIOUS, PREVIOUS))
+                .thenReturn(List.of(InventoryUsage.of(PREVIOUS, "MOVE-25", "PRODUCT", decimal("100"), null, "ORDER-25")));
+        when(boms.findAllByProductNoIn(java.util.Set.of("PRODUCT")))
                 .thenReturn(List.of(BillOfMaterial.of("BOM-1", "PRODUCT", "MAT", decimal("1.5"))));
 
         var report = service.report(request("MAT"));
@@ -81,27 +83,6 @@ class RootCauseReportServiceTests {
 
         assertThat(report.category()).isEqualTo("MATERIAL_REPLACEMENT");
         assertThat(report.certainty()).isEqualTo("Needs verification");
-    }
-
-    @Test
-    void changedBomLinesTakePriorityOverObservedMaterialSwap() {
-        stubGraphs(graph(new Node("NEW", decimal("10"), decimal("100")),
-                        new Node("PRODUCT", decimal("10"), null)),
-                graph(new Node("OLD", decimal("10"), decimal("100")),
-                        new Node("PRODUCT", decimal("10"), null)));
-        when(productions.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc("PRODUCT", CURRENT, CURRENT))
-                .thenReturn(List.of(Production.of("ORDER-26", CURRENT, "PRODUCT", decimal("10"), "D", "BOM-2")));
-        when(productions.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc("PRODUCT", PREVIOUS, PREVIOUS))
-                .thenReturn(List.of(Production.of("ORDER-25", PREVIOUS, "PRODUCT", decimal("10"), "D", "BOM-1")));
-        when(boms.findAllByBomNoAndProductNo("BOM-2", "PRODUCT"))
-                .thenReturn(List.of(BillOfMaterial.of("BOM-2", "PRODUCT", "NEW", decimal("1"))));
-        when(boms.findAllByBomNoAndProductNo("BOM-1", "PRODUCT"))
-                .thenReturn(List.of(BillOfMaterial.of("BOM-1", "PRODUCT", "OLD", decimal("1"))));
-
-        var report = service.report(request("NEW"));
-
-        assertThat(report.category()).isEqualTo("BOM_CHANGE");
-        assertThat(report.certainty()).isEqualTo("Confirmed by records");
     }
 
     private void stubGraphs(CsrGraph current, CsrGraph previous) {

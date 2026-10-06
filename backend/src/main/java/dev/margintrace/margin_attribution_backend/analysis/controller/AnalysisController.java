@@ -95,7 +95,7 @@ public class AnalysisController {
      * Runs the date-scoped, multi-target trace and returns JSON-safe adjacency entries.
      * Each entry contains the original upstream Node and its direct downstream Nodes.
      *
-     * @param request inclusive dates; targets are selected from sales in that period
+     * @param request inclusive dates; targets are selected from sales details in that period
      * @return an analysis ID and the traced adjacency entries
      */
     @PostMapping("/trace")

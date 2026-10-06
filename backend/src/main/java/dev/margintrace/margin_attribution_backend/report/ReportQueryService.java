@@ -28,33 +28,21 @@ public class ReportQueryService {
             "[A-Za-z0-9_\\s'(),.+\\-*/%<>=!]*");
 
     private static final Map<String, Set<String>> TABLE_COLUMNS = Map.of(
-            "production_order", Set.of(
-                    "id", "production_order_no", "date", "product_no", "product_num",
-                    "product_department", "bom_no"),
+            "material_master", Set.of(
+                    "material_no", "material_name", "material_type", "base_uom",
+                    "specification", "material_group", "status"),
             "inventory_usage", Set.of(
                     "id", "date", "movement_no", "product_no", "product_num",
                     "product_total_cost", "order_no", "material_no", "material_num",
                     "material_total_cost"),
             "bill_of_material", Set.of(
                     "id", "bom_no", "product_no", "material_no", "material_usage"),
-            "sales_order", Set.of(
-                    "id", "sale_order_no", "date", "movement_no", "product_no",
-                    "product_num", "product_total_price"),
-            "cost_details", Set.of(
-                    "id", "sale_order_no", "date", "movement_no", "product_no",
-                    "product_num", "total_cost"),
-            "order_margin_summary", Set.of(
-                    "id", "sale_order_no", "date", "movement_no", "product_no",
-                    "product_num", "revenue", "total_cost", "gross_margin", "gross_margin_percent"),
-            "account_receivables", Set.of(
-                    "id", "date", "account_receivable_no", "product_no", "product_num",
-                    "product_total_price", "sale_order_no"),
+            "sales_details", Set.of(
+                    "id", "date", "movement_no", "product_no",
+                    "product_num", "total_revenue", "total_cost"),
             "purchases", Set.of(
                     "id", "purchase_order_no", "date", "product_no", "product_num",
-                    "product_total_price"),
-            "account_payables", Set.of(
-                    "id", "date", "account_payable_no", "product_no", "product_num",
-                    "product_total_price", "purchase_order_no")
+                    "product_total_price")
     );
 
     private static final Set<String> SQL_WORDS = Set.of(

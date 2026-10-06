@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 
 /** Runs the Java frontier engine against the shared binary benchmark fixture. */
@@ -14,8 +15,8 @@ public final class BomFrontierJavaBenchmark {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 4) {
-            System.err.println("Usage: BomFrontierJavaBenchmark <dataset> <iterations> <threshold> <warmups>");
+        if (args.length != 4 && args.length != 5) {
+            System.err.println("Usage: BomFrontierJavaBenchmark <dataset> <iterations> <threshold> <warmups> [selected.bin]");
             System.exit(1);
         }
 
@@ -51,6 +52,12 @@ public final class BomFrontierJavaBenchmark {
             compute[iteration] = run.timings().computeMs();
             output[iteration] = run.timings().outputMs();
             total[iteration] = run.timings().totalMs();
+        }
+        if (args.length == 5) {
+            ByteBuffer selected = ByteBuffer.allocate(result.length * Integer.BYTES)
+                    .order(ByteOrder.LITTLE_ENDIAN);
+            for (int node : result) selected.putInt(node);
+            Files.write(Path.of(args[4]), selected.array());
         }
 
         long sum = 0;

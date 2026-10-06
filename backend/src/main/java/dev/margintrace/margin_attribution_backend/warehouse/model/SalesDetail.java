@@ -15,27 +15,24 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/** A product cost line associated with a sales order. */
+/** Revenue and cost for one sold product movement. */
 @Entity
-@IdClass(CostDetailId.class)
+@IdClass(SalesDetailId.class)
 @Table(
-        name = "cost_details",
+        name = "sales_details",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_cost_details_sale_movement_product",
-                columnNames = {"sale_order_no", "movement_no", "product_no", "date"}
+                name = "uk_sales_details_movement_product",
+                columnNames = {"movement_no", "product_no", "date"}
         )
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CostDetail {
+public class SalesDetail {
     private static final int BUSINESS_KEY_MAX_LENGTH = 100;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "sale_order_no", nullable = false, length = BUSINESS_KEY_MAX_LENGTH)
-    private String salesOrderNo;
 
     @Id
     @Column(name = "date", nullable = false)
@@ -53,16 +50,18 @@ public class CostDetail {
     @Column(name = "total_cost", nullable = false, precision = 18, scale = 6)
     private BigDecimal totalCost;
 
-    public static CostDetail of(
-            String salesOrderNo,
+    @Column(name = "total_revenue", nullable = false, precision = 18, scale = 6)
+    private BigDecimal totalRevenue;
+
+    public static SalesDetail of(
             LocalDate date,
             String movementNo,
             String productNo,
             BigDecimal productQuantity,
+            BigDecimal totalRevenue,
             BigDecimal totalCost
     ) {
-        CostDetail detail = new CostDetail();
-        detail.salesOrderNo = requireBusinessKey(salesOrderNo, "Sales order number");
+        SalesDetail detail = new SalesDetail();
         detail.date = requireDate(date);
         detail.movementNo = requireBusinessKey(movementNo, "Movement number");
         detail.productNo = requireBusinessKey(productNo, "Product number");
@@ -73,8 +72,12 @@ public class CostDetail {
         if (totalCost == null || totalCost.signum() < 0) {
             throw new IllegalArgumentException("Total cost must not be negative");
         }
+        if (totalRevenue == null || totalRevenue.signum() < 0) {
+            throw new IllegalArgumentException("Total revenue must not be negative");
+        }
 
         detail.productQuantity = productQuantity;
+        detail.totalRevenue = totalRevenue;
         detail.totalCost = totalCost;
         return detail;
     }

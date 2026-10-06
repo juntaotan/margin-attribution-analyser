@@ -19,22 +19,22 @@ class ReportQueryServiceTests {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
                 "jdbc:h2:mem:report-query;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.execute("DROP TABLE IF EXISTS sales_order");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS sales_details");
         jdbcTemplate.execute("""
-                CREATE TABLE sales_order (
+                CREATE TABLE sales_details (
                     id BIGINT PRIMARY KEY,
-                    sale_order_no VARCHAR(100),
                     date DATE,
                     movement_no VARCHAR(100),
                     product_no VARCHAR(100),
                     product_num NUMERIC(18, 6),
-                    product_total_price NUMERIC(18, 6)
+                    total_revenue NUMERIC(18, 6),
+                    total_cost NUMERIC(18, 6)
                 )
                 """);
         jdbcTemplate.update("""
-                INSERT INTO sales_order
-                    (id, sale_order_no, date, movement_no, product_no, product_num, product_total_price)
-                VALUES (1, 'SO-1', '2026-01-15', 'M-1', 'P-1', 2, 25)
+                INSERT INTO sales_details
+                    (id, date, movement_no, product_no, product_num, total_revenue, total_cost)
+                VALUES (1, '2026-01-15', 'M-1', 'P-1', 2, 40, 25)
                 """);
         service = new ReportQueryService(jdbcTemplate);
     }
@@ -42,13 +42,13 @@ class ReportQueryServiceTests {
     @Test
     void executesGeneratedAggregateAgainstWarehouseData() {
         ReportQueryService.QueryResult result = service.execute(blueprint(
-                "SUM(product_total_price)",
+                "SUM(total_revenue - total_cost)",
                 List.of("date BETWEEN '2026-01-01' AND '2026-01-31'")));
 
         assertThat(result.columns()).containsExactly("RESULT");
         assertThat(result.rows()).singleElement().satisfies(row ->
-                assertThat(row.get("RESULT")).hasToString("25.000000"));
-        assertThat(result.sql()).contains("FROM sales_order");
+                assertThat(row.get("RESULT")).hasToString("15.000000"));
+        assertThat(result.sql()).contains("FROM sales_details");
     }
 
     @Test
@@ -61,14 +61,14 @@ class ReportQueryServiceTests {
     @Test
     void rejectsStatementInjectionBeforeExecutingQuery() {
         assertThatThrownBy(() -> service.execute(blueprint(
-                "SUM(product_total_price); DROP TABLE sales_order", List.of())))
+                "SUM(total_cost); DROP TABLE sales_details", List.of())))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("unsafe formula");
     }
 
     private ReportBlueprint blueprint(String formula, List<String> filters) {
         return new ReportBlueprint(
-                "sales_order", "Sales orders", filters, List.of(), formula,
-                "Sales total", "currency", "Uses sales data");
+                "sales_details", "Sales details", filters, List.of(), formula,
+                "Cost total", "currency", "Uses cost data");
     }
 }

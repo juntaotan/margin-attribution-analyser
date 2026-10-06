@@ -1,37 +1,36 @@
 package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
-import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
+import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
+import dev.margintrace.margin_attribution_backend.warehouse.model.SalesDetail;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.util.LinkedHashSet;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-/** Finds the products sold in the requested period. */
+/** Finds sold products in the requested period. */
 @Component
 public class ReadDataHandler extends AbstractTraceHandler {
-    private final SalesOrderLineRepository salesRepository;
+    private final SalesDetailRepository salesDetailRepository;
 
     public ReadDataHandler(
-            SalesOrderLineRepository salesRepository,
+            SalesDetailRepository salesDetailRepository,
             EdgeBuildHandler next
     ) {
         super(next);
-        this.salesRepository = salesRepository;
+        this.salesDetailRepository = salesDetailRepository;
     }
 
     @Override
     protected void execute(TraceContext context) {
-        context.targets = findSoldTargets(context.startDate, context.endDate);
-    }
-
-    private List<String> findSoldTargets(LocalDate startDate, LocalDate endDate) {
-        LinkedHashSet<String> soldIds = new LinkedHashSet<>();
-        for (SalesOrderLine sale : salesRepository
-                .findAllByDateBetweenOrderByDateAscIdAsc(startDate, endDate)) {
-            soldIds.add(sale.getProductNo());
+        Map<String, BigDecimal> quantities = new LinkedHashMap<>();
+        for (SalesDetail detail : salesDetailRepository
+                .findAllByDateBetweenOrderByDateAscIdAsc(context.startDate, context.endDate)) {
+            quantities.merge(detail.getProductNo(), detail.getProductQuantity(), BigDecimal::add);
         }
-        return List.copyOf(soldIds);
+        quantities.forEach((productNo, quantity) -> context.nodes.put(productNo, new Node(productNo, quantity)));
+        context.targets = List.copyOf(quantities.keySet());
     }
 }

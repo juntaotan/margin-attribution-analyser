@@ -14,10 +14,10 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStr
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamPath;
 import dev.margintrace.margin_attribution_backend.analysis.dto.StreamCsrGraph;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
-import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
+import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -39,8 +39,8 @@ public class Analyser {
 
     private final AttributionWorkflow attributionWorkflow;
     private final BillOfMaterialRepository billOfMaterialRepository;
-    private final ProductionRepository productionRepository;
-    private final SalesOrderLineRepository salesOrderLineRepository;
+    private final InventoryUsageRepository inventoryUsageRepository;
+    private final SalesDetailRepository costDetailRepository;
     private final MarginAttributionAlgorithm pathFinder = new MarginAttributionAlgorithm();
     private final BomFrontierReconciler reconciler = new BomFrontierReconciler();
 
@@ -103,8 +103,8 @@ public class Analyser {
      * Nodes and edges outside the traced paths are excluded.
      * Repeated nodes and edges from converging paths or multiple targets are merged.
      *
-     * @param startDate inclusive start of the sales and production period
-     * @param endDate inclusive end of the sales and production period
+     * @param startDate inclusive start of the cost and inventory period
+     * @param endDate inclusive end of the cost and inventory period
      * @return one entry per traced Node, including terminal nodes with no downstream nodes
      */
     public AnalysisResults analyser(LocalDate startDate, LocalDate endDate) {
@@ -119,8 +119,8 @@ public class Analyser {
         }
 
         Set<String> targets = new LinkedHashSet<>();
-        salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(startDate, endDate)
-                .forEach(sale -> targets.add(sale.getProductNo()));
+        costDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(startDate, endDate)
+                .forEach(detail -> targets.add(detail.getProductNo()));
 
         // LinkedHashMap retains first-seen order; LinkedHashSet removes repeated edges.
         for (String target : targets) {
@@ -170,12 +170,12 @@ public class Analyser {
 
     /**
      * Traces the multi-level Bill of Materials (BOM) hierarchy for the given target products.
-     * When period dates are provided, planned quantities are scaled by the actual production
-     * quantity of each product order in that period, matching the scale of actual consumption.
+     * When period dates are provided, planned quantities use output quantities recorded
+     * on inventory movements, when available.
      *
      * @param targets target product IDs; if null or empty, an empty result is returned
-     * @param startDate optional production period start
-     * @param endDate optional production period end
+     * @param startDate optional inventory period start
+     * @param endDate optional inventory period end
      * @return one adjacency entry per visited BOM node
      */
     public AnalysisResults traceBom(List<String> targets, LocalDate startDate, LocalDate endDate) {
@@ -202,10 +202,17 @@ public class Analyser {
 
         Map<String, BigDecimal> producedQuantities = new HashMap<>();
         if (startDate != null && endDate != null) {
-            List<Production> productions = productionRepository
-                    .findAllByDateBetweenOrderByDateAsc(startDate, endDate);
-            for (Production p : productions) {
-                producedQuantities.put(p.getProductNo(), p.getCompletedQuantity());
+            Map<String, Map<String, BigDecimal>> byProductOrder = new HashMap<>();
+            for (InventoryUsage usage : inventoryUsageRepository
+                    .findAllByDateBetweenOrderByDateAsc(startDate, endDate)) {
+                if (usage.getProductNum() != null) {
+                    byProductOrder.computeIfAbsent(usage.getProductNo(), ignored -> new HashMap<>())
+                            .putIfAbsent(usage.getOrderNo(), usage.getProductNum());
+                }
+            }
+            for (Map.Entry<String, Map<String, BigDecimal>> entry : byProductOrder.entrySet()) {
+                producedQuantities.put(entry.getKey(),
+                        entry.getValue().values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
             }
         }
 

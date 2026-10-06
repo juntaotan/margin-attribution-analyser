@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -37,6 +40,16 @@ inline ResultSignature signature(const std::vector<uint32_t>& nodes) {
         result.xor_value ^= mixed;
     }
     return result;
+}
+
+/** Writes the actual selected IDs when a complete pipeline run requests them. */
+inline void write_selected_nodes(const std::filesystem::path& path,
+                                 const std::vector<uint32_t>& nodes) {
+    std::ofstream file(path, std::ios::binary);
+    if (!file) throw std::runtime_error("Failed to open selected-node output");
+    file.write(reinterpret_cast<const char*>(nodes.data()),
+               static_cast<std::streamsize>(nodes.size() * sizeof(uint32_t)));
+    if (!file) throw std::runtime_error("Failed to write selected-node output");
 }
 
 inline std::string json_escape(const std::string& value) {

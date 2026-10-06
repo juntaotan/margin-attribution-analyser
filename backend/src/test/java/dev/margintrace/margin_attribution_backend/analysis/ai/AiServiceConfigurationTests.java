@@ -40,10 +40,10 @@ class AiServiceConfigurationTests {
             assertThat(summary).isEqualTo("Unit cost increased.");
             assertThat(period.found()).isTrue();
             assertThat(period.duration()).isEqualTo("January 2026");
-            assertThat(blueprint.sourceTable()).isEqualTo("sales_order");
+            assertThat(blueprint.sourceTable()).isEqualTo("sales_details");
             assertThat(blueprint.inputFields()).singleElement()
                     .extracting(field -> field.field())
-                    .isEqualTo("product_total_price");
+                    .isEqualTo("total_revenue");
             assertThat(requests).hasSize(3);
             assertThat(requests.get(0)).contains("\"messages\"", "Unit cost change");
             assertThat(requests.get(1)).contains("\"response_format\"", "\"json_schema\"");
@@ -102,10 +102,10 @@ class AiServiceConfigurationTests {
                         {"found":true,"duration":"January 2026"}""";
             } else {
                 content = """
-                        {"sourceTable":"sales_order","sourceTableLabel":"sales_order (Sales orders)",
+                        {"sourceTable":"sales_details","sourceTableLabel":"sales_details (Sales revenue and cost)",
                          "filterConditions":["date is within January 2026"],
-                         "inputFields":[{"field":"product_total_price","label":"Revenue",
-                         "description":"Sales line total"}],"formula":"SUM(product_total_price)",
+                         "inputFields":[{"field":"total_revenue","label":"Revenue",
+                         "description":"Sales line total"}],"formula":"SUM(total_revenue)",
                          "formulaDescription":"Sum sales revenue","format":"currency",
                          "explanation":"Uses recorded sales lines"}""";
             }

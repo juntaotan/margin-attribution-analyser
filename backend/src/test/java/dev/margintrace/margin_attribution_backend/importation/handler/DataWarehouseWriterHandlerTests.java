@@ -1,19 +1,14 @@
 package dev.margintrace.margin_attribution_backend.importation.handler;
 
-import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -22,68 +17,86 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DataWarehouseWriterHandlerTests {
 
     @Test
-    void writesOnlySchemaMappedRawColumnsIntoWarehouseTable() throws Exception {
-        byte[] workbookBytes = salesWorkbook();
+    void importsSalesRevenueCostAndProductTarget() {
         JdbcTemplate jdbcTemplate = createJdbcTemplate();
         jdbcTemplate.execute("CREATE SCHEMA raw");
         jdbcTemplate.execute("""
-                CREATE TABLE sales_order (
+                CREATE TABLE sales_details (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    date DATE NOT NULL,
-                    movement_no VARCHAR(100) NOT NULL,
-                    sale_order_no VARCHAR(100) NOT NULL,
-                    product_no VARCHAR(100) NOT NULL,
-                    product_num NUMERIC(18,6) NOT NULL,
-                    product_total_price NUMERIC(18,6) NOT NULL
+                    date DATE NOT NULL, movement_no VARCHAR(100) NOT NULL,
+                    product_no VARCHAR(100) NOT NULL, product_num NUMERIC(18,6) NOT NULL,
+                    total_revenue NUMERIC(18,6) NOT NULL, total_cost NUMERIC(18,6) NOT NULL
                 )
                 """);
+        jdbcTemplate.execute("""
+                CREATE TABLE raw.sales_lines (
+                    sale_date DATE, movement VARCHAR(100), item_no VARCHAR(100),
+                    quantity NUMERIC(18,6), revenue NUMERIC(18,6), cost NUMERIC(18,6)
+                )
+                """);
+        jdbcTemplate.update("INSERT INTO raw.sales_lines VALUES (?, ?, ?, ?, ?, ?)",
+                java.sql.Date.valueOf("2026-01-15"), "MOVE-1", "PROD-A", 2, 50, 30);
 
-        ImportContext context = salesContext();
-        RawFileReader reader = objectKey -> new ByteArrayInputStream(workbookBytes);
-        new DatabaseWriterHandler(jdbcTemplate, reader).doImport(context);
-        context.setMappingTableName("sales_order");
+        ImportContext context = new ImportContext();
+        context.setMappingTableName("sales_details");
         context.setMappingResult(true);
-        new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
+        context.setTableStructure(new TableStructure("sales", 0, 0, 5, 1, 1.0));
+        context.setColumnTypes(new LinkedHashMap<>(Map.of(
+                "Cost Date", DataType.DATE, "Movement No", DataType.TEXT,
+                "Item No", DataType.TEXT, "Quantity", DataType.NUMERIC,
+                "Total Revenue", DataType.NUMERIC, "Total Cost", DataType.NUMERIC)));
+        context.setRawTableName("raw.sales_lines");
+        context.setRawColumnNames(Map.of(
+                "Cost Date", "sale_date", "Movement No", "movement", "Item No", "item_no",
+                "Quantity", "quantity", "Total Revenue", "revenue", "Total Cost", "cost"));
 
+        new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
         new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
 
-        assertThat(context.getWarehouseImportedRows()).isEqualTo(2);
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM " + context.getRawTableName(), Integer.class
-        )).isEqualTo(2);
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT notes_0 FROM " + context.getRawTableName() + " WHERE sales_order_no_0 = 'SO-001'",
-                String.class
-        )).isEqualTo("raw only");
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sales_order", Integer.class)).isEqualTo(2);
-        assertThat(jdbcTemplate.queryForMap("""
-                SELECT date, movement_no, sale_order_no, product_no, product_num, product_total_price
-                FROM sales_order WHERE sale_order_no = 'SO-001'
-                """))
-                .containsEntry("DATE", java.sql.Date.valueOf("2026-08-13"))
-                .containsEntry("MOVEMENT_NO", "MOVE-001")
-                .containsEntry("SALE_ORDER_NO", "SO-001")
-                .containsEntry("PRODUCT_NO", "P-001")
-                .containsEntry("PRODUCT_NUM", new BigDecimal("2.000000"))
-                .containsEntry("PRODUCT_TOTAL_PRICE", new BigDecimal("25.000000"));
+        assertThat(context.getWarehouseImportedRows()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForMap("SELECT product_no, total_revenue, total_cost FROM sales_details"))
+                .containsEntry("PRODUCT_NO", "PROD-A")
+                .containsEntry("TOTAL_REVENUE", new BigDecimal("50.000000"))
+                .containsEntry("TOTAL_COST", new BigDecimal("30.000000"));
+    }
 
-        assertThat(jdbcTemplate.queryForList(
-                "SELECT column_name FROM information_schema.columns "
-                        + "WHERE table_schema = 'PUBLIC' AND table_name = 'SALES_ORDER'",
-                String.class
-        )).doesNotContain("NOTES_0");
+    @Test
+    void importsMaterialWithOnlyItsNumber() {
+        JdbcTemplate jdbcTemplate = createJdbcTemplate();
+        jdbcTemplate.execute("CREATE SCHEMA raw");
+        jdbcTemplate.execute("""
+                CREATE TABLE material_master (
+                    material_no VARCHAR(100) NOT NULL PRIMARY KEY,
+                    material_name VARCHAR(200), material_type VARCHAR(30),
+                    base_uom VARCHAR(16), specification VARCHAR(255),
+                    material_group VARCHAR(100), status VARCHAR(20)
+                )
+                """);
+        jdbcTemplate.execute("CREATE TABLE raw.materials (material_no VARCHAR(100))");
+        jdbcTemplate.update("INSERT INTO raw.materials (material_no) VALUES (?)", "MAT-1");
+
+        ImportContext context = new ImportContext();
+        context.setMappingTableName("material_master");
+        context.setMappingResult(true);
+        context.setTableStructure(new TableStructure("materials", 0, 0, 0, 1, 1.0));
+        context.setColumnTypes(Map.of("Material No", DataType.TEXT));
+        context.setRawTableName("raw.materials");
+        context.setRawColumnNames(Map.of("Material No", "material_no"));
+
+        new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
+        new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
+
+        assertThat(context.getWarehouseImportedRows()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForMap("SELECT * FROM material_master"))
+                .containsEntry("MATERIAL_NO", "MAT-1")
+                .containsEntry("MATERIAL_NAME", null)
+                .containsEntry("BASE_UOM", null);
     }
 
     @Test
     void importsMaterialConsumptionDirectlyIntoInventoryUsage() {
         JdbcTemplate jdbcTemplate = createJdbcTemplate();
         jdbcTemplate.execute("CREATE SCHEMA IF NOT EXISTS raw");
-        jdbcTemplate.execute("""
-                CREATE TABLE production_order (
-                    production_order_no VARCHAR(100), product_no VARCHAR(100), date DATE,
-                    PRIMARY KEY (production_order_no, product_no)
-                )
-                """);
         jdbcTemplate.execute("""
                 CREATE TABLE inventory_usage (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -98,15 +111,13 @@ class DataWarehouseWriterHandlerTests {
                 """);
         jdbcTemplate.execute("""
                 CREATE TABLE raw.material_lines (
-                    consumption_no VARCHAR(100), production_no VARCHAR(100),
+                    consumption_no VARCHAR(100), production_no VARCHAR(100), movement_date DATE,
                     product_no VARCHAR(100), material_no VARCHAR(100),
                     material_num NUMERIC(18,6), material_cost NUMERIC(18,6)
                 )
                 """);
-        jdbcTemplate.update("INSERT INTO production_order VALUES (?, ?, ?)",
-                "PO-1", "P", java.sql.Date.valueOf("2026-01-15"));
-        jdbcTemplate.update("INSERT INTO raw.material_lines VALUES (?, ?, ?, ?, ?, ?)",
-                "MC-1", "PO-1", "P", "M", 4, 123.45);
+        jdbcTemplate.update("INSERT INTO raw.material_lines VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "MC-1", "PO-1", java.sql.Date.valueOf("2026-01-15"), "P", "M", 4, 123.45);
 
         ImportContext context = new ImportContext();
         context.setMappingTableName("material_consumption");
@@ -114,7 +125,8 @@ class DataWarehouseWriterHandlerTests {
         context.setTableStructure(new TableStructure("materials", 0, 0, 5, 1, 1.0));
         Map<String, DataType> columns = new LinkedHashMap<>();
         columns.put("Material Consumption No", DataType.TEXT);
-        columns.put("Production Order No", DataType.TEXT);
+        columns.put("Movement Date", DataType.DATE);
+        columns.put("Work Order No", DataType.TEXT);
         columns.put("Product No", DataType.TEXT);
         columns.put("Material No", DataType.TEXT);
         columns.put("Issued Quantity", DataType.NUMERIC);
@@ -123,7 +135,8 @@ class DataWarehouseWriterHandlerTests {
         context.setRawTableName("raw.material_lines");
         context.setRawColumnNames(Map.of(
                 "Material Consumption No", "consumption_no",
-                "Production Order No", "production_no",
+                "Movement Date", "movement_date",
+                "Work Order No", "production_no",
                 "Product No", "product_no",
                 "Material No", "material_no",
                 "Issued Quantity", "material_num",
@@ -145,64 +158,6 @@ class DataWarehouseWriterHandlerTests {
                 .containsEntry("MATERIAL_NO", "M")
                 .containsEntry("MATERIAL_NUM", new BigDecimal("4.000000"))
                 .containsEntry("MATERIAL_TOTAL_COST", new BigDecimal("123.450000"));
-    }
-
-    private static ImportContext salesContext() {
-        ImportContext context = new ImportContext();
-        context.setObjectKey("raw/test-sales.xlsx");
-        context.setTableStructure(new TableStructure("sales", 0, 0, 6, 2, 1.0));
-        Map<String, DataType> columnTypes = new LinkedHashMap<>();
-        columnTypes.put("Sales Order No", DataType.TEXT);
-        columnTypes.put("SKU", DataType.TEXT);
-        columnTypes.put("Sales Quantity", DataType.NUMERIC);
-        columnTypes.put("Sales Amount", DataType.NUMERIC);
-        columnTypes.put("Sales Date", DataType.DATE);
-        columnTypes.put("Movement No", DataType.TEXT);
-        columnTypes.put("Notes", DataType.TEXT);
-        context.setColumnTypes(columnTypes);
-        return context;
-    }
-
-    private static byte[] salesWorkbook() throws Exception {
-        try (XSSFWorkbook workbook = new XSSFWorkbook();
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            var sheet = workbook.createSheet("sales");
-            var header = sheet.createRow(0);
-            header.createCell(0).setCellValue("Sales Order No");
-            header.createCell(1).setCellValue("SKU");
-            header.createCell(2).setCellValue("Sales Quantity");
-            header.createCell(3).setCellValue("Sales Amount");
-            header.createCell(4).setCellValue("Sales Date");
-            header.createCell(5).setCellValue("Movement No");
-            header.createCell(6).setCellValue("Notes");
-
-            var dateStyle = workbook.createCellStyle();
-            dateStyle.setDataFormat(workbook.getCreationHelper()
-                    .createDataFormat().getFormat("yyyy-mm-dd"));
-
-            var firstRow = sheet.createRow(1);
-            firstRow.createCell(0).setCellValue("SO-001");
-            firstRow.createCell(1).setCellValue("P-001");
-            firstRow.createCell(2).setCellValue(2);
-            firstRow.createCell(3).setCellValue(25);
-            firstRow.createCell(4).setCellValue(LocalDate.of(2026, 8, 13));
-            firstRow.getCell(4).setCellStyle(dateStyle);
-            firstRow.createCell(5).setCellValue("MOVE-001");
-            firstRow.createCell(6).setCellValue("raw only");
-
-            var secondRow = sheet.createRow(2);
-            secondRow.createCell(0).setCellValue("SO-002");
-            secondRow.createCell(1).setCellValue("P-002");
-            secondRow.createCell(2).setCellValue(1);
-            secondRow.createCell(3).setCellValue(8.25);
-            secondRow.createCell(4).setCellValue(LocalDate.of(2026, 8, 14));
-            secondRow.getCell(4).setCellStyle(dateStyle);
-            secondRow.createCell(5).setCellValue("MOVE-002");
-            secondRow.createCell(6).setCellValue("not mapped");
-
-            workbook.write(output);
-            return output.toByteArray();
-        }
     }
 
     private static JdbcTemplate createJdbcTemplate() {

@@ -115,7 +115,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'Revenue': {
         id: 'Revenue',
         label: 'Net Sales Revenue',
-        prompt: 'Query actual sales orders to calculate total sales revenue sum(product_total_price) for the active period',
+        prompt: 'Query sales_details to calculate sum(total_revenue) for the active period',
         status: 'draft',
         resolvedValue: '$12,000.00',
         unit: '$',
@@ -123,7 +123,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'Revenue Change %': {
         id: 'Revenue Change %',
         label: 'Revenue Growth Rate',
-        prompt: 'Calculate sales revenue percentage growth rate comparing current sales_order product_total_price against baseline comparison period',
+        prompt: 'Compare sum(total_revenue) from sales_details across current and baseline periods',
         status: 'draft',
         resolvedValue: '0.0%',
         unit: '%',
@@ -131,7 +131,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'Gross Margin': {
         id: 'Gross Margin',
         label: 'Total Gross Margin',
-        prompt: 'Query order_margin_summary to calculate total gross margin contribution sum(gross_margin) for the active period',
+        prompt: 'Query sales_details to calculate sum(total_revenue - total_cost) for the active period',
         status: 'draft',
         resolvedValue: '$7,100.00',
         unit: '$',
@@ -139,7 +139,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'Gross Margin %': {
         id: 'Gross Margin %',
         label: 'Gross Margin Rate',
-        prompt: 'Query order_margin_summary to compute overall gross margin percentage: round(sum(gross_margin) / nullif(sum(revenue), 0) * 100, 2)',
+        prompt: 'Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)',
         status: 'draft',
         resolvedValue: '59.2%',
         unit: '%',
@@ -147,14 +147,14 @@ export const createDefaultDocument = (): ReportDocument => {
       'Current Period': {
         id: 'Current Period',
         label: 'Active Reporting Period',
-        prompt: 'Extract the active reporting cycle period from sales orders date range',
+        prompt: 'Extract the active reporting cycle period from sales_details date range',
         status: 'draft',
         resolvedValue: '2026-01-01 to 2026-01-31',
       },
       'Comparison Period': {
         id: 'Comparison Period',
         label: 'Comparable Baseline Period',
-        prompt: 'Extract the comparable baseline cycle period from historical sales orders date range',
+        prompt: 'Extract the comparable baseline cycle period from historical sales_details date range',
         status: 'draft',
         resolvedValue: '2025-01-01 to 2025-01-31',
       },

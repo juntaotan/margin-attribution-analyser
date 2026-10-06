@@ -56,8 +56,8 @@ class ReportPlaceholderServiceTests {
         String tag = "margintrace:revenue";
         String alias = "Sales revenue";
         String prompt = "Duration: January 2026\nCalculate total revenue";
-        ReportBlueprint blueprint = sampleBlueprint("SUM(product_total_price)", "currency");
-        String sql = "SELECT SUM(product_total_price) AS result FROM sales_order LIMIT 100";
+        ReportBlueprint blueprint = sampleBlueprint("SUM(total_revenue)", "currency");
+        String sql = "SELECT SUM(total_revenue) AS result FROM sales_details LIMIT 100";
         ReportQueryService.QueryResult queryResult = new ReportQueryService.QueryResult(
                 sql, List.of("result"), List.of(Map.of("result", 1250000)), 1);
 
@@ -119,7 +119,7 @@ class ReportPlaceholderServiceTests {
 
         String newPrompt = "Duration: February 2026\nCalculate updated revenue";
         ReportBlueprint newBlueprint = sampleBlueprint("SUM(new_val)", "currency");
-        String sql = "SELECT SUM(new_val) AS result FROM sales_order LIMIT 100";
+        String sql = "SELECT SUM(new_val) AS result FROM sales_details LIMIT 100";
         ReportQueryService.QueryResult queryResult = new ReportQueryService.QueryResult(
                 sql, List.of("result"), List.of(Map.of("result", 900000)), 1);
 
@@ -239,10 +239,10 @@ class ReportPlaceholderServiceTests {
 
     private ReportBlueprint sampleBlueprint(String formula, String format) {
         return new ReportBlueprint(
-                "sales_order",
-                "Sales orders",
+                "sales_details",
+                "Sales details",
                 List.of("date BETWEEN '2026-01-01' AND '2026-01-31'"),
-                List.of(new BlueprintInputField("product_total_price", "Revenue", "Sales line total")),
+                List.of(new BlueprintInputField("total_revenue", "Revenue", "Sales line total")),
                 formula,
                 "Total sales revenue",
                 format,

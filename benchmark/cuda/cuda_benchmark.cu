@@ -32,8 +32,8 @@ std::string device_name() {
 
 /** Runs the CUDA backend repeatedly and emits one JSON result line. */
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        std::cerr << "Usage: cuda_benchmark <dataset> <iterations> <threshold> <warmups>\n";
+    if (argc != 5 && argc != 6) {
+        std::cerr << "Usage: cuda_benchmark <dataset> <iterations> <threshold> <warmups> [selected.bin]\n";
         return 1;
     }
 
@@ -63,6 +63,7 @@ int main(int argc, char* argv[]) {
             samples.push_back({timing.input_ms, timing.compute_ms,
                     timing.output_ms, timing.total_ms});
         }
+        if (argc == 6) write_selected_nodes(argv[5], result);
 
         print_benchmark_json("CUDA", device_name(), load_ms,
                 graph.node_values.size(), graph.reverse_successors.size(),

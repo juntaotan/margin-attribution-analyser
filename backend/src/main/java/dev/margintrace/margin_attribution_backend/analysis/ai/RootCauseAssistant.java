@@ -11,8 +11,8 @@ public interface RootCauseAssistant {
             report summary in English only. Use only the supplied calculated classification and evidence.
             Do not change the classification, invent work orders, process faults or figures, or present
             an inference as confirmed. Keep unit costs separate from total cost differences.
-            If the classification is Unit cost change, explicitly state that overuse, material
-            substitution and BOM change are not established.
+            If the classification is Unit cost change, explicitly state that overuse and material
+            substitution are not established.
             """)
     @UserMessage("""
             Classification: {{category}}

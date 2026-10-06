@@ -1,25 +1,15 @@
 package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
-import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
-import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisResults;
-import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
+import dev.margintrace.margin_attribution_backend.warehouse.model.SalesDetail;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
-import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
-import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.CostDetailRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -30,116 +20,46 @@ class AttributionWorkflowTests {
     private static final LocalDate DATE = LocalDate.of(2026, 1, 15);
 
     @Test
-    void buildsTheRequestedRelationshipsAndCsrArrays() {
-        SalesOrderLineRepository sales = repository(SalesOrderLineRepository.class,
-                "findAllByDateBetweenOrderByDateAscIdAsc",
-                arguments -> List.of(sale("A001"), sale("A002")));
+    void tracesCostedProductThroughInventoryUsageWithoutOrderMaster() {
+        SalesDetailRepository costs = repository(SalesDetailRepository.class, method -> {
+            if (method.equals("findAllByDateBetweenOrderByDateAscIdAsc")) {
+                return List.of(SalesDetail.of(DATE, "C-1", "A", BigDecimal.TEN,
+                        BigDecimal.valueOf(150), BigDecimal.valueOf(100)));
+            }
+            if (method.equals("sumTotalCostBetween")) return BigDecimal.valueOf(100);
+            throw new UnsupportedOperationException(method);
+        });
+        Map<String, List<InventoryUsage>> usageByProduct = Map.of(
+                "A", List.of(usage("A", "B", "PO-A", BigDecimal.TEN)),
+                "B", List.of(usage("B", "C", "PO-B", BigDecimal.valueOf(5))));
+        InventoryUsageRepository usages = repository(InventoryUsageRepository.class,
+                method -> usageByProduct.getOrDefault(method, List.of()));
+        AttributionWorkflow workflow = new AttributionWorkflow(new ReadDataHandler(costs,
+                new EdgeBuildHandler(usages, costs, new CsrGraphHandler())));
 
-        Map<String, List<Production>> productions = new HashMap<>();
-        for (String id : List.of("A001", "A002", "B001", "B002", "B003", "B004")) {
-            productions.put(id, List.of(Production.of("PO-" + id, DATE, id,
-                    BigDecimal.ONE, "Production", "BOM-" + id)));
-        }
-        ProductionRepository production = repository(ProductionRepository.class,
-                "findAllByProductNoAndDateBetweenOrderByDateAscIdAsc",
-                arguments -> productions.getOrDefault(arguments[0], List.of()));
-
-        // Parent-child relationships supplied for this topology.
-        Map<String, List<InventoryUsage>> usages = Map.of(
-                "A001", List.of(line("A001", "B001"), line("A001", "B002")),
-                "B001", List.of(line("B001", "C001"), line("B001", "C002")),
-                "A002", List.of(line("A002", "B003"), line("A002", "B004")),
-                "B003", List.of(line("B003", "C003")),
-                "B004", List.of(line("B004", "C003"), line("B004", "C004")));
-        InventoryUsageRepository usage = repository(InventoryUsageRepository.class,
-                "findAllByProductNoAndDateBetweenAndMaterialNoIsNotNullOrderByDateAscIdAsc",
-                arguments -> usages.getOrDefault(arguments[0], List.of()));
-
-        CostDetailRepository costs = repository(CostDetailRepository.class,
-                "sumTotalCostBetween", arguments -> new BigDecimal("9000.00"));
-
-        AttributionWorkflow workflow = new AttributionWorkflow(new ReadDataHandler(sales,
-                new EdgeBuildHandler(production, usage, costs, new CsrGraphHandler())));
         CsrGraph graph = workflow.trace(DATE, DATE);
 
-        List<String> productRelationships = new ArrayList<>();
-        for (int source = 0; source < graph.nodes().length; source++) {
-            for (int edge = graph.offset()[source]; edge < graph.offset()[source + 1]; edge++) {
-                String child = graph.nodes()[source].inventoryId();
-                String parent = graph.nodes()[graph.successors()[edge]].inventoryId();
-                assertThat(child).isNotEqualTo(parent);
-                productRelationships.add(parent + "-" + child);
-            }
-        }
-        assertThat(productRelationships).containsExactlyInAnyOrder(
-                "A001-B001", "B001-C001", "B001-C002", "A001-B002",
-                "A002-B003", "A002-B004", "B003-C003", "B004-C003", "B004-C004",
-                "__COGS__-A001", "__COGS__-A002");
-
-        assertThat(graph.nodes()).containsExactly(
-                produced("A001"), produced("A002"),
-                consumed("B001"), consumed("B002"),
-                consumed("B003"), consumed("B004"),
-                consumed("C001"), consumed("C002"),
-                new Node("C003", BigDecimal.valueOf(2), BigDecimal.valueOf(20)), consumed("C004"),
-                new Node("__COGS__", BigDecimal.ONE, new BigDecimal("9000.00")));
-        assertThat(graph.offset()).containsExactly(
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 11);
-        assertThat(graph.successors()).containsExactly(10, 10, 0, 0, 1, 1, 2, 2, 4, 5, 5);
-
-        BillOfMaterialRepository bom = repository(BillOfMaterialRepository.class,
-                "findAllByProductNoIn", arguments -> List.of());
-        AnalysisResults analysis = new Analyser(workflow, bom, production, sales).analyser(DATE, DATE);
-        assertThat(analysis.getResults()).hasSize(10);
-        List<String> tracedRelationships = productRelationships.stream()
-                .filter(relationship -> !relationship.startsWith("__COGS__-"))
-                .toList();
-        assertThat(analysis.getResults().stream()
-                .flatMap(entry -> entry.downstream().stream()
-                        .map(downstream -> downstream.inventoryId() + "-" + entry.upstream().inventoryId())))
-                .containsExactlyInAnyOrderElementsOf(tracedRelationships);
-
-        System.out.println("offset = " + Arrays.toString(graph.offset()));
-        System.out.println("successors = " + Arrays.toString(graph.successors()));
-        System.out.println("edges (upstream -> downstream):");
-        for (int source = 0; source < graph.nodes().length; source++) {
-            for (int edge = graph.offset()[source]; edge < graph.offset()[source + 1]; edge++) {
-                int downstream = graph.successors()[edge];
-                System.out.println(source + ": " + graph.nodes()[source]
-                        + " -> " + downstream + ": " + graph.nodes()[downstream]);
-            }
-        }
+        assertThat(graph.nodes()).extracting(node -> node.inventoryId())
+                .containsExactly("A", "B", "C", "__COGS__");
+        assertThat(graph.nodes()[0].quantity()).isEqualByComparingTo("10");
+        assertThat(graph.nodes()[1].cost()).isEqualByComparingTo("10");
+        assertThat(graph.successors()).hasSize(3);
     }
 
-    private static <T> T repository(Class<T> type, String queryMethod, Function<Object[], Object> answer) {
-        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
-                (proxy, method, arguments) -> {
-                    if (!method.getName().equals(queryMethod)) {
-                        throw new UnsupportedOperationException(method.getName());
-                    }
-                    return answer.apply(arguments);
-                }));
-    }
-
-    private static SalesOrderLine sale(String id) {
-        return SalesOrderLine.of("SO-" + id, DATE, "MOVE-" + id,
-                id, BigDecimal.ONE, BigDecimal.ONE);
-    }
-
-    private static InventoryUsage line(String parent, String child) {
+    private static InventoryUsage usage(String product, String material, String order, BigDecimal quantity) {
         return new InventoryUsage() {
-            @Override public String getOrderNo() { return "PO-" + parent; }
-            @Override public String getMaterialNo() { return child; }
-            @Override public BigDecimal getMaterialNum() { return BigDecimal.ONE; }
+            @Override public String getProductNo() { return product; }
+            @Override public String getOrderNo() { return order; }
+            @Override public String getMaterialNo() { return material; }
+            @Override public BigDecimal getMaterialNum() { return quantity; }
             @Override public BigDecimal getMaterialTotalCost() { return BigDecimal.TEN; }
         };
     }
 
-    private static Node produced(String id) {
-        return new Node(id, BigDecimal.ONE);
-    }
-
-    private static Node consumed(String id) {
-        return new Node(id, BigDecimal.ONE, BigDecimal.TEN);
+    private static <T> T repository(Class<T> type, Function<String, Object> answer) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
+                (proxy, method, arguments) -> answer.apply(method.getName().equals(
+                        "findAllByProductNoAndDateBetweenOrderByDateAscIdAsc")
+                        ? String.valueOf(arguments[0]) : method.getName())));
     }
 }

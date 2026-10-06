@@ -9,10 +9,10 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationAna
 import dev.margintrace.margin_attribution_backend.analysis.dto.ReconciliationStreamEvent;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
-import dev.margintrace.margin_attribution_backend.warehouse.model.SalesOrderLine;
+import dev.margintrace.margin_attribution_backend.warehouse.model.SalesDetail;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesOrderLineRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,8 +36,8 @@ class AnalyserTests {
 
     @Mock private AttributionWorkflow attributionWorkflow;
     @Mock private BillOfMaterialRepository billOfMaterialRepository;
-    @Mock private ProductionRepository productionRepository;
-    @Mock private SalesOrderLineRepository salesOrderLineRepository;
+    @Mock private InventoryUsageRepository inventoryUsageRepository;
+    @Mock private SalesDetailRepository costDetailRepository;
     @InjectMocks private Analyser analyser;
 
     @Test
@@ -125,7 +125,7 @@ class AnalyserTests {
                 new int[] {1, 2, 4, 2});
         when(attributionWorkflow.trace(START, END))
                 .thenReturn(graph);
-        when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
+        when(costDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
                 .thenReturn(List.of(sale("TARGET-A"), sale("TARGET-B")));
 
         AnalysisResults result = analyser.analyser(START, END);
@@ -145,7 +145,7 @@ class AnalyserTests {
         CsrGraph graph = new CsrGraph(new Node[] {target}, new int[] {0, 0}, new int[] {});
         when(attributionWorkflow.trace(START, END))
                 .thenReturn(graph);
-        when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
+        when(costDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
                 .thenReturn(List.of(sale("TARGET")));
 
         AnalysisResults result = analyser.analyser(START, END);
@@ -161,7 +161,7 @@ class AnalyserTests {
         CsrGraph graph = new CsrGraph(
                 new Node[] {material, target}, new int[] {0, 1, 1}, new int[] {1});
         when(attributionWorkflow.trace(START, END)).thenReturn(graph);
-        when(salesOrderLineRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
+        when(costDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(START, END))
                 .thenReturn(List.of(sale("TARGET")));
 
         AnalysisResults result = analyser.analyser(START, END);
@@ -202,8 +202,8 @@ class AnalyserTests {
                 cost == null ? null : new BigDecimal(cost));
     }
 
-    private SalesOrderLine sale(String productNo) {
-        return SalesOrderLine.of("SO-" + productNo, START, "MOVE-" + productNo,
-                productNo, BigDecimal.ONE, BigDecimal.ONE);
+    private SalesDetail sale(String productNo) {
+        return SalesDetail.of(START, "MOVE-" + productNo,
+                productNo, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ONE);
     }
 }

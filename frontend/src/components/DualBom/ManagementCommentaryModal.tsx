@@ -419,11 +419,11 @@ export const ManagementCommentaryModal: React.FC<ManagementCommentaryModalProps>
                     <td className="py-2.5 px-3 text-slate-500">
                       <span className="inline-flex items-center gap-1 text-[11px] text-indigo-700">
                         <Sparkles className="w-3 h-3 text-indigo-500" />
-                        AI (sales_order)
+                        sales_details
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
-                      {loadingValues ? 'Calculating…' : values?.revenue || '$0.00'}
+                      {loadingValues ? 'Calculating…' : values?.revenue || 'N/A'}
                     </td>
                   </tr>
 

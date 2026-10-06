@@ -43,47 +43,29 @@ public class ReportPlaceholderService {
 
     public record PreconfiguredPrompt(String prompt, String format) {}
 
-    public static final Map<String, PreconfiguredPrompt> DEFAULT_PROMPTS = Map.of(
-            "Revenue", new PreconfiguredPrompt(
-                    "Query actual sales orders to calculate total sales revenue sum(product_total_price) for the active period",
-                    "currency"
-            ),
-            "Revenue Change %", new PreconfiguredPrompt(
-                    "Calculate sales revenue percentage growth rate comparing current sales_order product_total_price against baseline comparison period",
-                    "percentage"
-            ),
-            "Gross Margin", new PreconfiguredPrompt(
-                    "Query order_margin_summary to calculate total gross margin contribution sum(gross_margin) for the active period",
-                    "currency"
-            ),
-            "Gross Margin %", new PreconfiguredPrompt(
-                    "Query order_margin_summary to compute overall gross margin percentage: round(sum(gross_margin) / nullif(sum(revenue), 0) * 100, 2)",
-                    "percentage"
-            ),
-            "Current Period", new PreconfiguredPrompt(
-                    "Extract the active reporting cycle period from sales orders date range",
-                    "text"
-            ),
-            "Comparison Period", new PreconfiguredPrompt(
-                    "Extract the comparable baseline cycle period from historical sales orders date range",
-                    "text"
-            ),
-            "PPV Variance", new PreconfiguredPrompt(
-                    "Query actual purchase order settlement prices vs baseline standard costs to derive Purchase Price Variance rate",
-                    "percentage"
-            ),
-            "Usage Variance", new PreconfiguredPrompt(
-                    "Query inventory_usage to calculate total material consumption: sum(material_total_cost) for the active period",
-                    "currency"
-            ),
-            "Scrap Loss", new PreconfiguredPrompt(
-                    "Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact",
-                    "currency"
-            ),
-            "ECN Impact", new PreconfiguredPrompt(
-                    "Compare active ECN design bill of materials against baseline revision to calculate unit quota cost impact",
-                    "currency"
-            )
+    public static final Map<String, PreconfiguredPrompt> DEFAULT_PROMPTS = Map.ofEntries(
+            Map.entry("Revenue", new PreconfiguredPrompt(
+                    "Query sales_details to calculate sum(total_revenue) for the active period", "currency")),
+            Map.entry("Revenue Change %", new PreconfiguredPrompt(
+                    "Compare sum(total_revenue) from sales_details across current and baseline periods", "percentage")),
+            Map.entry("Gross Margin", new PreconfiguredPrompt(
+                    "Query sales_details to calculate sum(total_revenue - total_cost) for the active period", "currency")),
+            Map.entry("Gross Margin %", new PreconfiguredPrompt(
+                    "Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)", "percentage")),
+            Map.entry("Cost of Goods Sold", new PreconfiguredPrompt(
+                    "Query sales_details to calculate sum(total_cost) for the active period", "currency")),
+            Map.entry("Current Period", new PreconfiguredPrompt(
+                    "Extract the active reporting cycle period from sales_details date range", "text")),
+            Map.entry("Comparison Period", new PreconfiguredPrompt(
+                    "Extract the comparable baseline cycle period from historical sales_details date range", "text")),
+            Map.entry("PPV Variance", new PreconfiguredPrompt(
+                    "Query purchases for purchase price variance in the active period", "percentage")),
+            Map.entry("Usage Variance", new PreconfiguredPrompt(
+                    "Query inventory_usage to calculate sum(material_total_cost) for the active period", "currency")),
+            Map.entry("Scrap Loss", new PreconfiguredPrompt(
+                    "Aggregate recorded material losses in inventory_usage", "currency")),
+            Map.entry("ECN Impact", new PreconfiguredPrompt(
+                    "Compare bill_of_material usage across revisions", "currency"))
     );
 
     public PreconfiguredPrompt getPreconfiguredPrompt(String tag) {

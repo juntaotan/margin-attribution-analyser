@@ -2,10 +2,8 @@ package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
-import dev.margintrace.margin_attribution_backend.warehouse.model.Production;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.CostDetailRepository;
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.ProductionRepository;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -13,6 +11,8 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Queue;
 import java.util.Set;
 
@@ -21,20 +21,17 @@ import java.util.Set;
 public class EdgeBuildHandler extends AbstractTraceHandler {
     public static final String COST_OF_GOODS_SOLD_NODE_ID = "__COGS__";
 
-    private final ProductionRepository productionRepository;
     private final InventoryUsageRepository inventoryUsageRepository;
-    private final CostDetailRepository costDetailRepository;
+    private final SalesDetailRepository salesDetailRepository;
 
     public EdgeBuildHandler(
-            ProductionRepository productionRepository,
             InventoryUsageRepository inventoryUsageRepository,
-            CostDetailRepository costDetailRepository,
+            SalesDetailRepository salesDetailRepository,
             CsrGraphHandler next
     ) {
         super(next);
-        this.productionRepository = productionRepository;
         this.inventoryUsageRepository = inventoryUsageRepository;
-        this.costDetailRepository = costDetailRepository;
+        this.salesDetailRepository = salesDetailRepository;
     }
 
     @Override
@@ -48,7 +45,7 @@ public class EdgeBuildHandler extends AbstractTraceHandler {
             return;
         }
 
-        BigDecimal totalCost = costDetailRepository.sumTotalCostBetween(
+        BigDecimal totalCost = salesDetailRepository.sumTotalCostBetween(
                 context.startDate, context.endDate);
         if (totalCost == null) {
             totalCost = BigDecimal.ZERO;
@@ -71,30 +68,24 @@ public class EdgeBuildHandler extends AbstractTraceHandler {
 
         while (!pending.isEmpty()) {
             String productId = pending.remove();
-            List<Production> productions = productionRepository
+            List<InventoryUsage> usages = inventoryUsageRepository
                     .findAllByProductNoAndDateBetweenOrderByDateAscIdAsc(
                             productId, context.startDate, context.endDate);
-
-            if (productions.isEmpty() && context.targets.contains(productId)) {
-                throw new IllegalArgumentException("Target not found in period: " + productId);
-            }
-
-            Set<String> productionOrders = new HashSet<>();
-            for (Production production : productions) {
-                Node product = new Node(production.getProductNo(), production.getCompletedQuantity());
-                context.nodes.putIfAbsent(productId, product);
-                context.edges.computeIfAbsent(productId, ignored -> new LinkedHashSet<>());
-                productionOrders.add(production.getProductionOrderNo());
-            }
-
-            if (productions.isEmpty()) {
-                continue;
-            }
-            List<InventoryUsage> usages = inventoryUsageRepository
-                    .findAllByProductNoAndDateBetweenAndMaterialNoIsNotNullOrderByDateAscIdAsc(
-                            productId, context.startDate, context.endDate);
+            Map<String, BigDecimal> outputByOrder = new HashMap<>();
             for (InventoryUsage usage : usages) {
-                if (!productionOrders.contains(usage.getOrderNo())) {
+                if (usage.getProductNum() != null) {
+                    outputByOrder.putIfAbsent(usage.getOrderNo(), usage.getProductNum());
+                }
+            }
+            if (!outputByOrder.isEmpty() && !context.consumedNodes.containsKey(productId)) {
+                BigDecimal output = outputByOrder.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                context.nodes.put(productId, new Node(productId, output));
+            } else {
+                context.nodes.putIfAbsent(productId, new Node(productId, BigDecimal.ONE));
+            }
+            context.edges.computeIfAbsent(productId, ignored -> new LinkedHashSet<>());
+            for (InventoryUsage usage : usages) {
+                if (usage.getMaterialNo() == null) {
                     continue;
                 }
                 String materialId = usage.getMaterialNo();

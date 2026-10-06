@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/** An inventory movement attributed to a production order and product. */
+/** An inventory movement attributed to a product and source order number. */
 @Entity
 @IdClass(InventoryUsageId.class)
 @Table(name = "inventory_usage")

@@ -47,11 +47,15 @@ def build_all() -> None:
 
 
 def run_backend(name: str, executable: list[str], dataset: Path,
-                iterations: int, threshold: int, warmups: int) -> dict[str, Any]:
+                iterations: int, threshold: int, warmups: int,
+                selected_output: Path | None = None) -> dict[str, Any]:
     """Runs one backend and records its complete process wall-clock time."""
     print(f"Running {name}...")
     start = time.perf_counter_ns()
-    output = command(executable + [str(dataset), str(iterations), str(threshold), str(warmups)])
+    arguments = executable + [str(dataset), str(iterations), str(threshold), str(warmups)]
+    if selected_output is not None:
+        arguments.append(str(selected_output))
+    output = command(arguments)
     wall_ms = (time.perf_counter_ns() - start) / 1_000_000.0
     line = next((line for line in output.splitlines()
                  if line.startswith("BENCHMARK_JSON ")), None)

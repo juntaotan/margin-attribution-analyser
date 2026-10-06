@@ -22,13 +22,12 @@ The environment variables `LLAMA_BASE_URL` and `LLAMA_MODEL` remain the startup 
 
 The deploy Compose configuration runs Flyway migration V4 and creates `ai_provider_settings` automatically. `compose.dev.yaml` currently pins Flyway to V2 for its remote database workflow, so that profile must have migration V4 applied before this settings feature can be used.
 
-The current sample periods have equal quantities and topology but different material cost. They should be classified as **单位成本变化**. This is a fourth outcome in addition to overuse, suspected replacement, and BOM change. The data do not support calling the sample an overuse or a replacement.
+The current sample periods have equal quantities and topology but different material cost. They should be classified as **单位成本变化**. The data do not support calling the sample an overuse or a replacement.
 
 ## Classification boundaries
 
-- **BOM 变化** requires different BOM material lines for the production orders in the two periods. A changed BOM number without both line sets is only evidence to investigate.
-- **疑似物料更换** requires both removed and added consumed materials under the same product, without a confirmed BOM line change. The available records cannot prove that the materials are approved substitutes.
-- **用料超出 BOM 计划** requires actual material quantity per unit of product to exceed the current BOM unit usage. **单位产出用料增加** compares the periods when a BOM plan is unavailable.
+- **疑似物料更换** requires both removed and added consumed materials under the same product. The available records cannot prove that the materials are approved substitutes.
+- **用料超出 BOM 计划** requires actual material quantity and output quantity on inventory movements, plus a single BOM for the product. **单位产出用料增加** compares the periods when a BOM plan is unavailable.
 - **单位成本变化** reports a changed cost per unit when no stronger structural or usage signal applies.
 
 The endpoint is `POST /api/v1/analysis/root-cause-report` with `actualStartDate`, `actualEndDate`, `comparableStartDate`, `comparableEndDate`, and `inventoryId`. The backend recomputes the graphs from warehouse records, so the model does not receive client-supplied financial facts.
