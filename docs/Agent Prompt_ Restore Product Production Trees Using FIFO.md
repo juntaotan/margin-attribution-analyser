@@ -4,7 +4,7 @@
 
 Starting from the identified abnormal branches, locate the affected final products, expand each product into its complete production tree, and restore the actual quantities and amounts belonging to that tree using material issue relationships and FIFO allocation.
 
-Each final product instance must have its own tree. Preserve all leaf materials and intermediate semi-finished products or products. Supply the restored trees to [the standard FGW implementation](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>) for comparison between actual trees of the same product.
+Each final product instance must have its own tree. Preserve all leaf materials and intermediate semi-finished products or products. Supply the restored trees to [the standard FGW implementation](<algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>) for comparison between actual trees of the same product.
 
 Follow these steps. For each step, specify inputs, outputs, and computation.
 
@@ -219,13 +219,13 @@ Record this within-layer proportional attribution convention separately from FIF
 **Inputs:**
 
 - Restored trees.
-- Existing 12-dimensional material embeddings.
+- Caller-supplied 384-dimensional material content embeddings for every tree node occurrence.
 - Product-instance and node-occurrence identifiers.
 
 **Outputs:**
 
 - One FGW-ready tree per final product instance.
-- CSR topology and embeddings aligned to the same node index order.
+- CSR topology and one 384-dimensional material content embedding per node, aligned to the same index order.
 - Restored quantities, amounts, units, and source references aligned to those indices.
 - Comparable actual-tree pairs for the same product.
 
@@ -235,13 +235,13 @@ Record this within-layer proportional attribution convention separately from FIF
 
 (2) Build CSR arrays from the manufacturing edges. Retain every intermediate node and leaf material.
 
-(3) Load each material's existing 12-dimensional embedding and preserve its version. Do not redefine embedding dimensions in this stage.
+(3) Load each node's 384-dimensional material content embedding and preserve its version. Use the node's own content vector, not the three-block neighbourhood vector or six-block BOM embedding. Do not generate embeddings in this stage; report missing or misaligned vectors rather than inventing them.
 
 (4) Keep the restored actual values and allocation references beside the graph input. Preserve the mapping from FGW indices back to tree occurrences and source records.
 
 (5) Select multiple actual trees of the same product for comparison. Keep unit, monetary scope, and known production conditions available to assess comparability.
 
-(6) Pass the trees to [CUDA Agent Prompt: Implement Standard FGW in Five Steps](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>). Follow its objective and weighting rules.
+(6) Pass the trees to [CUDA Agent Prompt: Implement Standard FGW in Five Steps](<algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>). Follow its objective and weighting rules.
 
 **Requirements:**
 
@@ -358,4 +358,4 @@ The embodied B in remaining S is already consumed input lineage, not available r
 - FGW input adapter with stable source mappings.
 - Automated allocation/restoration tests and a PASS/FAIL report.
 
-After these deliverables pass their checks, execute the second and third instruction files listed in [the agent workflow](<Production Anomaly Analysis — Agent Workflow.md>).
+After these deliverables pass their checks, execute the second and third instruction files listed in [the agent workflow](<algorithms/Production Anomaly Analysis — Agent Workflow.md>).

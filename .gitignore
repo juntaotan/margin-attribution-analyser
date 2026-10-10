@@ -55,14 +55,15 @@ buildNumber.properties
 
 # Markdown documentation
 *.md
+!AGENTS.md
 !/docs/tasks/**/*.md
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
 !cuda/README.md
 !docs/LOCAL_AI_REPORT.md
-!docs/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md
-!docs/FGW CUDA Implementation — Numerical Test Case.md
-!docs/Production Anomaly Analysis — Agent Workflow.md
+!docs/algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md
+!docs/algorithms/FGW CUDA Implementation — Numerical Test Case.md
+!docs/algorithms/Production Anomaly Analysis — Agent Workflow.md
 !docs/Agent Prompt_ Restore Product Production Trees Using FIFO.md
 
 # environment variables

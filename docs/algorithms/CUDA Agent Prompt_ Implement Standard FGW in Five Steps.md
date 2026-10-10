@@ -6,13 +6,13 @@ Assume that complete production trees with FIFO-restored actual quantities and a
 
 # Objective
 
-The feature of finding out the abnormal transactions uses the **standard balanced Fused Gromov-Wasserstein (FGW)**  algorithm in CUDA and OpenCL for comparing manufacturing graphs with different node counts and unordered structures. Each node has an existing 12-dimensional material embedding. Graph topology is stored in CSR format.
+The feature of finding out the abnormal transactions uses the **standard balanced Fused Gromov-Wasserstein (FGW)**  algorithm in CUDA and OpenCL for comparing manufacturing graphs with different node counts and unordered structures. Each node has one caller-supplied 384-dimensional material content embedding aligned with its CSR index. Use the node's own content vector, not the three-block neighbourhood vector or six-block BOM embedding. Graph topology is stored in CSR format. Embedding generation and model inference are outside this FGW implementation; report missing or misaligned embeddings rather than fabricating them.
 
 Follow these five steps. For each step, specify inputs, outputs, and computation.
 
 # Step 1: Calculate Distance Matrices
 
-**Inputs:**  Two CSR graphs (`G1`​, `G2`​) and node embeddings `[N, 12]`​ and `[M, 12]`.
+**Inputs:**  Two CSR graphs (`G1`​, `G2`​) and material content embeddings `[N, 384]`​ and `[M, 384]` in the same node order as their respective CSR graphs.
 
 **Outputs:**  Material distance matrix `M_attr [N, M]`​and structural distance matrices `D1 [N, N]`​, `D2 [M, M]`.
 

@@ -8,7 +8,7 @@ Follow the three instruction files below in order. Treat them as execution instr
 
 # File 1: Restore Product Production Trees Using FIFO
 
-Read [Agent Prompt: Restore Product Production Trees Using FIFO](<Agent Prompt_ Restore Product Production Trees Using FIFO.md>).
+Read [Agent Prompt: Restore Product Production Trees Using FIFO](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>).
 
 **Inputs:** Existing abnormal-branch results, directed material-to-product relationships, production records, material issue records, and inventory/production receipt layers.
 
@@ -32,7 +32,7 @@ Complete the allocation and restoration checks in File 1 before supplying a tree
 
 Read [CUDA Agent Prompt: Implement Standard FGW in Five Steps](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
 
-**Inputs:** Two complete actual product trees from File 1, CSR topology, and existing 12-dimensional material embeddings.
+**Inputs:** Two complete actual product trees from File 1, CSR topology, and caller-supplied 384-dimensional material content embeddings aligned with tree node indices.
 
 **Outputs:** Correspondence matrix, material cost, structure cost, FGW cost, iteration count, and convergence status.
 

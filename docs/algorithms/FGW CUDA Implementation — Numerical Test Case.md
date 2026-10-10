@@ -4,7 +4,7 @@
 
 Execute this as File 3 of [the production analysis agent workflow](<Production Anomaly Analysis — Agent Workflow.md>) to validate [the FGW implementation](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
 
-Use the fixed synthetic inputs and expected values below. Do not replace this regression with FIFO production data or alter its distance definitions. Validate [FIFO restoration](<Agent Prompt_ Restore Product Production Trees Using FIFO.md>) separately through its prescribed allocation and restoration tests.
+Use the fixed synthetic inputs and expected values below. Do not replace this regression with FIFO production data or alter its distance definitions. Validate [FIFO restoration](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>) separately through its prescribed allocation and restoration tests.
 
 ## Objective
 
@@ -55,12 +55,12 @@ colIndices = [1, 2]
 
 ### Node Embeddings
 
-Each node has a 12-dimensional embedding.
+Each node has a 384-dimensional material content embedding. The fixed fixture uses zero padding so that changing the embedding dimension does not change any expected distance or FGW result.
 
 ```text
-A = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-X = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-B = [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+A = [0.0] * 384
+X = [1.0] + [0.0] * 383
+B = [2.0] + [0.0] * 383
 ```
 
 ### Configuration
