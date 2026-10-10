@@ -1,0 +1,5 @@
+# Numerical oracle and optimised benchmark tools; no production Python dependency.
+numpy==2.5.3
+scipy==1.18.1
+POT==0.9.7.post1
+threadpoolctl==3.7.0

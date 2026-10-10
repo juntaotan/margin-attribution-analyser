@@ -162,6 +162,44 @@ costScaleFloor = 1e-12
 - State CUDA and OpenCL delivery/test coverage separately.
 - Benchmark the complete CUDA implementation against an optimized multicore CPU baseline.
 
+# Fixed-Baseline CUDA Execution
+
+The primary workload compares one fixed baseline product tree with many nearby target trees of the same product. This execution model changes resource management only; retain the five mathematical steps, objective scale, exact balanced OT, uniform initialisation, tolerances, feasible starts and multi-start behaviour above.
+
+## Baseline Lifetime
+
+- Validate and prepare the baseline once per processing session on the selected CUDA device.
+- Keep its `[N, 384]` material content embeddings, undirected structural distance matrix `D1`, uniform weights `p` and reusable fixed-marginal structural constants read-only in device memory for all comparisons in that session.
+- Share this immutable baseline across the session's execution workers on that device. Establish readiness with a CUDA event before worker streams read it. Do not upload or recompute it for each target or input batch.
+- Preserve the baseline's node order and source identifiers, restored quantities and decimal amounts for output mapping. These remain metadata rather than additional objective terms.
+- Release the baseline only after all accepted comparisons have finished and their device work has been drained. A new baseline requires a new preparation/session.
+
+## Persistent Execution Resources
+
+- Create a configurable, fixed number of host worker threads. Each thread owns its CUDA stream, cuBLAS handle, dedicated cuBLAS workspace and reusable algorithm/transfer buffers. Threads repeatedly consume targets from a bounded queue until processing is closed and the queue is empty.
+- Create streams, handles and library workspaces once per worker lifetime. Reuse them across comparisons and input-batch boundaries, including idle periods; release them when the processing session ends. Do not create a new thread, stream or handle per target.
+- Use one cuBLAS handle per host thread for its entire lifetime, following [NVIDIA's recommended model](https://docs.nvidia.com/cuda/cublas/index.html#cublascreate). Concurrent workers must not share mutable handle configuration or overlapping workspaces.
+- Bind the stream before setting a custom workspace: [`cublasSetStream()` resets the custom workspace](https://docs.nvidia.com/cuda/cublas/index.html#cublassetstream). Allocate suitably aligned workspace and keep it valid until all operations using it complete.
+- Retain allocated buffer capacity. Grow buffers only when a target size or start count exceeds that capacity, after previous work using the buffers has finished. Support unequal graph sizes and independently supplied feasible starts.
+- Every comparison owns independent target data, correspondence matrices, gradients, exact OT solutions, directions, costs, iteration counts and stopping statuses. Initialise each comparison with the prescribed uniform outer product unless explicit feasible starts are supplied. Reusing storage must not implicitly reuse an earlier comparison's state or answer.
+- Continue to run exact balanced linear OT on the CPU. Workers may overlap one comparison's CPU work with another comparison's GPU work. Retain the exact solver, objective and convergence contract; CPU placement alone is not an explanation for a measured performance difference.
+- Bound queued inputs and outstanding results. Submit targets in batches or as a stream and consume results incrementally; do not retain millions of input trees, transport matrices or full traces in memory.
+- Report target validation/execution failures individually. Drain in-flight device work before reusing its buffers, reject submissions after closure, and finish accepted work before destroying resources.
+
+## Throughput Validation
+
+Complete the prescribed numerical regression, independent CPU comparison and POT validation before performance measurements. Also validate baseline preparation/resource counts, queue bounds, reuse across batch boundaries, fresh initialisation after different starts, unequal target sizes, failure isolation and draining at session closure.
+
+Fix the benchmark dimensions to a 128-node baseline and 160-node targets, each with 384-dimensional embeddings. Request 100, 500, 1,000, 2,000, 5,000 and 10,000 complete comparisons (18,600 in total per execution path). Use a reproducible pool of nearby target trees, submit them incrementally, and execute every request without caching previously computed FGW answers.
+
+The smaller tiers check startup/queue behaviour; the larger tiers measure sustained throughput and repeated resource reuse within a practical validation run. With a 16-target pool, the largest tier processes each target 625 times. Label these as short-run benchmarks: they do not establish million-request endurance or production readiness. Keep counts configurable for separately requested longer runs.
+
+Use equivalent inputs, precision, parameters, initialisation and stopping settings for an optimised multicore CPU baseline. Prepare its fixed baseline once and reuse its execution resources as well. Perform warm-up inside the same process/session as the measured comparisons; do not launch a fresh CUDA process per comparison.
+
+Report initialisation, warm-up, steady processing, destruction and total elapsed time separately, with completed/requested counts, throughput, resource counts, marginal errors and numerical agreement. Record CPU exact-OT time, CUDA event intervals for device work/transfers and host synchronisation waits; explain overlapping intervals rather than summing them into wall time. If CPU and CUDA paths use different exact OT implementations, disclose that comparison confound instead of attributing their performance difference solely to GPU execution.
+
+An explicitly time-limited run is a measured prefix, not a completed benchmark at the requested count. Preserve its actual completed count, mark it incomplete, and never present an extrapolated duration as an actual million-comparison measurement.
+
 # File Organisation
 
 Use these filenames, following the existing CUDA algorithm/engine convention:

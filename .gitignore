@@ -55,6 +55,7 @@ buildNumber.properties
 
 # Markdown documentation
 *.md
+/docs/tasks/**/*.json
 !AGENTS.md
 !/docs/tasks/**/*.md
 !DEPLOYMENT.md
@@ -108,3 +109,6 @@ build/
 # Benchmark
 datasets/
 benchmark/results/
+
+# Native FGW build and validation instructions
+!backend/src/main/resources/cuda/test/fgw/README.md
