@@ -1,0 +1,41 @@
+Start time: 2026-10-11 01:00:13 Pacific/Auckland (UTC+13:00)
+End time: 2026-10-11 01:12:47 Pacific/Auckland (UTC+13:00)
+Summary: Refined project instructions covering project context, module responsibilities, coding and compatibility conventions, CPU analysis and optional acceleration, data integrity, document-defined validation, portability, minimal changes, commits, and task records.
+Details:
+- Changes: Updated `AGENTS.md` to leave completed and validated changes uncommitted until the user explicitly requests a Git commit.
+- Changes: Added a task-record requirement covering implementation, documentation, and configuration changes, with one English Markdown file per task under `docs/tasks/`.
+- Changes: Defined the required Start time, End time, Summary, and Details fields, British English prose, affected-file and validation reporting, and Pacific/Auckland timestamps with UTC offsets.
+- Changes: Added a narrowly scoped `.gitignore` exception for Markdown records under `docs/tasks/`, preserving the existing ignore rules and unrelated changes.
+- Changes: Created this task record. The earlier creation of `AGENTS.md` and the `AGENT.md` pointer is outside the timing and change scope of this update.
+- Changes: Continued the same instruction-refinement task by adding `Project Overview` to `AGENTS.md`, covering the current data-preparation, analysis, management-reporting, and settings workflows and their supporting services.
+- Changes: Replaced the brief repository map with `Project Structure`, describing backend packages, resources and tests, frontend features, native algorithm modules, infrastructure, and documentation.
+- Changes: Distinguished specified FIFO/FGW capabilities from confirmed implementation.
+- Changes: Incorporated the user's confirmation that the project serves manufacturing financial analysts and data analysts and is currently a prototype for research and validation.
+- Changes: Recorded Java as the complete business backend and OpenCL/CUDA as analysis-acceleration implementations intended for future integration, with integration currently incomplete. Updated the standalone CUDA module description accordingly.
+- Changes: Confirmed the production-analysis workflow and its three linked FIFO/FGW documents as the authoritative requirements and validation standards for related tasks.
+- Changes: Made Docker the default test environment and documented isolated backend test and verification commands plus a frontend build-stage command, derived from the repository's existing configuration.
+- Changes: Explained that backend image packaging skips tests, frontend builds do not replace behavioural tests, and GPU validation requires an appropriate runtime and actual device access. Recorded the existing CUDA CMake source-path issue without changing algorithm build files.
+- Changes: Added open-source portability requirements so setup and validation serve users beyond the maintainer's environment, without claiming unverified platform support.
+- Changes: Incorporated the user's preference to preserve the existing structure and make only the smallest necessary changes, avoiding unsolicited refactoring.
+- Changes: Recorded the user's requirement that all analysis functionality be available on the CPU, with GPU acceleration optional. Distinguished this requirement from the current implementation status and retained specification-required GPU validation.
+- Changes: Added exactly the two data and calculation rules selected by the user: avoid binary floating-point precision loss in monetary calculations, and explicitly report missing inputs or incomplete allocations without fabricating results.
+- Changes: Restricted the test scope to tests explicitly required by applicable documents or user task instructions, without imposing additional regression tests. Kept the obligation to implement automated tests where the specifications require them.
+- Changes: Made backend and frontend verification commands conditional on task requirements and clarified that the Docker command list does not independently require every check for every change.
+- Changes: Added the confirmed Java and React naming conventions and required new file and directory names to follow comparable existing modules without bulk renaming.
+- Changes: Recorded compatibility as the preferred approach, with necessary API, format, or schema changes accompanied by updates to affected callers, documentation, and prescribed tests.
+- Changes: Added the preference to reuse existing dependencies and frameworks, introducing a new dependency only when existing tools cannot reasonably meet the task and documenting the reason.
+- Changes: Required detailed documentation comments for important classes and public methods, using English and explaining purpose, inputs, outputs, and applicable assumptions, side effects, and error behaviour.
+- Changes: Removed duplicated specification and automated-test wording without changing the confirmed requirements.
+- Validation: PASS — `git diff --check` found no whitespace errors in tracked changes.
+- Validation: PASS — checked that `AGENTS.md` contains the commit policy, task directory, required report fields, time zone, and existing British/American English conventions; checked trailing whitespace and the final newline.
+- Validation: PASS — checked that the task-record path matches the `.gitignore` inclusion rule.
+- Validation: PASS — checked the new overview and structure headings, every backend package listed in the structure table, and repository paths referenced in the instructions against the filesystem.
+- Validation: PASS — reviewed application navigation, analysis endpoints and orchestration, AI reporting documentation, deployment configuration, and the standalone CUDA build to support the overview and module descriptions.
+- Validation: PASS — checked that the user-confirmed audience, prototype stage, Java responsibilities, and incomplete OpenCL/CUDA integration are present, and removed the superseded uncertainty about the native modules' intended role.
+- Validation: PASS — checked shell syntax for all three documented Docker commands and matched their image/build-stage choices and verification lifecycle against the Dockerfiles and Jenkins configuration.
+- Validation: PASS — confirmed the CUDA benchmark paths do not exist relative to the module and checked the specification-authority, Docker-default, portability, and minimal-change instructions.
+- Validation: PASS — checked CPU completeness, optional acceleration, numerical comparisons, and retention of GPU-specific tests; removed the obsolete statement that CPU-only requirements were undecided.
+- Validation: PASS — checked that the data and calculation section contains exactly the user's two selected rules and no additional data rules.
+- Validation: PASS — checked document-defined test scope, retention of specification-required automated tests, conditional verification commands, naming conventions, and coordinated compatibility changes.
+- Validation: PASS — completed a final content review covering required sections, dependency and documentation-comment preferences, selected earlier preferences, backend packages, repository references, Docker command shell syntax, Markdown fences, whitespace, the legacy instruction-file pointer, and the instruction size limit.
+- Limitations: Application tests and the documented Docker commands were not run because this task only changes instructions and documentation handling; no applicable specification requires application tests for these edits. The start time is the first captured timestamp for the recorded refinement work. A reproducible GPU test-container setup remains implementation work outside this instruction-writing task. The confirmed preferences are incorporated in the current instruction file.
