@@ -60,6 +60,7 @@ buildNumber.properties
 # Markdown documentation
 *.md
 docs/tasks/
+docs/validation/
 !AGENTS.md
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
