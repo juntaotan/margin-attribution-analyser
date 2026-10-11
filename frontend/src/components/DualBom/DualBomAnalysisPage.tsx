@@ -1,340 +1,90 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { AnalysisHeader } from './AnalysisHeader';
 import { ScopeControlsBar } from './ScopeControlsBar';
-import { KpiSummaryBar } from './KpiSummaryBar';
 import { DualBomTreeCanvas } from './DualBomTreeCanvas';
-import { MaterialLedgerWorkbench } from './MaterialLedgerWorkbench';
 import { AuditSidebar } from './AuditSidebar';
-import { ReconciliationPathsPanel } from './ReconciliationPathsPanel';
-import {
-  DualBomNode,
-  DualBomReconciliationResult,
-  reconcileDualBom,
-} from '../../varianceEngine';
-import {
-  COST_OF_GOODS_SOLD_NODE_ID, ReconciliationPath, StreamCsrGraph, StreamNode,
-  csrToAdjacency, readAnalysisStream,
-} from '../../analysisGraph';
+import { ProductComparisonModal } from './ProductComparisonModal';
+import { accelerationPreference, canvasGraph, readWorkflowStream, recorded, type AnalysisOutcome, type PeriodSnapshot, type WorkflowEvent } from '../../analysisRun';
+import type { StreamNode } from '../../analysisGraph';
 
+const STAGES: Record<string, string> = { loading: 'Loading warehouse data', graph: 'Period graphs built', branches: 'Abnormal branches discovered', 'production-trees': 'Production trees restored', embeddings: 'Embeddings prepared', comparison: 'Comparing production instances', completed: 'Analysis complete' };
 export const DualBomAnalysisPage: React.FC = () => {
-  const [periodFrom, setPeriodFrom] = useState<string>('2026-01-01');
-  const [periodTo, setPeriodTo] = useState<string>('2026-01-31');
-  const [threshold, setThreshold] = useState<number>(250.0);
-  const [comparablePeriodFrom, setComparablePeriodFrom] = useState<string>('2025-01-01');
-  const [comparablePeriodTo, setComparablePeriodTo] = useState<string>('2025-01-31');
-  const [leafThreshold, setLeafThreshold] = useState<number>(100);
-  const [reconciliationPaths, setReconciliationPaths] = useState<ReconciliationPath[] | null>(null);
-  const [pathError, setPathError] = useState<string | null>(null);
-  const [graphSnapshot, setGraphSnapshot] = useState<{
-    analysisId: string; actual: StreamCsrGraph; comparable: StreamCsrGraph;
-    actualLabel: string; comparableLabel: string;
-    actualStartDate: string; actualEndDate: string;
-    comparableStartDate: string; comparableEndDate: string;
-  } | null>(null);
-  const [highlightedNodeIds, setHighlightedNodeIds] = useState<ReadonlySet<string>>(new Set());
-  const [highlightedEdgeIds, setHighlightedEdgeIds] = useState<ReadonlySet<string>>(new Set());
-  const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(null);
-  const requestVersion = useRef(0);
-  const abortRef = useRef<AbortController | null>(null);
-
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [result, setResult] = useState<DualBomReconciliationResult | null>(null);
-  const [selectedNode, setSelectedNode] = useState<DualBomNode | null>(null);
-
-  // Resizable vertical split between Tree (default 70%) and Material Ledger (default 30%)
-  const [treeHeightPct, setTreeHeightPct] = useState<number>(70);
-  const [isDraggingSplitter, setIsDraggingSplitter] = useState<boolean>(false);
-  const leftAreaRef = useRef<HTMLDivElement>(null);
-
-  const handleSplitterMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDraggingSplitter(true);
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!leftAreaRef.current) return;
-      const rect = leftAreaRef.current.getBoundingClientRect();
-      const relativeY = moveEvent.clientY - rect.top;
-      const newPct = (relativeY / rect.height) * 100;
-      // Allow dragging up to expand the ledger (down to 15% tree) or down (up to 85% tree)
-      const clamped = Math.max(15, Math.min(85, newPct));
-      setTreeHeightPct(clamped);
-    };
-
-    const handleMouseUp = () => {
-      setIsDraggingSplitter(false);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  // Focus and pulse animation micro-interaction
-  const handleInspectNode = (node: DualBomNode) => {
-    setSelectedNode(node);
-    const graphNode = graphSnapshot?.actual.nodes.find((item) => item.inventoryId === node.id);
-    setSelectedGraphNodeId(graphNode?.id ?? null);
-  };
-
-  const handleSelectGraphNode = (node: StreamNode) => {
-    setSelectedGraphNodeId(node.id);
-    setSelectedNode(result?.nodesById.get(node.inventoryId) ?? null);
-  };
-
+  const [periodFrom, setPeriodFrom] = useState('2026-01-01'); const [periodTo, setPeriodTo] = useState('2026-01-31');
+  const [comparablePeriodFrom, setComparablePeriodFrom] = useState('2025-01-01'); const [comparablePeriodTo, setComparablePeriodTo] = useState('2025-01-31');
+  const [threshold, setThreshold] = useState(250); const [leafThreshold, setLeafThreshold] = useState(100);
+  const [currency, setCurrency] = useState(''); const [costScope, setCostScope] = useState('');
+  const [complete, setComplete] = useState(false); const [repeated, setRepeated] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false); const [stage, setStage] = useState('');
+  const [error, setError] = useState<string | null>(null); const [outcome, setOutcome] = useState<AnalysisOutcome | null>(null);
+  const [graphs, setGraphs] = useState<{ analysisId: string; actual: PeriodSnapshot; comparable: PeriodSnapshot } | null>(null);
+  const [selected, setSelected] = useState<StreamNode | null>(null); const [product, setProduct] = useState<string | null>(null);
+  const [resultScope, setResultScope] = useState(''); const [submittedOptions, setSubmittedOptions] = useState('');
+  const request = useRef<AbortController | null>(null); const version = useRef(0);
+  const scope = `${periodFrom}|${periodTo}|${comparablePeriodFrom}|${comparablePeriodTo}|${leafThreshold}|${threshold}`;
+  const options = `${currency}|${costScope}|${complete}|${repeated}`;
+  useEffect(() => () => { version.current++; request.current?.abort(); }, []);
+  const closeProduct = useCallback(() => setProduct(null), []);
   const handleRunAnalysis = async () => {
-    if (!periodFrom || !periodTo) {
-      setAnalysisError('Please select both Start Date and End Date.');
-      return;
-    }
-    if (periodFrom > periodTo) {
-      setAnalysisError('Start Date must not be after End Date.');
-      return;
-    }
-    if (!comparablePeriodFrom || !comparablePeriodTo || comparablePeriodFrom > comparablePeriodTo) {
-      setAnalysisError('Please select an ordered comparable period.');
-      return;
-    }
-    if (!Number.isFinite(leafThreshold) || leafThreshold < 0
-      || !Number.isFinite(threshold) || threshold < 0) {
-      setAnalysisError('Cost thresholds must be non-negative numbers.');
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const version = ++requestVersion.current;
-    setIsAnalyzing(true);
-    setAnalysisError(null);
-    setPathError(null);
-    setReconciliationPaths(null);
-    setGraphSnapshot(null);
-    setResult(null);
-    setSelectedNode(null);
-    setSelectedGraphNodeId(null);
-    setHighlightedNodeIds(new Set());
-    setHighlightedEdgeIds(new Set());
-
-    let receivedGraph = false;
+    if (isAnalyzing) return;
+    if (!periodFrom || !periodTo || periodFrom > periodTo || !comparablePeriodFrom || !comparablePeriodTo || comparablePeriodFrom > comparablePeriodTo || !Number.isFinite(leafThreshold) || leafThreshold < 0 || !Number.isFinite(threshold) || threshold < 0) { setError('Select ordered periods and non-negative thresholds.'); return; }
+    if (!currency.trim() || !costScope.trim()) { setError('Declare the currency and cost scope for the warehouse values.'); return; }
+    const controller = new AbortController(); request.current?.abort(); request.current = controller; const current = ++version.current;
+    setIsAnalyzing(true); setStage('loading'); setError(null); setOutcome(null); setGraphs(null); setProduct(null); setSelected(null); setResultScope(scope); setSubmittedOptions(options);
+    let completed = false; let streamedError: string | null = null;
     try {
-      const response = await fetch('/api/v1/analysis/reconcile-periods/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          actualStartDate: periodFrom,
-          actualEndDate: periodTo,
-          comparableStartDate: comparablePeriodFrom,
-          comparableEndDate: comparablePeriodTo,
-          leafThreshold,
-          stopThreshold: threshold,
-        }),
-      });
-      if (!response.ok) throw new Error(`Analysis failed (${response.status})`);
-
-      let snapshot: {
-        analysisId: string; actual: StreamCsrGraph; comparable: StreamCsrGraph;
-        actualLabel: string; comparableLabel: string;
-        actualStartDate: string; actualEndDate: string;
-        comparableStartDate: string; comparableEndDate: string;
-      } | null = null;
-      let receivedDiff = false;
-      let streamError: string | null = null;
-      await readAnalysisStream(response, (event) => {
-        if (version !== requestVersion.current) return;
+      const response = await fetch('/api/v1/analysis/run/stream', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' }, signal: controller.signal,
+        body: JSON.stringify({ actualStartDate: periodFrom, actualEndDate: periodTo, comparableStartDate: comparablePeriodFrom, comparableEndDate: comparablePeriodTo,
+          leafThreshold: String(leafThreshold), stopThreshold: String(threshold), execution: accelerationPreference(),
+          comparison: { completeGraphCoverage: complete, warehouse: { namespace: 'warehouse', currency: currency.trim(), costScope: costScope.trim(),
+            quantityInterpretation: repeated ? 'REPEATED_INSTANCE_TOTAL' : 'UNVERIFIED', costInterpretation: repeated ? 'REPEATED_INSTANCE_TOTAL' : 'UNVERIFIED' }, config: { alpha: 0.8 } } }) });
+      if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.message || `Analysis failed (${response.status})`); }
+      await readWorkflowStream(response, (event: WorkflowEvent) => {
+        if (current !== version.current) return;
+        setStage(event.type);
         if (event.type === 'graph') {
-          receivedGraph = true;
-          snapshot = {
-            analysisId: event.analysisId,
-            actual: event.actualGraph,
-            comparable: event.comparableGraph,
-            actualLabel: `Actual ${periodFrom} to ${periodTo}`,
-            comparableLabel: `Comparable ${comparablePeriodFrom} to ${comparablePeriodTo}`,
-            actualStartDate: periodFrom,
-            actualEndDate: periodTo,
-            comparableStartDate: comparablePeriodFrom,
-            comparableEndDate: comparablePeriodTo,
-          };
-          setGraphSnapshot(snapshot);
-          const reconciled = reconcileDualBom(
-            csrToAdjacency(event.actualGraph), csrToAdjacency(event.comparableGraph), threshold,
-          );
-          setResult(reconciled);
-          const first = reconciled.nodes
-            .filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID && (node.costDelta ?? 0) > 0)
-            .sort((left, right) => (right.costDelta ?? 0) - (left.costDelta ?? 0))[0]
-            ?? reconciled.nodes[0];
-          setSelectedNode(first ?? null);
-          setSelectedGraphNodeId(event.actualGraph.nodes.find((node) => node.inventoryId === first?.id)?.id ?? null);
-        } else if (event.type === 'diff') {
-          if (!snapshot || snapshot.analysisId !== event.analysisId) return;
-          receivedDiff = true;
-          setHighlightedNodeIds(new Set(event.paths.flatMap((path) => path.nodeIds)));
-          setHighlightedEdgeIds(new Set(event.paths.flatMap((path) => path.edgeIds)));
-          setReconciliationPaths(event.paths.map((path) => ({
-            nodes: path.positions.map((position) => snapshot!.actual.nodes[position]),
-            edges: path.edgeIndexes.map((edgeIndex, index) => ({
-              edgeIndex,
-              fromPosition: path.positions[index],
-              toPosition: path.positions[index + 1],
-            })),
-            endReason: path.endReason,
-            endingCostDifference: path.endingCostDifference,
-          })));
-        } else if (event.type === 'error' && (!snapshot || snapshot.analysisId === event.analysisId)) {
-          streamError = event.message;
-        }
+          const [actual, comparable] = event.data as PeriodSnapshot[]; setGraphs({ analysisId: event.analysisId!, actual, comparable });
+        } else if (event.type === 'completed') { completed = true; const value = event.data as AnalysisOutcome; setOutcome(value); }
+        else if (event.type === 'error') streamedError = event.message || 'Analysis failed.';
       });
-      if (streamError) throw new Error(streamError);
-      if (!snapshot) throw new Error('Analysis returned no graph.');
-      if (!receivedDiff) throw new Error('Analysis returned no diff result.');
-    } catch (err) {
-      if (version === requestVersion.current && !controller.signal.aborted) {
-        const message = err instanceof Error ? err.message : 'Analysis failed.';
-        if (receivedGraph) setPathError(message);
-        else setAnalysisError(message);
-      }
-    } finally {
-      if (version === requestVersion.current) setIsAnalyzing(false);
-    }
+      if (streamedError) throw new Error(streamedError);
+      if (!completed) throw new Error('Analysis stream ended before a completed result.');
+    } catch (err) { if (current === version.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Analysis failed.'); }
+    finally { if (current === version.current) setIsAnalyzing(false); }
   };
-
-  // Run initial trace on mount to immediately display the workbench
-  useEffect(() => {
-    handleRunAnalysis();
-    return () => {
-      requestVersion.current++;
-      abortRef.current?.abort();
-    };
-  }, []);
-
-  const topOverrunNode = result?.nodes
-    .filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID && (node.costDelta ?? 0) > 0)
-    .sort((left, right) => (right.costDelta ?? 0) - (left.costDelta ?? 0))[0];
-
-  return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 text-slate-800 font-sans overflow-hidden select-none">
-      {/* 1. Header with System ID & Engine Status */}
-      <AnalysisHeader />
-
-      {/* 2. Full-Width Scope Parameters Bar */}
-      <ScopeControlsBar
-        periodFrom={periodFrom}
-        setPeriodFrom={setPeriodFrom}
-        periodTo={periodTo}
-        setPeriodTo={setPeriodTo}
-        threshold={threshold}
-        setThreshold={setThreshold}
-        comparablePeriodFrom={comparablePeriodFrom}
-        setComparablePeriodFrom={setComparablePeriodFrom}
-        comparablePeriodTo={comparablePeriodTo}
-        setComparablePeriodTo={setComparablePeriodTo}
-        leafThreshold={leafThreshold}
-        setLeafThreshold={setLeafThreshold}
-        isAnalyzing={isAnalyzing}
-        onRunAnalysis={handleRunAnalysis}
-      />
-
-      <ReconciliationPathsPanel paths={reconciliationPaths} error={pathError} />
-
-      {/* 3. Top Summary KPI Bar */}
-      <KpiSummaryBar
-        netVariance={result?.netVariance ?? 0}
-        penetratedNodesCount={result?.penetratedNodesCount ?? 0}
-        riskTier={result?.riskTier ?? 'Nominal In-Spec'}
-        topOverrunNodeId={topOverrunNode?.id}
-        onOpenAiDossier={() => {
-          if (topOverrunNode) handleInspectNode(topOverrunNode);
-        }}
-        onInspectTopNode={() => {
-          if (topOverrunNode) handleInspectNode(topOverrunNode);
-        }}
-      />
-
-      {/* 4. Main Split: Left Scrollable Canvas vs Right Fixed Sidebar */}
-      <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden min-h-0">
-        {/* Left Area: Symmetrical Tree Structure + Resizable Material Ledger */}
-        <div
-          ref={leftAreaRef}
-          className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-slate-200/80 ${
-            isDraggingSplitter ? 'select-none cursor-row-resize' : ''
-          }`}
-        >
-          {analysisError && (
-            <div className="m-3 p-2.5 bg-rose-50 border border-rose-200/80 rounded text-xs text-rose-700 shrink-0">
-              Notice: {analysisError}
-            </div>
-          )}
-
-          {result && graphSnapshot && (
-            <>
-              {/* SECTION 1: Dual-BOM True Tree Canvas (Default 70% Vertical Height Space, adjustable) */}
-              <div
-                style={{ height: `${treeHeightPct}%` }}
-                className="min-h-0 overflow-y-auto overflow-x-auto border-b border-slate-200/80 flex flex-col shrink-0"
-              >
-                <DualBomTreeCanvas
-                  actualGraph={graphSnapshot.actual}
-                  comparableGraph={graphSnapshot.comparable}
-                  actualLabel={graphSnapshot.actualLabel}
-                  comparableLabel={graphSnapshot.comparableLabel}
-                  highlightedNodeIds={highlightedNodeIds}
-                  highlightedEdgeIds={highlightedEdgeIds}
-                  selectedNodeId={selectedGraphNodeId}
-                  onSelectNode={handleSelectGraphNode}
-                />
-              </div>
-
-              {/* VERTICAL SPLITTER: Draggable Bar allowing users to pull the bottom table upwards */}
-              <div
-                onMouseDown={handleSplitterMouseDown}
-                onDoubleClick={() => setTreeHeightPct(70)}
-                className={`h-3 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-300 border-y border-slate-200/80 cursor-row-resize flex items-center justify-center transition-colors group relative z-20 select-none shrink-0 ${
-                  isDraggingSplitter ? 'bg-slate-200 border-slate-400' : ''
-                }`}
-                title="Drag up or down to adjust table height (Double-click to reset to 70%)"
-              >
-                <div className="flex items-center gap-1">
-                  <div className="w-10 h-1 rounded-full bg-slate-300 group-hover:bg-slate-500 group-active:bg-slate-600 transition-colors" />
-                </div>
-                {/* Visual indicator / tooltip */}
-                <div
-                  className={`absolute right-4 text-[10px] font-mono font-medium px-2 py-0.5 rounded shadow-sm transition-opacity pointer-events-none ${
-                    isDraggingSplitter
-                      ? 'bg-slate-900 text-white opacity-100'
-                      : 'bg-white text-slate-500 border border-slate-200/80 opacity-0 group-hover:opacity-100'
-                  }`}
-                >
-                  Tree: {Math.round(treeHeightPct)}% / Table: {Math.round(100 - treeHeightPct)}% (Drag to resize)
-                </div>
-              </div>
-
-              {/* SECTION 2: Full-Width Production Material Ledger Workbench (Default 30%, pulled upwards via splitter) */}
-              <div
-                style={{ height: `calc(${100 - treeHeightPct}% - 12px)` }}
-                className="min-h-0 flex flex-col overflow-hidden"
-              >
-                <MaterialLedgerWorkbench
-                  items={result.ledgerItems}
-                  selectedNodeId={selectedNode?.id ?? null}
-                  onInspectNode={handleInspectNode}
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Right Fixed Sidebar (50/50 Split) */}
-        <AuditSidebar
-          selectedNode={selectedNode}
-          actualStartDate={graphSnapshot?.actualStartDate ?? periodFrom}
-          actualEndDate={graphSnapshot?.actualEndDate ?? periodTo}
-          comparableStartDate={graphSnapshot?.comparableStartDate ?? comparablePeriodFrom}
-          comparableEndDate={graphSnapshot?.comparableEndDate ?? comparablePeriodTo}
-        />
-      </div>
+  const actual = graphs ? canvasGraph(graphs.actual, graphs.analysisId, 'actual') : null;
+  const comparable = graphs ? canvasGraph(graphs.comparable, graphs.analysisId, 'comparable') : null;
+  const nodes = new Set(outcome?.branches.flatMap(branch => branch.positions.map(i => `${outcome.analysisId}:actual:node:${i}`)) || []);
+  const edges = new Set(outcome?.branches.flatMap(branch => branch.edges.map(edge => `${outcome.analysisId}:actual:edge:${edge.edgeIndex}`)) || []);
+  const chooseNode = (node: StreamNode) => {
+    setSelected(node);
+    if (outcome && node.inventoryId !== '__COGS__' && (outcome.actual.records.issues.some(issue => issue.productId === node.inventoryId) || outcome.comparable.records.issues.some(issue => issue.productId === node.inventoryId))) setProduct(node.inventoryId);
+  };
+  const exportAnalysis = () => {
+    if (!outcome) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(outcome, null, 2)], { type: 'application/json' }));
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `analysis-${outcome.analysisId}.json`; anchor.click(); URL.revokeObjectURL(url);
+  };
+  return <main className="flex-1 flex flex-col h-full min-h-0 bg-[#F6F8FA] text-slate-800 overflow-hidden">
+    <AnalysisHeader onExport={exportAnalysis} status={outcome?.execution.map(report => `${report.stage}: ${report.actual || report.status}`).join(' · ') || 'Awaiting analysis'} />
+    <ScopeControlsBar {...{ periodFrom, setPeriodFrom, periodTo, setPeriodTo, threshold, setThreshold, comparablePeriodFrom, setComparablePeriodFrom, comparablePeriodTo, setComparablePeriodTo, leafThreshold, setLeafThreshold, isAnalyzing }} onRunAnalysis={handleRunAnalysis} />
+    <details className="bg-white border-b px-4 py-2 text-xs shrink-0"><summary className="cursor-pointer font-medium">Data interpretation {(!complete || !repeated) && '· confirmation required for complete comparisons'}</summary><div className="flex flex-wrap gap-4 py-3">
+      <label>Currency <input aria-label="Warehouse currency" className="border rounded px-2 py-1 ml-2 w-20" placeholder="NZD" value={currency} onChange={e => setCurrency(e.target.value)} /></label>
+      <label>Cost scope <input aria-label="Warehouse cost scope" className="border rounded px-2 py-1 ml-2" placeholder="Recorded valuation" value={costScope} onChange={e => setCostScope(e.target.value)} /></label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={complete} onChange={e => setComplete(e.target.checked)} /> Imported records cover both periods and complete selected batches</label>
+      <label className="flex items-center gap-2"><input type="checkbox" checked={repeated} onChange={e => setRepeated(e.target.checked)} /> Output values repeated on issue rows are batch totals</label>
+    </div></details>
+    <div className="px-4 py-2 bg-white border-b text-xs flex flex-wrap gap-4 items-center" role="status" aria-live="polite">
+      {isAnalyzing && <LoaderCircle size={16} className="animate-spin text-[#466987]" />}<span>{isAnalyzing ? STAGES[stage] || stage : outcome?.status || (error ? 'Analysis failed' : 'Select periods and run analysis.')}</span>
+      {outcome && <span>{outcome.branches.length} paths · {outcome.planned} pairs planned · {outcome.executed} executed · {outcome.rejected} rejected · {outcome.failed} failed</span>}
+      {outcome && (scope !== resultScope || options !== submittedOptions) && <span className="text-[#866322]">Inputs changed. Displayed results retain the previous run scope; run again to update.</span>}
     </div>
-  );
+    {error && <p className="px-4 py-2 text-xs text-[#A64242] bg-red-50" role="alert">{error}</p>}
+    {outcome && <details className="px-4 py-2 text-xs bg-white border-b shrink-0"><summary className="cursor-pointer">Reconciliation paths and diagnostics ({outcome.branches.length})</summary><ul className="max-h-32 overflow-auto space-y-2 py-2">{outcome.branches.map((branch,i) => <li key={i}>{branch.positions.map(position => outcome.actual.graph.nodes[position]?.inventoryId).join(' → ')} · {branch.endReason} · recorded difference {recorded(branch.endingCostDifference)}</li>)}{outcome.diagnostics.map((diagnostic,i) => <li key={`d${i}`}>{diagnostic}</li>)}</ul></details>}
+    <div className="flex-1 min-h-0 overflow-auto lg:overflow-hidden flex flex-col lg:flex-row">
+      <div className="flex-1 min-w-0 min-h-[400px] lg:min-h-0 flex flex-col result-enter">{actual && comparable ? <DualBomTreeCanvas actualGraph={actual} comparableGraph={comparable} actualLabel={`Actual ${graphs!.actual.start} to ${graphs!.actual.end}`} comparableLabel={`Comparable ${graphs!.comparable.start} to ${graphs!.comparable.end}`} highlightedNodeIds={nodes} highlightedEdgeIds={edges} selectedNodeId={selected?.id || null} onSelectNode={chooseNode} /> : <div className="flex-1 flex flex-col justify-center items-center p-8 text-sm text-slate-600"><p>{isAnalyzing ? 'Preparing recorded period graphs…' : 'Your analysis starts with the imported warehouse records.'}</p><p className="text-xs mt-2">Select two periods, confirm the data interpretation and run analysis.</p></div>}</div>
+      <AuditSidebar outcome={outcome} inventoryId={selected?.inventoryId || null} />
+    </div>
+    <ProductComparisonModal outcome={outcome} productId={product} alpha={0.8} onClose={closeProduct} />
+  </main>;
 };

@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /** One material code, with all descriptive fields optional. */
 @Entity
 @Table(name = "material_master")
@@ -35,6 +37,18 @@ public class MaterialMaster {
 
     @Column(name = "status", length = 20)
     private String status;
+
+    /** Declared supplier for this material's embedding context; absent for internal production. */
+    @Column(name = "supplier", length = 200)
+    private String supplier;
+
+    /** Explicit embedding source kind: PURCHASED or INTERNAL; missing values remain unknown. */
+    @Column(name = "source_kind", length = 16)
+    private String sourceKind;
+
+    /** Declared embedding unit cost per baseUom, interpreted with the run's currency and valuation basis. */
+    @Column(name = "unit_cost", precision = 18, scale = 6)
+    private BigDecimal unitCost;
 
     public static MaterialMaster of(String materialNo) {
         if (materialNo == null || materialNo.isBlank()) {

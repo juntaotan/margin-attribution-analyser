@@ -135,6 +135,12 @@ const GraphPane: React.FC<GraphPaneProps> = ({
               const node = nodesById.get(item.id);
               if (node) onSelectNode(node);
             }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              const element = (event.target as HTMLElement).closest('[data-id]');
+              const node = nodesById.get(element?.getAttribute('data-id') || '');
+              if (node) { event.preventDefault(); onSelectNode(node); }
+            }}
           >
             <Background gap={20} color="#cbd5e1" size={1} />
             <Controls showInteractive={false} />

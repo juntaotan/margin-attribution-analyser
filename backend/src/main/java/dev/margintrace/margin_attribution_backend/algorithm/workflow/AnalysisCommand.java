@@ -14,5 +14,17 @@ public record AnalysisCommand(LocalDate actualStartDate, LocalDate actualEndDate
                               BigDecimal leafThreshold, BigDecimal stopThreshold, ExecutionPolicy execution,
                               EmbeddingSettings embedding, Comparison comparison) {
     public record Comparison(ProductionTree.Evidence evidence, boolean completeGraphCoverage, Map<String, MaterialContext.Evidence> contextEvidence,
-                             Map<String, EmbeddingOutcome.Supplied> embeddings, FgwEngine.Config config) {}
+                             Map<String, EmbeddingOutcome.Supplied> embeddings, FgwEngine.Config config,
+                             WarehouseOptions warehouse) {
+        public Comparison(ProductionTree.Evidence evidence, boolean completeGraphCoverage,
+                          Map<String, MaterialContext.Evidence> contextEvidence,
+                          Map<String, EmbeddingOutcome.Supplied> embeddings, FgwEngine.Config config) {
+            this(evidence, completeGraphCoverage, contextEvidence, embeddings, config, null);
+        }
+    }
+
+    /** Explicit caller declarations for adapting the existing warehouse to direct-consumption analysis. */
+    public record WarehouseOptions(String namespace, String currency, String costScope,
+                                   ProductionTree.OutputInterpretation quantityInterpretation,
+                                   ProductionTree.OutputInterpretation costInterpretation) {}
 }

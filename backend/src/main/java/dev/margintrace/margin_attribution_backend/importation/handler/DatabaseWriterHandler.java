@@ -142,7 +142,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
         int columnIndex = 0;
         for (Map.Entry<String, DataType> entry : columnTypes.entrySet()) {
             String columnType = switch (entry.getValue()) {
-                case NUMERIC -> "NUMERIC(20,5)";
+                case NUMERIC -> "NUMERIC(20,6)";
                 case BOOLEAN -> "BOOLEAN";
                 case DATE -> "DATE";
                 case TIME -> "TIME";

@@ -75,9 +75,9 @@ export const App: React.FC = () => {
       {/* Main Layout (Sidebar + Content Area) */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* 2. Left Sidebar Navigation */}
-        <aside className="w-56 bg-[#fafbfc] border-r border-slate-200/80 flex flex-col justify-between shrink-0">
+        <aside className="w-14 sm:w-56 bg-[#fafbfc] border-r border-slate-200/80 flex flex-col justify-between shrink-0">
           <div className="p-3">
-            <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="hidden sm:block px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Navigation
             </div>
             <nav className="space-y-1">
@@ -92,7 +92,7 @@ export const App: React.FC = () => {
                 }`}
               >
                 <Network className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Dual-BOM Analysis</span>
+                <span className="hidden sm:inline">Dual-BOM Analysis</span>
               </button>
 
               {/* Report Studio -> /report-studio */}
@@ -106,7 +106,7 @@ export const App: React.FC = () => {
                 }`}
               >
                 <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>Report Studio</span>
+                <span className="hidden sm:inline">Report Studio</span>
               </button>
 
               {/* Data Preparation -> /data-prep */}
@@ -120,7 +120,7 @@ export const App: React.FC = () => {
                 }`}
               >
                 <Database className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Data Preparation</span>
+                <span className="hidden sm:inline">Data Preparation</span>
               </button>
 
               {/* Settings & Parameters */}

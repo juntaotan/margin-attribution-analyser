@@ -30,7 +30,7 @@ public class ReportQueryService {
     private static final Map<String, Set<String>> TABLE_COLUMNS = Map.of(
             "material_master", Set.of(
                     "material_no", "material_name", "material_type", "base_uom",
-                    "specification", "material_group", "status"),
+                    "specification", "material_group", "status", "supplier", "source_kind", "unit_cost"),
             "inventory_usage", Set.of(
                     "id", "date", "movement_no", "product_no", "product_num",
                     "product_total_cost", "order_no", "material_no", "material_num",

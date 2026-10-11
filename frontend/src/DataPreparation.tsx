@@ -258,7 +258,7 @@ export const DataPreparation: React.FC = () => {
               <p className="text-[11px] text-slate-400 font-mono">
                 {importPath
                   ? (fileReady ? 'File loaded' : 'Reading file…')
-                  : 'Import Path: [No path selected] (Supports CSV, XLSX, ERP export files)'}
+                  : 'Import Path: [No path selected] (Supports XLSX and XLS exports)'}
               </p>
             </div>
           </div>
@@ -266,10 +266,10 @@ export const DataPreparation: React.FC = () => {
         <div className="space-y-2" aria-live="polite">
           <div className="flex justify-between text-xs text-slate-500">
             <span>{fileError || (isUploading ? 'Uploading to data lake…' : activeJob ? activeJob.stage.replace(/_/g, ' ') : fileReady ? 'File loaded' : importPath ? 'Reading file…' : 'Waiting for file')}</span>
-            <span className="font-mono">{fileProgress}%</span>
+            <span className="font-mono">{activeJob && !isUploading ? activeJob.status === 'WRITE_SUCCESS' ? `${activeJob.importedRows} rows imported` : 'Stage progress' : `${fileProgress}%`}</span>
           </div>
-          <div role="progressbar" aria-label="File loading progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={fileProgress} className="h-2 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${fileProgress}%` }} />
+          <div role="progressbar" aria-label={activeJob && !isUploading ? 'Import stages' : 'File transfer progress'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={activeJob && !isUploading && activeJob.status !== 'WRITE_SUCCESS' ? undefined : fileProgress} aria-valuetext={activeJob?.stage} className="h-2 overflow-hidden rounded-full bg-slate-200">
+            <div className={`h-full rounded-full bg-[#466987] transition-[width] duration-150 ${activeJob && !isTerminalImportStatus(activeJob.status) ? 'import-stage-motion' : ''}`} style={{ width: `${fileProgress}%` }} />
           </div>
         </div>
         </div>

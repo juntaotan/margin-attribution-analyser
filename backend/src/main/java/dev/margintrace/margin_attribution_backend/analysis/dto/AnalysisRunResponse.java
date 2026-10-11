@@ -17,4 +17,6 @@ public final class AnalysisRunResponse {
             })).build();
     private AnalysisRunResponse() {}
     public static JsonNode json(AnalysisOutcome outcome) { return MAPPER.valueToTree(outcome); }
+    /** Encode progress using the same decimal contract as the completed response. */
+    public static byte[] bytes(Object value) { return MAPPER.writeValueAsBytes(value); }
 }

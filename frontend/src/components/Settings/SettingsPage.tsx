@@ -1,8 +1,10 @@
 import React, { FormEvent, useEffect, useState } from 'react';
+import { AccelerationSettings } from './AccelerationSettings';
 import {
   AlertCircle,
   CheckCircle2,
   Cpu,
+  ChevronDown,
   Download,
   FileCheck,
   FileText,
@@ -67,6 +69,9 @@ const readError = async (response: Response) => {
 };
 
 export const SettingsPage: React.FC = () => {
+  const [aiExpanded, setAiExpanded] = useState(false);
+  const [templateExpanded, setTemplateExpanded] = useState(false);
+  const [savedAi, setSavedAi] = useState('');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('8081');
   const [model, setModel] = useState('local');
@@ -179,6 +184,7 @@ export const SettingsPage: React.FC = () => {
         setModel(settings.model);
         setActiveUrl(settings.baseUrl);
         setPersisted(settings.persisted);
+        setSavedAi(`${settings.host}|${settings.port}|${settings.model}`);
       })
       .catch((error: Error) => {
         if (active) setNotice({ success: false, message: error.message });
@@ -237,6 +243,7 @@ export const SettingsPage: React.FC = () => {
       setModel(settings.model);
       setActiveUrl(settings.baseUrl);
       setPersisted(settings.persisted);
+        setSavedAi(`${settings.host}|${settings.port}|${settings.model}`);
       setNotice({
         success: true,
         message: 'Settings saved. New AI requests now use this connection.',
@@ -267,7 +274,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
-          <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
+          <button type="button" aria-expanded={aiExpanded} aria-controls="ai-settings-content" onClick={() => setAiExpanded(!aiExpanded)} className="flex w-full text-left items-start gap-3 border-b border-slate-100 px-5 py-4">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-100 text-slate-700">
               <Cpu className="h-4 w-4 text-sky-600" />
             </div>
@@ -280,8 +287,10 @@ export const SettingsPage: React.FC = () => {
                 Testing does not save the entered values.
               </p>
             </div>
-          </div>
-
+            <ChevronDown aria-hidden="true" size={16} className={`ml-auto shrink-0 transition-transform ${aiExpanded ? "rotate-180" : ""}`} />
+          </button>
+          <p className="px-5 py-2 text-xs text-slate-600">{loading ? 'Loading saved connection…' : activeUrl || 'Connection unavailable'} · {model}{savedAi && savedAi !== `${host}|${port}|${model}` ? ' · Unsaved' : ''}{notice ? ` · ${notice.message}` : ''}</p>
+          <div id="ai-settings-content" hidden={!aiExpanded} className="settings-content">
           <form onSubmit={saveSettings} className="space-y-5 p-5">
             <div className="grid gap-4 sm:grid-cols-[1fr_150px]">
               <label className="space-y-1.5">
@@ -382,11 +391,12 @@ export const SettingsPage: React.FC = () => {
               </button>
             </div>
           </form>
+          </div>
         </section>
 
         {/* Management Report Template Section */}
         <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
-          <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4">
+          <button type="button" aria-expanded={templateExpanded} aria-controls="template-settings-content" onClick={() => setTemplateExpanded(!templateExpanded)} className="flex w-full text-left items-start gap-3 border-b border-slate-100 px-5 py-4">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-100 text-slate-700">
               <FileText className="h-4 w-4 text-sky-600" />
             </div>
@@ -407,9 +417,10 @@ export const SettingsPage: React.FC = () => {
                 Configure the Word (.docx) master template used to instantiate management commentary reports. The template is persisted in the MinIO Data Lake. Each report generation clones this master and injects analysis data.
               </p>
             </div>
-          </div>
-
-          <div className="p-5 space-y-4">
+            <ChevronDown aria-hidden="true" size={16} className={`ml-auto shrink-0 transition-transform ${templateExpanded ? "rotate-180" : ""}`} />
+          </button>
+          <p className="px-5 py-2 text-xs text-slate-600">{templateLoading ? 'Loading template…' : templateMeta?.filename || 'Template unavailable'}{templateNotice ? ` · ${templateNotice.message}` : ''}</p>
+          <div id="template-settings-content" hidden={!templateExpanded} className="settings-content p-5 space-y-4">
             {/* Template Info Card */}
             <div className="rounded-lg border border-slate-200/80 bg-[#f8fafc] p-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -525,6 +536,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </section>
 
+        <AccelerationSettings />
         <p className="px-1 text-[11px] leading-5 text-slate-400">
           In Docker, 127.0.0.1 points to the backend container itself.
           Use host.docker.internal or a network-reachable llama.cpp host.

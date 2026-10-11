@@ -117,7 +117,10 @@ public class SchemaMappingPresetCatalog {
                 text("baseUom", "base_uom", "base uom", "base unit", "base unit of measure", "基本计量单位", "基本单位"),
                 text("specification", "specification", "model", "specification model", "规格", "规格型号"),
                 text("materialGroup", "material_group", "material group", "item group", "物料组", "物料分组"),
-                text("status", "status", "material status", "状态", "物料状态"));
+                text("status", "status", "material status", "状态", "物料状态"),
+                text("supplier", "supplier", "supplier name", "vendor", "vendor name"),
+                text("sourceKind", "source_kind", "source kind", "sourcing type"),
+                numeric("unitCost", "unit_cost", "unit cost", "unit price"));
     }
 
     private static DataSetDefinition inventoryMovement() {

@@ -149,3 +149,8 @@ benchmark/results/
 !/docs/tasks/2026-10-12-005606-complete-analysis-library.md
 !/docs/tasks/2026-10-12-005606-complete-analysis-library/
 !/docs/tasks/2026-10-12-005606-complete-analysis-library/**
+
+# Computer manufacturing generator instructions and task record.
+!/scripts/README-computer-data.md
+!/docs/tasks/2026-10-12-084206-computer-manufacturing-generator.md
+!/docs/tasks/2026-10-12-085001-computer-data-import-validation.md

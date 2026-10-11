@@ -20,6 +20,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DatabaseWriterHandlerTests {
 
     @Test
+    void preservesSixDecimalPlacesBeforeWarehouseMapping() throws Exception {
+        byte[] bytes;
+        try (var workbook = new XSSFWorkbook(); var output = new ByteArrayOutputStream()) {
+            var sheet = workbook.createSheet("Precision");
+            sheet.createRow(0).createCell(0).setCellValue("Amount");
+            sheet.createRow(1).createCell(0).setCellValue(1.234567);
+            workbook.write(output);
+            bytes = output.toByteArray();
+        }
+        var dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:mem:raw-six-decimal-test;MODE=PostgreSQL");
+        var jdbc = new JdbcTemplate(dataSource);
+        // Keep the isolated in-memory database alive for the handler's connections.
+        try (var connection = dataSource.getConnection()) {
+            jdbc.execute("CREATE SCHEMA raw");
+            var handler = new DatabaseWriterHandler(jdbc, key -> new ByteArrayInputStream(bytes));
+            var context = new ImportContext();
+            context.setObjectKey("precision-test.xlsx");
+            context.setTableStructure(new TableStructure("Precision", 0, 0, 0, 1, 1));
+            context.setColumnTypes(Map.of("Amount", DataType.NUMERIC));
+            handler.doImport(context);
+            assertThat(jdbc.queryForObject("SELECT amount_0 FROM " + context.getRawTableName(), BigDecimal.class))
+                    .isEqualByComparingTo("1.234567");
+        }
+    }
+
+    @Test
     void createsTableWithoutTrailingComma() {
         DatabaseWriterHandler handler = new DatabaseWriterHandler(null, null);
         Map<String, DataType> columnTypes = new LinkedHashMap<>();
@@ -35,7 +62,7 @@ class DatabaseWriterHandlerTests {
                 .isEqualTo("CREATE TABLE sales_data("
                         + "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
                         + "order_no_0 TEXT," + System.lineSeparator()
-                        + "total_price_0 NUMERIC(20,5))")
+                        + "total_price_0 NUMERIC(20,6))")
                 .doesNotContain("," + System.lineSeparator() + ")");
     }
 
@@ -86,6 +113,6 @@ class DatabaseWriterHandlerTests {
                 "SELECT order_no_0, total_price_0 FROM " + context.getRawTableName() + " WHERE id = 1"
         ))
                 .containsEntry("ORDER_NO_0", "SO-001")
-                .containsEntry("TOTAL_PRICE_0", new BigDecimal("12.50000"));
+                .containsEntry("TOTAL_PRICE_0", new BigDecimal("12.500000"));
     }
 }

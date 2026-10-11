@@ -28,23 +28,34 @@ public class AnalysisRunService {
     /** Load once, release the transaction, then publish events from the same Java workflow run. */
     public AnalysisOutcome run(AnalysisCommand command, AnalysisProgressListener progress) {
         if (command == null) throw new IllegalArgumentException("Missing analysis command");
-        var records = sources.load(command.comparison() != null && command.comparison().completeGraphCoverage());
-        return new AnalysisWorkflow(new RecordPeriodGraphProvider(records), new RecordProductionDataProvider(), (tree, node) -> null,
-                settings -> {
-                    if (settings.mode() == dev.margintrace.margin_attribution_backend.algorithm.embedding.EmbeddingSettings.Mode.SUPPLIED_ONLY)
-                        return new dev.margintrace.margin_attribution_backend.infrastructure.embedding.SuppliedEmbeddingProvider(
-                                settings.modelId() == null ? model : settings.modelId(), settings.modelRevision() == null ? revision : settings.modelRevision());
-                    if (python.isBlank() || (settings.modelId() == null && model.isBlank()) ||
-                            (settings.modelRevision() == null && revision.isBlank())) throw new IllegalStateException("Configure margin.embedding.python/model/revision and install the pinned model");
-                    Path script = null;
-                    try (var resource = getClass().getResourceAsStream("/embedding/sentence_encoder.py")) {
-                        script = Files.createTempFile("margin-encoder-", ".py"); Files.copy(resource, script, StandardCopyOption.REPLACE_EXISTING);
-                        var provider = new PythonEmbeddingProvider(python, script.toString(), model, revision, settings, timeout);
-                        Files.delete(script); return provider;
-                    } catch (IOException | RuntimeException error) {
-                        if (script != null) try { Files.deleteIfExists(script); } catch (IOException cleanup) { error.addSuppressed(cleanup); }
-                        throw new IllegalStateException("Embedding runtime unavailable: " + error.getMessage(), error);
-                    }
-                }, preparation, new BackendRegistry()).run(command, progress);
+        var snapshot = sources.loadSnapshot(command.comparison() != null && command.comparison().completeGraphCoverage());
+        var options = command.comparison() == null ? null : command.comparison().warehouse();
+        var prepared = WarehouseAnalysisAdapter.prepare(command, snapshot);
+        return new AnalysisWorkflow(new RecordPeriodGraphProvider(snapshot.records()), new RecordProductionDataProvider(),
+                (tree, node) -> WarehouseAnalysisAdapter.context(snapshot, options, tree, node),
+                this::createProvider, preparation, new BackendRegistry()).run(prepared, progress);
     }
+
+    /** Create an owned inference provider; overridable for isolated transport tests only. */
+    protected dev.margintrace.margin_attribution_backend.algorithm.port.EmbeddingProvider createProvider(
+            dev.margintrace.margin_attribution_backend.algorithm.embedding.EmbeddingSettings settings) {
+        if (settings.mode() == dev.margintrace.margin_attribution_backend.algorithm.embedding.EmbeddingSettings.Mode.SUPPLIED_ONLY)
+            return new dev.margintrace.margin_attribution_backend.infrastructure.embedding.SuppliedEmbeddingProvider(
+                    settings.modelId() == null ? model : settings.modelId(), settings.modelRevision() == null ? revision : settings.modelRevision());
+        if (python.isBlank() || (settings.modelId() == null && model.isBlank()) ||
+                (settings.modelRevision() == null && revision.isBlank()))
+            throw new IllegalStateException("Configure margin.embedding.python/model/revision and install the pinned model");
+        Path script = null;
+        try (var resource = getClass().getResourceAsStream("/embedding/sentence_encoder.py")) {
+            script = Files.createTempFile("margin-encoder-", ".py");
+            Files.copy(resource, script, StandardCopyOption.REPLACE_EXISTING);
+            return new PythonEmbeddingProvider(python, script.toString(), model, revision, settings, timeout);
+        } catch (IOException error) {
+            throw new IllegalStateException("Embedding runtime unavailable", error);
+        } finally {
+            if (script != null) try { Files.deleteIfExists(script); }
+            catch (IOException ignored) { /* The provider owns its already-started process. */ }
+        }
+    }
+
 }

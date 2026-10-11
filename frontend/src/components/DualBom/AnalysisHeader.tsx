@@ -3,12 +3,14 @@ import { Printer, Share2, FileSpreadsheet } from 'lucide-react';
 
 interface AnalysisHeaderProps {
   onExport?: () => void;
+  status?: string;
   onPrint?: () => void;
   onShare?: () => void;
 }
 
 export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
   onExport,
+  status,
   onPrint,
   onShare,
 }) => {
@@ -21,15 +23,15 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
               Δ
             </span>
             <h1 className="text-sm font-bold tracking-tight text-slate-900">
-              Dual-BOM MAS Variance Analysis System
+              MarginTrace Analysis
             </h1>
           </div>
           <span className="text-[11px] font-mono bg-[#f8fafc] px-1.5 py-0.5 rounded text-slate-600 border border-slate-200/80">
-            v4.8.2-PROD
+            Prototype
           </span>
           <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50/60 text-emerald-800 border border-emerald-200/70 rounded text-[11px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Engine: Connected / In-Spec</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+            <span>{status || 'Awaiting analysis'}</span>
           </div>
         </div>
         <p className="text-[11px] text-slate-500">
@@ -49,6 +51,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
         <button
           type="button"
           onClick={onShare}
+          disabled={!onShare}
           className="h-7 px-2 bg-white hover:bg-slate-50 border border-slate-200/80 rounded text-slate-600 hover:text-slate-900 flex items-center transition-colors shadow-2xs"
           title="Share Workbench"
         >
@@ -57,6 +60,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
         <button
           type="button"
           onClick={onExport}
+          disabled={!onExport}
           className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded font-medium text-xs flex items-center gap-1.5 shadow-xs transition-colors border border-slate-800"
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />

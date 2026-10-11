@@ -60,7 +60,7 @@ public class ImportJob {
     private long rejectedRows;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "completed_at")
