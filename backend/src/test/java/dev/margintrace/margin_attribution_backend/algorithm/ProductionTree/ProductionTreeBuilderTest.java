@@ -27,7 +27,9 @@ class ProductionTreeBuilderTest {
         return new Evidence("fixture", scope, ids, issues, outputs, "NZD", "material");
     }
     ProductionTree build(String id, List<Issue> rows, Evidence e) {
-        return builder.build(id, e, p -> rows.stream().filter(r -> r.productionId().equals(p)).toList(), List.of());
+        return builder.build(id, e, ProductionTreeFixtures.graphForRows(e.namespace(), rows, e),
+                p -> rows.stream().filter(r -> r.productionId().equals(p)).toList(),
+                m -> rows.stream().filter(r -> Objects.equals(r.materialId(), m)).toList(), List.of());
     }
     static List<Issue> fixed() { return List.of(
             row("L1", "P1", "A", "B", "100", "200", "20"),
@@ -95,7 +97,7 @@ class ProductionTreeBuilderTest {
         ProductionTree tree = build("P", rows, receiptEvidence);
         assertEquals("20", tree.outputQuantity()); assertEquals("4", tree.recordedOutputCost());
         assertEquals("0", tree.outputCostDifference());
-        assertTrue(build("P1", fixed(), evidence(fixed(), Scope.DIRECT_CONSUMPTION, Map.of())).statuses().isEmpty());
+        assertTrue(build("P1", fixed(), evidence(fixed(), Scope.DIRECT_CONSUMPTION, Map.of())).statuses().contains("MISSING_LABOR_ALLOCATION"));
         assertTrue(build("P2", fixed(), evidence(fixed(), Scope.DIRECT_CONSUMPTION, Map.of())).statuses().contains("OUTPUT_COST_DISCREPANCY"));
         Issue conflictingCost = new Issue("c", rows.get(0).date(), "doc-c", "P", "A", "C", d("1"), d("2"), d("20"), d("301"));
         List<Issue> costs = List.of(rows.get(0), conflictingCost);
@@ -227,6 +229,7 @@ class ProductionTreeBuilderTest {
         double[] identity = {1./3,0,0,0,1./3,0,0,0,1./3};
         var compared = adapter.compare(response, new ProductionComparisonRequest(null,"P1","P2",vectors,null,List.of(identity)));
         assertTrue(compared.converged());
+        assertTrue(compared.statuses().contains("INCOMPLETE_TOTAL_COST_EVIDENCE"));
         assertEquals(0, compared.result().starts.get(0).costs.fgw(),1e-8);
         assertEquals(l.instanceId(), compared.result().left.instanceId());
         assertEquals("120", compared.result().left.nodes().get(1).quantity());

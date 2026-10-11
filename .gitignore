@@ -134,3 +134,13 @@ benchmark/results/
 
 !/docs/tasks/2026-10-11-183228-java-production-tree-fgw.md
 !/docs/validation/production-tree-fgw-2026-10-11/validation.md
+!/docs/tasks/2026-10-11-230326-two-pass-production-tree-spec.md
+
+# Two-pass production-tree implementation record and readable validation evidence.
+!/docs/tasks/2026-10-11-230907-two-pass-production-tree-implementation.md
+!/docs/validation/
+/docs/validation/*
+!/docs/validation/production-tree-two-pass-2026-10-11/
+/docs/validation/production-tree-two-pass-2026-10-11/*
+!/docs/validation/production-tree-two-pass-2026-10-11/validation.md
+!/docs/validation/production-tree-two-pass-2026-10-11/fgw-validation.md

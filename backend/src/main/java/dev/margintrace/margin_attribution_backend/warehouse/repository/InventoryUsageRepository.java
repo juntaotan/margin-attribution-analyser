@@ -13,6 +13,9 @@ public interface InventoryUsageRepository extends JpaRepository<InventoryUsage, 
     List<InventoryUsage> findAllByProductNo(String productNo);
 
     List<InventoryUsage> findAllByOrderNo(String orderNo);
+
+    /** All available candidate receivers of a material; selection dates do not restrict lineage evidence. */
+    List<InventoryUsage> findAllByMaterialNo(String materialNo);
     List<InventoryUsage> findAllByDateBetweenOrderByDateAsc(
         LocalDate startDate, LocalDate endDate);
 

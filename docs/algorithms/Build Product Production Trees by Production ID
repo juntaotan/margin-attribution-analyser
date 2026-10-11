@@ -2,22 +2,29 @@
 
 # Objective
 
-Build one actual consumption tree for each `productionId`, using material issue records explicitly associated with that production instance. Compare different production IDs of the **same product** through [standard balanced FGW](<algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
+Build one actual production tree for each selected `productionId` through two required passes:
+
+1. Traverse the preceding stage's product-to-material CSR from the selected product down to the terminal nodes. Record the permitted nodes, relationships and complete paths.
+2. Query all available actual issue records for those terminal materials, then traverse material-to-product relationships upwards. Reject receivers outside the recorded scope and use issue documents to establish the quantities and material amounts attributable to each accepted receiving production instance. Record total cost on nodes and labour/manufacturing overhead on edges.
+
+A final CSR generated after grouping issues does not satisfy the required first pass. Compare different production IDs of the **same product** through [standard balanced FGW](<FGW Implementation - Implement Standard FGW in Five Steps.md>).
+
+This revision supersedes the earlier issue-grouping-first construction in this document. The [existing Java API description](<Production Tree Java API.md>) describes that earlier implementation; it is an implementation baseline, not evidence that the two-pass workflow is already available. Where the older [workflow overview](<Restore Product Production Trees and Compare with FGW.md>) differs on tree construction, follow this revised specification for this task. Preserve its production identity and unchanged FGW requirements.
 
 A production instance represents the recorded batch or order, including all its issue lines and output records. It does not represent a physical single unit or an issue document. Never merge separate production IDs solely because they produce the same product.
 
-This specification replaces FIFO restoration. Its existing filename is retained to preserve references. Do not perform FIFO allocation, infer batches from timestamps, estimate missing consumption with Bayesian methods, or substitute BOM quantities for actual consumption.
+This specification replaces FIFO restoration. The current filename is retained. Do not perform FIFO allocation, infer batches from timestamps, estimate missing consumption with Bayesian methods, or substitute BOM quantities for actual consumption.
 
 # Verified Database State and Identifier Mapping
 
-The PostgreSQL database connected to the running backend was inspected through read-only queries on 11 October 2026. `public.inventory_usage` contains:
+An earlier task recorded a read-only inspection of the PostgreSQL database connected to the running backend on 11 October 2026. That historical inspection has not been repeated for this specification revision. `public.inventory_usage` contains:
 
 ```text
 id, date, movement_no, product_no, product_num, product_total_cost,
 order_no, material_no, material_num, material_total_cost
 ```
 
-There is **no dedicated `productionId` or `production_id` column** in that table. The [initial migration](../backend/src/main/resources/db/migration/V1__create_core_tables.sql), [Java entity](../backend/src/main/java/dev/margintrace/margin_attribution_backend/warehouse/model/InventoryUsage.java) and [import mapping](../backend/src/main/java/dev/margintrace/margin_attribution_backend/importation/mapping/SchemaMappingPresetCatalog.java) agree with that schema.
+There is **no dedicated `productionId` or `production_id` column** in that table. The [initial migration](../../backend/src/main/resources/db/migration/V1__create_core_tables.sql), [Java entity](../../backend/src/main/java/dev/margintrace/margin_attribution_backend/warehouse/model/InventoryUsage.java) and [import mapping](../../backend/src/main/java/dev/margintrace/margin_attribution_backend/importation/mapping/SchemaMappingPresetCatalog.java) agree with that schema.
 
 The user has confirmed that the existing `order_no` / `orderNo` **is the receiving production ID** for this workflow. Use that confirmed mapping directly; a dedicated new column or a further identifier-inference step is unnecessary:
 
@@ -36,93 +43,116 @@ Requirements:
 - Require one receiving product per production ID. Return `AMBIGUOUS_PRODUCTION_PRODUCT` for multiple products, rather than silently splitting one ID into accepted trees or inventing a co-product allocation.
 - Retain an explicit source-system/organisation namespace if IDs are not globally unique. Do not manufacture batch identity from dates or material numbers.
 - Return `MISSING_PRODUCTION_ID` for absent or blank IDs. Do not use a movement number or generated row ID as a replacement production ID. Other source datasets must map their production identifiers explicitly into `order_no`.
-- The inspected table has no explicit upstream source-production link for consumed semi-finished products. A receiving production ID alone does not identify the supplying batch.
+- The inspected table has no explicit upstream source-production link for consumed semi-finished products. A receiving production ID alone does not identify the supplying batch. CSR reachability identifies candidate topology, not source-batch ownership.
+- The listed issue columns contain no explicit labour or manufacturing-overhead allocation fields. Inspect existing cost sources and their contracts before implementation. If no suitable source exists, accept explicit, referenced cost-allocation evidence through the Java API. Do not infer processing costs from `product_total_cost - material_total_cost`, invent a distribution rule, or introduce a migration merely to rename an identifier.
 - This specification describes subsequent implementation, not already implemented functionality. This documentation task does not authorise database writes or schema changes.
 
-# Step 1: Select Production Instances
+# Step 1: Select Instances and Record the Top-Down Scope
 
-**Inputs:** Explicit product/production-ID selection or existing abnormal-branch results, actual manufacturing relationships, verified ID mapping, reporting scope and source namespace.
+**Inputs:** The preceding stage's selected product codes and actual manufacturing CSR, explicit production-ID selection or existing abnormal-branch results, reporting scope, verified identifier mapping and source namespace.
 
-**Outputs:** Selected production IDs/products, selection evidence and identity statuses.
-
-**Computation:**
-
-(1) Select requested production IDs directly. For abnormal-branch selection, reuse the existing detection and follow actual relationships to affected products, then select their production instances. Product-level detection identifies candidates; it does not establish that every instance caused the anomaly.
-
-(2) Deduplicate by scoped production ID, preserving all contributing abnormal-branch references. Apply the confirmed `order_no` mapping and verify nonblank identity and the single-product requirement.
-
-(3) Use the reporting period to select instances, then retrieve **all available records for each selected production ID**, including related records outside that period. Do not truncate an instance at a reporting boundary. Report incomplete imported coverage explicitly.
-
-# Step 2: Collect Recorded Consumption and Output
-
-**Inputs:** Selected IDs, their issue/output records, units and any explicit manufacturing-step/source-production links.
-
-**Outputs:** Traceable issue sets, output metadata, validation statuses and unresolved source relationships.
+**Outputs:** Selected production IDs, roots, permitted node set `S`, permitted edge/path set `E`, terminal nodes, source graph identity and scope/identity statuses.
 
 **Computation:**
 
-(1) Query by the confirmed receiving production ID. Check product consistency; do not collect all issues for a product number across unrelated production IDs.
+(1) Select requested production IDs directly, or reuse existing abnormal-branch discovery to identify candidate products and their production instances. Deduplicate by scoped production ID and preserve every contributing selection reference. Product-level detection identifies candidates, not proven causes. Require one receiving product per ID.
 
-(2) Preserve each issue row using `(id, date)` and its document reference. Include each row once. Equal materials, amounts or document numbers alone do not establish duplicates.
+(2) Use dates to select instances. Subsequent retrieval must include all available records of each selected instance, even outside that selection period. Preserve the preceding graph's coverage and period separately; a graph missing relevant cross-period relationships must be reported as incomplete, not used to silently discard valid records.
 
-(3) Read actual `material_num` and `material_total_cost`. Preserve missing values as missing, never as zero. Do not obtain replacement consumption or prices from BOM or receipt layers.
+(3) Accept or obtain the actual relationship CSR produced by the preceding stage. Validate root identity, node/index alignment, offsets, successors, edge identities, direction, coverage and cycles. The request or service contract must make the graph and selected roots explicit. Do not replace it with a CSR generated after the actual tree has already been built.
 
-(4) Resolve output quantity from authoritative output records where available. With the current denormalised table, require a verified instance-total interpretation of `product_num`: repeated totals on material lines count **once**, not once per line. Conflicting totals return `OUTPUT_QUANTITY_CONFLICT`; absent totals return `MISSING_OUTPUT_QUANTITY`. Equal values alone do not prove their semantics. If quantities represent separate output receipts, require explicit receipt identities before summing; equal quantities must not deduplicate independent receipts.
+(4) Starting at each selected product root, traverse product-to-material adjacency down to every terminal. Record **every** visited node, permitted relationship and root-to-terminal path, including direct material branches alongside deeper branches. Keep separate scope evidence for each selected root. Detect cycles and incomplete relationships rather than claiming a complete terminal set.
 
-(5) Apply the same interpretation checks to `product_total_cost`. Retain output cost separately from summed issue amounts, since their cost scopes may differ.
+(5) Name directions by their meaning, not by the word "reverse" alone. Existing Java `CsrGraph` edges normally point from material to product. For that convention, derive transposed adjacency for the top-down pass and use material-to-product adjacency for the upward pass. If the supplied CSR already points from product to material, invert those roles. Both passes must use consistent node/edge identities.
 
-(6) Identify missing materials, units and relationship references. Reconcile returns/reversals only through explicit transaction links and a declared netting rule. The current material-value constraint does not support assuming negative return rows are present.
+(6) Retain stable scoped identities. A product-level CSR node can identify a candidate material/product code but cannot establish a production-instance identity. Keep `(namespace, receiving productionId, material/product, manufacturing position, explicit supplying productionId)` where applicable when matching records and creating occurrences. Never merge different batches merely because their product codes match.
 
-# Step 3: Build One Tree per Production ID
+**Scope rule:** A receiver must be in `S`, its connecting relationship must be in `E`, and its occurrence must belong to the permitted root/production path. Node membership alone is insufficient when a shared material or cross-connection can reach several products.
 
-**Inputs:** Instance identity/output metadata, actual issues and any explicit step/upstream links.
+An actual issue that cannot be matched to supplied actual topology must remain visible as excluded/unmatched evidence, with an incomplete-scope status. Do not add it as an accepted branch outside `S`/`E`, silently discard it, or claim a complete tree. A BOM-only graph is not a verified actual scope; unreliable BOM must not silently remove unexpected actual materials.
 
-**Outputs:** One rooted actual consumption tree per production ID, stable occurrences/edges, issue references and completeness statuses.
+# Step 2: Collect Terminal Issues and Trace Actual Receivers Upwards
 
-**Computation:**
+**Inputs:** Per-root `S`, `E` and terminals, actual issue/output records, units, explicit positions and supplying-production relationships.
 
-(1) Create the root from `(source namespace, productionId, productId)`. All issue documents for that instance feed the same root.
-
-(2) Attach issued materials to their recorded receiving steps. With the current table alone, build the root and its directly recorded material children; do not invent intermediate steps.
-
-(3) Aggregate issue lines into one material occurrence only when receiving step, material, unit and explicit source-production relationship agree. Keep every contributing issue-line ID. Issue-document splitting must not itself create manufacturing nodes.
-
-(4) Retain separate occurrences for different manufacturing positions or explicitly different upstream production instances, even when material numbers match.
-
-(5) Expand intermediates only through explicit links identifying their supplying production instances. Load those instances' actual inputs. If an explicit consumed share of homogeneous upstream output is available, project that share of its input quantities/amounts with decimal arithmetic and retain source references. Never infer shares or choose source instances by SKU, chronology or FIFO.
-
-(6) Keep an intermediate without a source link as a boundary node, with `UNRESOLVED_SOURCE_PRODUCTION`. Do not label it a fully restored raw-material leaf. Report missing material classification as well. Such a direct consumption tree remains inspectable but is not a complete multilevel lineage tree.
-
-(7) Detect cycles, self-consumption requiring an unrecorded step, and incomplete relationships. Do not silently truncate and claim completeness.
-
-Requirements:
-
-- Store edges in material-to-product direction; display may run from root to leaves.
-- Actual records define branches. BOM may supply reference information, but cannot add unsupported actual branches, remove unexpected materials or supply theoretical consumption.
-- Project shared upstream relationships into occurrence-specific branches with explicit source shares. Do not copy the whole upstream batch into every receiving tree.
-- Keep issue-document and inventory bookkeeping out of manufacturing topology.
-
-# Step 4: Attach Quantities, Amounts and Evidence
-
-**Inputs:** Trees, original issue/output records, explicit upstream shares, declared units/currency/cost scope.
-
-**Outputs:** Recorded quantities/amounts at occurrences and edges, separate output metadata, source evidence and reconciliation statuses.
+**Outputs:** Accepted and excluded issue references with reasons, receiving-instance quantities/material amounts, source-link statuses and an actual occurrence graph restricted to the recorded scope.
 
 **Computation:**
 
-(1) Sum original issue quantities and amounts within valid occurrence groups using decimal arithmetic. Preserve missing-input flags even when a known subtotal can be calculated.
+(1) Start at the recorded terminals and query all available material issue records for each terminal material in the declared source dataset. Preserve records for other receivers as candidate/exclusion evidence; querying all terminal consumption does not authorise attributing it all to the selected root. Retrieve complete selected/upstream production instances without truncating their records at the selection period.
 
-(2) Root output quantity comes from output records, not the sum of child quantities. Keep different units separate.
+(2) For each candidate upward receiver, first test membership in `S`. Reject out-of-scope receivers and record that exclusion. For receivers in `S`, also verify the permitted edge/path in `E`, receiving production identity and any required source-production link. If the scope's batch relationship is unresolved, retain boundary/unresolved evidence instead of guessing.
 
-(3) Calculate `recordedMaterialAmount` from non-overlapping receiving-instance issue contributions. Keep `recordedOutputCost` separate. Where scopes are comparable, report discrepancies; never force equality or invent labour/overhead costs.
+(3) Query or join the actual issue documents for the accepted material-to-receiver relationship. Match at least source namespace, `material_no`, `product_no` and receiving `order_no`, plus explicit manufacturing position and supplying production where available. Read actual `material_num` and `material_total_cost` to determine how much reached that specific receiver. Neither CSR membership nor the child's entire cost establishes the amount received.
 
-(4) For an explicitly expanded intermediate, preserve upstream input amounts separately from its downstream issue valuation. Do not add upstream amounts to the intermediate issue amount again in receiving-tree financial totals. Distinguish valuation differences from missing lineage.
+(4) Preserve each original issue with identity `(id, date)` and document `movement_no`. Equal materials, amounts, dates or document numbers are not duplicates. Include a row once in a receiving contribution. Deduplicate overlapping terminal queries and shared traversal visits by source identity without merging genuinely different manufacturing occurrences.
 
-(5) Optionally report consumption per output unit when output quantity is resolved and positive. This derived metric does not change FGW weights, embeddings or objective.
+(5) Aggregate only compatible receiving-position/material/unit/source-production contributions and retain every source reference. Use decimal arithmetic. Preserve missing quantities/amounts as missing, with known subtotals labelled as partial. Do not mix units or currencies.
+
+(6) Repeat the same receiver-membership, edge/path and issue-document checks when moving from an intermediate to its next receiver. A shared intermediate's whole batch cost must not be copied into each parent. Product-level relationships are insufficient to choose which supplying batch contributed; require explicit upstream links and, when projecting a homogeneous source batch's breakdown, explicit consumed shares. Do not infer shares or batches from SKU, chronology or FIFO.
+
+(7) Process accepted dependencies in bottom-up order. Accumulate all contributing children before finalising a receiver, including shallower terminals and converging/shared branches. Use occurrence-specific projections where the candidate structure is a DAG. Detect cycles, self-consumption, conflicting relationship evidence and missing links; do not silently truncate.
+
+(8) If a terminal is an unresolved intermediate rather than a verified raw material, report its boundary status. Direct recorded consumption can remain inspectable, but this is not complete multilevel restoration. Reconcile reversals only with explicit transaction links and a declared netting rule; absent rules remain unresolved.
+
+# Step 3: Record Node Total Costs and Edge Processing Costs
+
+**Inputs:** Accepted actual receiving contributions, bottom-up dependencies, original issue values, referenced processing-cost allocations, output metadata and declared cost scopes.
+
+**Outputs:** One rooted occurrence tree per selected production ID, node total costs, edge labour/overhead, separate material-flow evidence, partial-cost and reconciliation statuses.
+
+**Cost model:**
+
+- A node records its **total cost at its declared occurrence scope**, together with known subtotal, completeness, currency and source references. Keep a source production instance's full output cost distinct from the portion represented by a receiving occurrence.
+- A material-to-product edge records **labour cost and manufacturing overhead** attributable to that production relationship. Keep the two components separately inspectable; their sum is processing cost. Material issue quantity/amount remains separately named flow evidence on or alongside the edge. Never relabel the existing material `amount` as labour/overhead.
+- Every processing allocation requires source identity, receiving production/position, currency, cost scope and a declared allocation basis or explicit relationship allocation. Production-level labour/overhead totals must not be repeated on every incoming edge. Without a justified allocation, retain them as unallocated evidence and report incompleteness.
+- For a purchased raw-material occurrence, its recorded attributable issue valuation supplies the cost basis; no manufacturing step is invented. An unresolved produced terminal's recorded valuation can be shown, but its internal cost breakdown remains unresolved.
+
+**Computation:**
+
+(1) For each accepted edge `(u, v)`, calculate the material quantity and amount received by `v` from the corresponding actual issue records. Attach the separately sourced labour and overhead allocations. Preserve original and projected source values and their references.
+
+(2) After all incoming contributions to a receiver are accounted for, calculate:
+
+```text
+nodeTotalCost(v) = sum(accepted material issue amounts received by v)
+                 + sum(labour allocations attributed to v's accepted incoming edges)
+                 + sum(overhead allocations attributed to v's accepted incoming edges)
+```
+
+This is a complete total only when all required material and processing inputs and allocations are complete and have compatible scopes. Missing labour/overhead is **not zero**; zero must be supported explicitly. Retain a known subtotal separately and mark the total incomplete/unresolved when required inputs are absent.
+
+(3) Upward propagation carries the attributable contribution identified by the **next receiver's issue records**, not the child's whole total. An explicitly linked source-share projection supplies a traceable cost breakdown for that flow. Keep any difference between that projected source cost and the recorded downstream issue valuation as a valuation reconciliation item. Do not add both as independent material contributions or silently substitute one for the other.
+
+(4) Count each original issue/processing contribution once at its receiving scope. An ancestor's issue valuation may already incorporate its child's material and processing costs: do not add the child's total or descendants' amounts again. Node totals are summaries, not additional contributions to be summed across the tree.
+
+(5) Preserve stable occurrences for distinct positions/source instances and all issue documents feeding the same root. Shared upstream breakdowns are projected into their explicitly attributable occurrences; underlying shared evidence must not inflate receiving totals. Do not copy the whole source batch or duplicate a processing allocation across paths.
+
+(6) Keep manufacturing topology separate from document splitting and inventory bookkeeping. Store accepted edges in material-to-product direction; display may run root-to-leaves. Retain the top-down scope and upward exclusions alongside the final CSR for audit.
+
+# Step 4: Resolve Outputs and Reconcile Evidence
+
+**Inputs:** Accepted node/edge costs, original output records, output interpretation evidence, units/currency and completeness metadata.
+
+**Outputs:** Output quantities/costs, separate material and processing subtotals, calculated node totals, valuation differences and traceable statuses.
+
+**Computation:**
+
+(1) Root output quantity comes from authoritative output records, not the sum of child quantities. With the current denormalised issue table, repeated `product_num` totals count once only after their instance-total interpretation is confirmed. Conflicts return `OUTPUT_QUANTITY_CONFLICT`; absence returns `MISSING_OUTPUT_QUANTITY`. Equal values do not establish semantics. Independent output receipts require explicit receipt identities and must not be deduplicated merely because their values agree.
+
+(2) Apply the same interpretation checks to `product_total_cost`. Keep this recorded output valuation separate from the calculated node total and from `recordedMaterialAmount`. Do not derive missing labour/overhead by subtracting these values.
+
+(3) Preserve `recordedMaterialAmount` as the non-overlapping root receiving-issue subtotal for compatibility. Expose root/node total cost and labour/overhead as separate fields. Retain existing material issue amount fields with their documented meaning when extending request/response contracts.
+
+(4) Compare recorded output valuation with the calculated total only when both are complete and their cost scopes agree. Label material-only comparisons separately. Preserve existing discrepancy fields' documented semantics or explicitly version/update their callers and tests; do not silently change a material-only difference into a total-cost difference.
+
+(5) Retain every accepted/excluded/unmatched source issue and processing allocation with reasons, graph identity, root scope, production relationships and known/unknown values. Report incomplete graph/import coverage, units, classification, source batches, processing allocations and returns explicitly. Never force a reconciliation to zero or invent balancing costs.
+
+(6) Optionally report attributable consumption per resolved positive output unit. This derived metric does not change FGW weights, embeddings or objective.
 
 # Step 5: Prepare Production-ID Trees for FGW
 
-**Inputs:** Trees with source/completeness metadata, caller-supplied 384-dimensional content embeddings and comparable IDs of the same product.
+**Inputs:** Trees from the required two-pass construction, scope/cost/source completeness metadata, caller-supplied 384-dimensional content embeddings and comparable IDs of the same product.
 
 **Outputs:** Aligned CSR/embeddings, production-ID/source mappings, explicit eligibility and pairwise FGW inputs.
 
@@ -130,11 +160,11 @@ Requirements:
 
 (1) Assign stable occurrence indices and build CSR, retaining root identity and all actual branches. Align each node's own 384-dimensional embedding and preserve its version. Report missing vectors; embedding generation is outside this stage.
 
-(2) Map the scoped production ID to native `Graph.instanceId` and receiving product to `Graph.productId`. Populate `NodeSource.productionOrderId` with the confirmed receiving production ID for that occurrence's step. Preserve issue IDs and decimal quantity/amount text. Retain upstream-source and edge metadata alongside native input when its current fields cannot represent them.
+(2) Map the scoped production ID to native `Graph.instanceId` and receiving product to `Graph.productId`. Populate `NodeSource.productionOrderId` with the confirmed receiving production ID for that occurrence's step. Preserve issue IDs and decimal quantity/amount text. Retain top-down scope, exclusions, upstream-source relationships, node cost completeness and edge processing allocations alongside native input when its current fields cannot represent them.
 
 (3) Leave legacy `NodeSource.fifoAllocationIds` empty. Preserve that field for interface compatibility; do not fabricate FIFO references or repurpose it for production IDs.
 
-(4) Compare different IDs of the same product at the same declared topology scope. Complete direct-consumption trees may be compared at direct-consumption scope. Accept full-lineage comparisons only when required upstream links are resolved. Report incompatible/incomplete inputs instead of claiming a complete comparison. Keep provenance/completeness evidence alongside native results; the solver does not validate these semantics.
+(4) Compare different IDs of the same product at the same declared topology scope. Complete direct-consumption trees may be compared at direct-consumption scope. Accept full-lineage comparisons only when required upstream links are resolved. Report incompatible/incomplete inputs instead of claiming a complete comparison. Keep topology, lineage and cost completeness separate and preserve all of them alongside native results. A topology comparison may remain explicitly qualified when processing costs are missing; it must not claim complete total-cost restoration. The solver does not validate these semantics.
 
 (5) Preserve standard balanced FGW mathematics. Quantity and amount remain explanation metadata, not distance terms. Quantity or price changes alone are not detected by the current FGW objective.
 
@@ -154,10 +184,18 @@ Implement and run automated tests, reporting PASS/FAIL for:
 10. Missing inputs/units, output-cost discrepancies, returns, cycles and incomplete relationships.
 11. CSR, embeddings, root, production IDs and source references aligned after reindexing; legacy FIFO references empty.
 12. Same-product eligibility and matching topology scope. Keep the fixed FGW numerical fixture and expected values unchanged.
+13. Required first-pass input and traversal: direction/transposition, multiple roots, all intermediate/terminal nodes, direct and deep branches, malformed CSR, cycles and missing/cross-period scope coverage. Prove that the final output CSR does not replace the input pass.
+14. Terminal material shared by an allowed and an excluded receiver: preserve all candidate issue identities but attribute only the allowed receiver's actual quantity/amount. Excluded records must have explicit reasons.
+15. Both endpoint codes present in `S` but their connection absent from `E`, or their receiving/source batch incompatible with the selected root: reject that contribution despite node membership.
+16. Bottom-up dependency ordering, converging/shared paths, repeated queries and repeated document references without loss or duplicate attribution. Each selected production ID retains its own scope and evidence.
+17. Node total cost versus separately named material flow and edge labour/overhead; explicit zero costs versus missing inputs, partial totals, allocation provenance and incompatible currency/cost scope.
+18. Production-level processing costs split across several incoming edges by explicit allocation evidence and counted once. Missing/unsupported allocation remains unallocated; duplicating the full total on each edge must fail validation.
+19. Intermediate cost already embedded in downstream issue valuation: no repeated addition of the intermediate's total or its ancestors' processing costs. Report source-projection/downstream valuation differences separately.
+20. Execute the two-pass cost fixture below and the unchanged original grouping fixture through the application construction path using explicitly passed in-memory inputs. Follow the final chapter for database-free test execution, output-contract assertions and the detailed acceptance cases.
 
 # Fixed Production-ID Grouping Test
 
-Treat `order_no` as a confirmed receiving production ID and `product_num` as a repeated instance total. Issue quantities use one unit per material; amounts share one currency and material-cost scope.
+Treat `order_no` as a confirmed receiving production ID and `product_num` as a repeated instance total. Issue quantities use one unit per material; amounts share one currency and material-cost scope. Supply an actual top-down graph with root A and material children B/C for each selected instance. Preserve the following original material grouping expectations; they do not supply or prove processing costs. Assert complete root total costs only with explicit zero processing allocations, otherwise assert missing processing evidence and partial totals.
 
 ```text
 productionId  productId  issueLineId  movementNo  outputQty  material  issueQty  amount
@@ -191,12 +229,95 @@ No receipt-layer allocation or FIFO calculation occurs.
 
 The root material amount is a labelled child subtotal, not another financial contribution. Do not sum it with the children again. Changing input order or splitting L1 into two explicitly distinct source rows with the same combined quantity/amount must preserve material topology and totals, while retaining the new references. FGW must preserve P1/P2 instance IDs. Identical topology and material embeddings give identical mathematical FGW inputs despite different quantity/amount metadata.
 
+# Fixed Two-Pass Cost and Exclusion Test
+
+Use a verified actual scope for root `(fixture, P_A, A)`:
+
+```text
+Top-down adjacency: A -> S -> R
+S = {A, S, R}
+Allowed upward relationships: R -> S, S -> A
+Terminal set: {R}
+Explicit source link: A's S occurrence consumes 0.2 of homogeneous P_S output.
+Source production P_S produces S; receiving production P_A produces A.
+```
+
+Use one declared currency and compatible valuation scopes. Issue identities and output quantities are explicit:
+
+```text
+issueLineId  material  receiverProduct  receiverProduction  quantity  materialAmount
+L_RS         R         S                P_S                 10        100
+L_RB         R         B                P_B                 99        990
+L_SA         S         A                P_A                  2         30
+L_SC         S         C                P_C                  8         96
+
+P_S output quantity: 10; recorded output cost: 120
+P_A output quantity:  2; recorded output cost:  40
+
+Full-source edge allocations, each with a distinct processing source reference:
+R -> S at P_S: labour 12, overhead 8
+S -> A at P_A: labour  4, overhead 6
+```
+
+Expected results:
+
+- The terminal query retains `L_RS` and `L_RB` as candidate evidence. Reject `L_RB` because B is outside `S`. At the next level, reject `L_SC` because C is outside `S` and P_C is not P_A.
+- Full source P_S cost is `100 + 12 + 8 = 120`. Preserve it as source-instance evidence, not a full receiving-occurrence contribution.
+- The S occurrence within P_A represents only the explicit 0.2 source share. Its underlying R quantity is 2 and R material valuation is 20; its projected edge labour is 2.4 and overhead is 1.6. Its projected source-cost breakdown is `20 + 2.4 + 1.6 = 24`.
+- The actual S quantity received by P_A is 2 and its recorded issue valuation is 30, from `L_SA`. Preserve that receiving valuation separately from the projected source total 24; their valuation difference is 6.
+- The root material subtotal is 30. Its incoming edge labour is 4 and overhead is 6. Root calculated total cost is `30 + 4 + 6 = 40`. Neither 120 nor 24 nor the projected R amount 20 is added again to this total. Recorded root output cost reconciles to 40.
+- The two excluded issue amounts 990 and 96 contribute zero to P_A's totals while remaining traceable as exclusions. Original source issue/allocation values remain available separately from projected amounts.
+- If the labour or overhead allocation for S -> A is absent, the root total is incomplete rather than assumed to be 40. Removing an allocation does not change the known material amount 30. An explicit zero allocation is distinguishable from an absent allocation.
+- Independently permuting graph/node/issue order preserves accepted identities, topology and amounts after consistent reindexing. Repeated visits to L_RS must not multiply its contribution.
+
+Also test a graph where both endpoint codes are permitted but a candidate cross-edge is absent from `E`, and a second production ID of A receiving S. Neither node membership nor equal product codes may cause those records to enter P_A.
+
 # Deliverables for Subsequent Implementation
 
-- Verified production-ID mapping and instance selection.
-- One actual consumption tree per ID, with source evidence and completeness statuses.
-- Recorded quantity/amount aggregation and explicit upstream lineage where available.
+- Verified production-ID mapping, instance selection and explicit preceding-stage CSR integration.
+- Per-root top-down node/edge/path/terminal scope and bottom-up accepted/excluded receiving evidence; one actual occurrence tree per production ID.
+- Exact attributable issue quantities/material amounts, node total/partial costs, separately sourced edge labour/overhead, allocation provenance and valuation reconciliation; explicit lineage where available.
 - FGW adapter preserving production IDs, source mappings and unchanged mathematics.
-- Automated grouping/tree/evidence tests and a PASS/FAIL report.
+- Updated Java service, tree builder, DTOs, affected callers/API documentation and automated two-pass/grouping/cost/evidence tests with a requirement-by-requirement PASS/FAIL report.
+- Record any unavailable schema, source-batch or cost-allocation evidence precisely. Do not claim full restoration solely because grouping, a build or the FGW solver succeeds.
 
-Follow [the agent workflow](<algorithms/Production Anomaly Analysis — Agent Workflow.md>) for separately scoped FGW implementation and numerical validation. Rewriting this document does not require executing those implementation stages.
+The [workflow overview](<Restore Product Production Trees and Compare with FGW.md>), [FGW implementation specification](<FGW Implementation - Implement Standard FGW in Five Steps.md>) and [fixed numerical fixture](<FGW Implementation - Test Case.md>) cover separately scoped FGW work. This tree update preserves its mathematics and fixtures; it does not authorise GPU implementation or optimisation. Rewriting this document does not execute subsequent code stages or validate their behaviour.
+
+
+# Required Tests with Passed Inputs and No Database Reads
+
+This chapter records the user's confirmed test approach and is authoritative for the new two-pass acceptance tests: **supply all test data explicitly as inputs; do not read it from a database**. This changes the validation approach, not the production requirement to retrieve actual issue evidence through the application's data-access boundary.
+
+## Test Execution Contract
+
+- Supply selected roots/production IDs, source namespace, actual CSR and direction/coverage metadata, issue rows, output records/interpretations, units/currency, source-production links/shares and processing allocations as fixture parameters.
+- If the existing entry point uses loaders or providers, pass deterministic in-memory implementations backed by the supplied fixture. Terminal-material lookups and full-instance lookups must resolve from these inputs. Candidate lookups must include other receivers so that exclusion is exercised, rather than returning only pre-filtered accepted rows.
+- Exercise the actual scope traversal, upward attribution, cost aggregation and response construction used by the application. Do not implement a separate test-only algorithm or validate only an isolated arithmetic helper. Where orchestration requires dependencies, inject the in-memory input boundary without changing production source semantics.
+- No database connection, JPA query, H2 fixture, Testcontainers, Flyway execution or live warehouse access is required for these new tests. A test must fail if its construction path attempts database access. Existing database-oriented tests may remain, but they do not replace or impose a database dependency on these acceptance cases.
+- Validate returned node/edge values, accepted/excluded/unmatched records, original and projected source references, identity/scope and completeness statuses. Test response mapping and exact decimal serialisation through passed inputs; an HTTP server or database-backed endpoint test is not required.
+- Use `BigDecimal` or the existing exact-decimal representation. Preserve fixed expectations and report each case as PASS/FAIL. Run the prescribed Java tests under Java 21 using the project's documented environment; this documentation change itself does not execute the proposed tests.
+
+## Acceptance Cases
+
+| ID | Passed inputs | Required assertions |
+| --- | --- | --- |
+| T01 — Complete multilevel attribution | Pass the complete fixed two-pass fixture above: `A -> S -> R`, P_A/P_S identities, source share 0.2, all four issue rows and both processing allocations. | Record scope nodes A/S/R, edges A->S/S->R and terminal R. Exclude L_RB and L_SC with reasons; retain their original references. Full source cost is 120; the S occurrence's projected source cost is 24, with R quantity 2, material amount 20, labour 2.4 and overhead 1.6. Downstream S issue quantity is 2 and valuation is 30; valuation difference is 6. Root material amount is 30, labour 4, overhead 6 and total 40. Do not add 120, 24, 20, 990 or 96 again. |
+| T02 — Invalid connection within the node set | Supply two nodes both reachable from the root, but omit the candidate connection between them from the permitted edge/path set. Include an issue row for that connection. | Reject that contribution despite both endpoint codes being in the node set; preserve its source reference and explicit exclusion reason. No amount or processing cost for the rejected connection enters the root. |
+| T03 — Same product, different production IDs | Add S issues to A/P_A2 as well as A/P_A; select P_A alone and then both IDs. Provide explicit compatible source links for accepted instances. | P_A2 records never enter P_A. Selecting both IDs yields separate trees/scopes and evidence, even though the product code is A. Preserve all selection references and the confirmed receiving-ID mapping. |
+| T04 — Direct and deep branches | Extend T01 with direct purchased material T->A, issue amount 5 and explicitly zero labour/overhead on that edge. | Top-down traversal discovers both R and T as terminals and retains both paths. Complete both branches before finalising A. Root total is 45; reversing branch processing order does not change it. |
+| T05 — Shared terminal and converging branches | Pass `A -> S1 -> R` and `A -> S2 -> R`, with distinct production/position identities and explicit source links/shares. Let S1->A and S2->A issue amounts be 40 and 60; declare complete zero processing allocations. | Preserve separate R occurrences and branch references where their receiving positions differ. Root material amount and total are 100. Reaching shared source evidence along two paths does not multiply a contribution or merge distinct occurrences. |
+| T06 — Duplicate retrieval and genuine row splitting | Return the same `(id,date)` through repeated in-memory lookups/visits. Separately split one original issue into two distinct row identities with equal combined quantity/amount; include equal document references. Also supply conflicting values for one composite identity. | Repeated retrieval counts once per legitimate receiving contribution. Distinct split rows both survive and preserve their references; totals/topology remain equivalent. Document equality is not deduplication. Conflicting records for one identity produce explicit rejection/conflict evidence. |
+| T07 — Processing allocation across incoming edges | Two root issues have amounts 60 and 40. Supply receiving-production labour total 10 and overhead total 5, with explicit edge allocations 6/4 and 3/2 and allocation/source identities. | Root material amount is 100, labour is 10, overhead is 5 and total is 115. Preserve edge allocations and their provenance. Duplicating the full 10/5 on both edges, reusing one allocation as two independent costs, or supplying inconsistent allocation totals must fail validation or mark the allocation unresolved. Missing allocation basis remains unallocated, not equally divided by assumption. |
+| T08 — Missing processing cost versus explicit zero | For an otherwise complete material issue amount 30, run fixtures with labour/overhead absent, one component absent, and both components explicitly zero with source evidence. | Missing components produce an incomplete/unresolved total and a labelled known subtotal, never assumed zero. Explicit zero allocations yield complete total 30 when all other required evidence is complete. Return material, processing and completeness fields separately. |
+| T09 — Missing supplying batch or share | Remove the supplying production ID or explicit 0.2 share from T01. Retain the downstream S->A issue and root processing allocations. | Keep known downstream material amount 30 and its original evidence. Mark source lineage/projected cost breakdown unresolved; do not choose a batch by code/date/FIFO or infer a share. Distinguish known receiving cost from incomplete multilevel lineage; do not claim complete restoration. |
+| T10 — Cross-period instance and graph coverage | Pass selected P_A records both inside and outside the selection period. In a second variant, supply a graph whose declared coverage omits a relevant relationship. | Selection dates do not truncate the supplied instance's issues. Incomplete graph coverage yields explicit incomplete-scope/unmatched evidence; no silent removal or complete-tree claim. Missing imported coverage declarations remain explicit. |
+| T11 — Decimal precision and incompatible units/currency | Supply compatible contributions 0.1 and 0.2, and separately 9007199254740993.01 and 0.02. Include incompatible-unit/currency/cost-scope variants and a missing amount. | Exact totals are 0.3 and 9007199254740993.03, with exact decimal response text. Do not sum incompatible quantities/currencies or force valuation reconciliation across incompatible scopes. Missing amounts remain missing; partial known subtotals do not imply complete totals. |
+| T12 — CSR direction, malformed structure and reordering | Supply equivalent material-to-product and product-to-material CSR fixtures with explicit direction, then consistently permute nodes, issues and edges. Supply separate malformed-offset, invalid-successor, missing-root, cycle and incomplete-relationship fixtures. | Equivalent valid directions/reindexings produce the same scope, accepted identities and financial results. Validate direction/transposition and graph identity. Invalid structures return explicit errors/statuses rather than partial traversal presented as complete. Prove that omitting the required preceding-stage graph cannot be hidden by generating a final CSR after grouping. |
+| T13 — Existing grouping/output/FGW compatibility | Pass the unchanged P1/P2 fixture, repeated output totals, conflicting totals, distinct equal-valued output receipts, scoped identities and existing FGW inputs. | Preserve P1 material amount 300, P2 amount 110, B quantity 150, C quantity 7 and amount conservation 410. Count repeated verified totals once; keep distinct receipts separate. Missing/ambiguous IDs and conflicting output semantics remain explicit. Existing field meanings, same-product/scope eligibility, CSR/embedding/source alignment and empty FIFO references remain correct. Preserve FGW mathematics and fixed expected results; amount changes alone do not change its objective. |
+| T14 — Incomplete inputs and returns | Pass missing material/unit/classification, unknown intermediate terminals, self-consumption, explicit reversal references and return rows without a declared netting rule. | Preserve original evidence and explicit incompleteness/boundary/return statuses. Do not treat unknown intermediates as restored raw leaves, invent a step, replace missing quantities with zero, or net returns without the required rule. |
+
+## Required Test Deliverables
+
+Implement automated tests for T01-T14, including meaningful parameterised variants where specified. Every fixture must enter through passed inputs or the deterministic in-memory input boundary. Preserve the original fixed grouping and FGW expectations; do not change them to fit the implementation.
+
+Produce a PASS/FAIL checklist identifying each case, actual values/statuses and the test command executed. Clearly distinguish tests written, tests run and unavailable/unverified checks. Include evidence that the new acceptance tests do not access a database. A successful build, pre-filtered input or the existing database-backed suite alone does not establish acceptance of this algorithm.

@@ -3,6 +3,7 @@ package dev.margintrace.margin_attribution_backend.analysis.service;
 import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionTree;
 import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionTreeBuilder;
 import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionTreeFgwAdapter;
+import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionScopeTraversal;
 import dev.margintrace.margin_attribution_backend.analysis.dto.*;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
@@ -29,10 +30,14 @@ public class ProductionTreeService {
      * paths are reused as selection evidence and followed through actual issue
      * relationships to products. Candidate selection is not a causal assertion.
      * Blank/absent IDs and ambiguous products return explicit identity statuses.
+     * The required preceding actual graph bounds each root before terminal queries;
+     * whole-instance and material queries share this read-only transaction. Results
+     * retain rejected candidates and externally referenced processing allocations.
      */
     public ProductionTreeResponse inspect(ProductionTreeRequest request) {
         if (request == null) throw new IllegalArgumentException("Missing tree request");
         ProductionTreeBuilder.validateEvidence(request.evidence());
+        ProductionScopeTraversal.validate(request.actualGraph(), request.evidence().namespace());
         if ((request.startDate() == null) != (request.endDate() == null) ||
                 (request.startDate() != null && request.startDate().isAfter(request.endDate())))
             throw new IllegalArgumentException("Selection requires ordered start and end dates");
@@ -82,9 +87,13 @@ public class ProductionTreeService {
         Map<String, List<ProductionTree.Issue>> cache = new HashMap<>();
         java.util.function.Function<String, List<ProductionTree.Issue>> loader = id -> cache.computeIfAbsent(id,
                 key -> repository.findAllByOrderNo(key).stream().map(ProductionTreeService::issue).toList());
+        Map<String, List<ProductionTree.Issue>> materialCache = new HashMap<>();
+        java.util.function.Function<String, List<ProductionTree.Issue>> materialLoader = material -> materialCache.computeIfAbsent(material,
+                key -> repository.findAllByMaterialNo(key).stream().map(ProductionTreeService::issue).toList());
         List<ProductionTree> trees = new ArrayList<>();
         for (var selection : selected.entrySet()) {
-            try { trees.add(builder.build(selection.getKey(), request.evidence(), loader, List.copyOf(selection.getValue()))); }
+            try { trees.add(builder.build(selection.getKey(), request.evidence(), request.actualGraph(),
+                    loader, materialLoader, List.copyOf(selection.getValue()))); }
             catch (IllegalArgumentException exception) {
                 if (!Set.of("MISSING_PRODUCTION_ID", "AMBIGUOUS_PRODUCTION_PRODUCT").contains(exception.getMessage())) throw exception;
                 identities.add(new ProductionTreeResponse.IdentityStatus(selection.getKey(), Set.of(exception.getMessage())));

@@ -55,7 +55,10 @@ public final class ProductionTreeFgwAdapter {
         FgwEngine.Result result = session.compare(graph(right, vectors),
                 request.initialMatrices() == null ? List.of() : request.initialMatrices());
         FgwEngine.StartResult best = result.starts.get(result.bestStart);
-        return new ProductionComparisonResponse(Set.of(best.status.name()), List.of(),
+        statuses.add(best.status.name());
+        if (left.nodes().stream().anyMatch(n -> !n.costComplete()) || right.nodes().stream().anyMatch(n -> !n.costComplete()))
+            statuses.add("INCOMPLETE_TOTAL_COST_EVIDENCE");
+        return new ProductionComparisonResponse(Set.copyOf(statuses), List.of(),
                 Map.copyOf(versions), response, result, best.converged());
     }
     private static ProductionTree find(ProductionTreeResponse response, String id) {

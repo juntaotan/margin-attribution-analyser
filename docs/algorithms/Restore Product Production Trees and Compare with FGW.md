@@ -2,35 +2,35 @@
 
 # Objective
 
-Implement production-branch analysis by building one actual consumption tree per production ID from its recorded issues, then comparing different production instances of the same product with standard balanced Fused Gromov-Wasserstein (FGW). The user-confirmed mapping is `productionId = inventory_usage.order_no`; do not perform FIFO allocation or infer missing batches.
+Implement production-branch analysis by traversing the preceding actual CSR top-down and attributing recorded issues bottom-up into one occurrence tree per production ID, then comparing different production instances of the same product with standard balanced Fused Gromov-Wasserstein (FGW). The user-confirmed mapping is `productionId = inventory_usage.order_no`; do not perform FIFO allocation or infer missing batches.
 
 Follow the three instruction files below in order. Treat them as execution instructions for the implementation agent.
 
 # File 1: Build Product Production Trees by Production ID
 
-Read [Agent Prompt: Build Product Production Trees by Production ID](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>). The historical filename is retained for link compatibility.
+Read [Build Product Production Trees by Production ID](<Build Product Production Trees by Production ID>). Its revised two-pass construction supersedes the earlier issue-grouping-first workflow.
 
-**Inputs:** Selected production IDs or existing abnormal-branch results, recorded material issues and production output metadata, directed manufacturing relationships, and explicit upstream production links where available.
+**Inputs:** Selected production IDs or existing abnormal-branch results, preceding-stage verified actual CSR with explicit roots and coverage, recorded material issues/output metadata, explicit upstream links/shares, and referenced processing-cost allocations.
 
-**Outputs:** One actual consumption tree per production ID, recorded quantities and amounts, CSR topology, issue/source mappings, declared topology scope and completeness statuses. Full multilevel lineage requires explicit upstream production links.
+**Outputs:** One actual occurrence tree per production ID, per-root permitted nodes/edges/paths/terminals, accepted/excluded issue and allocation evidence, exact material flows, node totals/known subtotals, edge labour/overhead, final CSR and separate topology/lineage/cost completeness. Full multilevel lineage requires explicit upstream production links.
 
 **Computation:**
 
 (1) Select requested production IDs directly, or reuse abnormal-branch discovery to locate affected products and candidate production instances.
 
-(2) Retrieve all available issue records for each selected production ID, including records outside the selection period. Keep different IDs separate even when their product numbers agree.
+(2) Validate the preceding actual CSR and its selected roots, derive product-to-material adjacency from its declared direction, and traverse every direct/deep branch to record scope and terminals. Keep different production IDs and root scopes separate even when product codes agree.
 
-(3) Build its root and actual material occurrences using the recorded receiving relationships. Expand intermediates only through explicit source-production links; retain unresolved intermediates as boundary nodes with incomplete-lineage status.
+(3) Query every terminal material's available issues, retaining candidate/exclusion evidence, then trace material-to-product relationships upwards. Attribute only permitted edges and receiving/source batches. Retrieve whole receiving/upstream instances across selection dates. Expand only explicitly linked source shares; retain unresolved intermediates as boundary nodes.
 
-(4) Aggregate recorded quantities and material amounts with decimal arithmetic and retained issue references. Resolve repeated output totals once, report conflicts and keep output valuation separate. Do not revalue from inventory layers or add cumulative subtree amounts twice.
+(4) Finalise receivers in dependency order using exact decimal material flows plus independently sourced edge labour/overhead. Keep missing inputs and unallocated costs explicit, preserve complete/known node totals and reconcile source projections separately from downstream issue valuations. Resolve confirmed output totals once and preserve the legacy material-only discrepancy alongside the new total-cost comparison. Never add descendant totals again.
 
-(5) Preserve one tree per production ID and prepare the existing FGW interface with aligned embeddings and source mappings. Leave legacy FIFO references empty. Compare only matching topology scopes with explicit eligibility statuses.
+(5) Preserve one tree per production ID and prepare the existing FGW interface with aligned embeddings and source mappings. Leave legacy FIFO references empty. Compare only matching topology scopes with explicit eligibility; qualify missing total-cost evidence independently of the unchanged mathematical objective.
 
 Complete the grouping, tree and evidence checks in File 1 before supplying accepted inputs to File 2. A documentation-only revision does not execute these subsequent implementation stages.
 
 # File 2: Implement Standard FGW in Five Steps
 
-Read [CUDA Agent Prompt: Implement Standard FGW in Five Steps](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
+Read [Implement Standard FGW in Five Steps](<FGW Implementation - Implement Standard FGW in Five Steps.md>).
 
 **Inputs:** Two eligible actual product trees from File 1 at the same topology scope, CSR topology, and caller-supplied 384-dimensional material content embeddings aligned with tree node indices.
 
@@ -48,7 +48,7 @@ Read [CUDA Agent Prompt: Implement Standard FGW in Five Steps](<CUDA Agent Promp
 
 # File 3: Validate the FGW Numerical Implementation
 
-Read [FGW CUDA Implementation — Numerical Test Case](<FGW CUDA Implementation — Numerical Test Case.md>).
+Read [FGW Numerical Test Case](<FGW Implementation - Test Case.md>).
 
 **Inputs:** The fixed graphs, embeddings, configuration, and expected intermediate values in File 3.
 
@@ -80,7 +80,7 @@ The labels "Normal Production" and "Actual Production" in File 3 describe its fi
 
 # Deliverables
 
-1. Production-ID tree implementation and automated grouping/evidence tests.
-2. Actual consumption tree interface and FGW adapter with source/completeness metadata.
+1. Two-pass production-ID tree implementation and automated grouping/scope/exclusion/cost/evidence tests, with a requirement-by-requirement PASS/FAIL report.
+2. Actual occurrence tree interface and FGW adapter with preceding scope, allocation provenance and separate topology/lineage/cost completeness.
 3. Standard FGW implementation and actual-tree comparison output.
 4. Fixed numerical regression and validation report.
