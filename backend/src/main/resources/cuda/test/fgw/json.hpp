@@ -98,6 +98,8 @@ inline void result(std::ostream &out, const fgw::Result &r) {
     number(out, r.totalMilliseconds);
     out << ",\"executionTimes\":{\"cpuOtMilliseconds\":";
     number(out, r.executionTimes.cpuOtMilliseconds);
+    out << ",\"gpuOtMilliseconds\":";
+    number(out, r.executionTimes.gpuOtMilliseconds);
     out << ",\"deviceMilliseconds\":";
     number(out, r.executionTimes.deviceMilliseconds);
     out << ",\"synchronizationMilliseconds\":";
@@ -148,6 +150,12 @@ inline void result(std::ostream &out, const fgw::Result &r) {
             number(out, t.ot.maximumReducedCostViolation);
             out << ",\"otPivots\":" << t.ot.pivots << ",\"otDegeneratePivots\":" << t.ot.degeneratePivots
                 << ",\"otBlandFallback\":" << (t.ot.usedBlandRule ? "true" : "false");
+            out << ",\"otFullPricingScans\":" << t.ot.fullPricingScans
+                << ",\"otCandidatePricingPasses\":" << t.ot.candidatePricingPasses
+                << ",\"otTreeRebuilds\":" << t.ot.treeRebuilds
+                << ",\"otIncrementalTreeUpdates\":" << t.ot.incrementalTreeUpdates
+                << ",\"otTreeNodesVisited\":" << t.ot.treeNodesVisited
+                << ",\"otCycleEdges\":" << t.ot.cycleEdges;
             out << ",\"absoluteCostChange\":";
             number(out, t.absoluteCostChange);
             out << ",\"relativeCostChange\":";

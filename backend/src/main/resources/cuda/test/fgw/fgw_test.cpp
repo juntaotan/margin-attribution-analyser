@@ -10,6 +10,12 @@
 #include <iostream>
 #include <queue>
 #include <stdexcept>
+#include <utility>
+
+#ifdef FGW_CUDA_TEST
+std::pair<fgw::LinearOtResult, fgw::LinearOtResult> fgwGpuOtFixture(const std::vector<double> &cost, int n,
+                                                                    int m, int mode);
+#endif
 
 using namespace fgw;
 namespace {
@@ -270,6 +276,21 @@ int main(int argc, char **argv) {
     }
 #endif
     try {
+        Config c;
+        require(c.incrementalOtTree && c.candidateOtPricing, "combined simplex enabled by default");
+        int simplexMode = (c.incrementalOtTree ? 1 : 0) | (c.candidateOtPricing ? 2 : 0);
+        if (const char *mode = std::getenv("FGW_SIMPLEX_MODE")) {
+            simplexMode = std::stoi(mode);
+            c.incrementalOtTree = (simplexMode & 1) != 0;
+            c.candidateOtPricing = (simplexMode & 2) != 0;
+        }
+        require(simplexMode >= 0 && simplexMode <= 3, "Simplex mode must be 0..3");
+#ifdef FGW_CUDA_TEST
+        if (const char *device = std::getenv("FGW_DEVICE")) {
+            auto status = cudaSetDevice(std::stoi(device));
+            if (status != cudaSuccess) throw std::runtime_error(cudaGetErrorString(status));
+        }
+#endif
         if (argc == 3 && std::string(argv[1]) == "--ot") {
             std::ifstream input(argv[2]);
             int n, m;
@@ -280,11 +301,20 @@ int main(int argc, char **argv) {
                 input >> value;
             require(!input.fail(), "OT fixture costs");
             algorithm::LinearOtWorkspace workspace;
+#ifdef FGW_CUDA_TEST
+            auto gpu = fgwGpuOtFixture(cost, n, m, simplexMode);
+            auto solved = std::move(gpu.first);
+#else
             auto solved = algorithm::exactLinearOt(cost, n, m, 1e-12, &workspace);
+#endif
             auto changedCost = cost;
             for (auto &value : changedCost)
                 value = -value;
+#ifdef FGW_CUDA_TEST
+            auto warm = std::move(gpu.second);
+#else
             auto warm = algorithm::exactLinearOt(changedCost, n, m, 1e-12, &workspace);
+#endif
             std::cout << "{\"P\":";
             testjson::vector(std::cout, solved.correspondence);
             std::cout << ",\"linearCost\":";
@@ -303,10 +333,31 @@ int main(int argc, char **argv) {
             testjson::number(std::cout, warm.dualCost);
             std::cout << ",\"warmDualViolation\":";
             testjson::number(std::cout, warm.maximumReducedCostViolation);
+            std::cout << ",\"simplexMode\":" << simplexMode
+                      << ",\"fullPricingScans\":" << solved.fullPricingScans
+                      << ",\"candidatePricingPasses\":" << solved.candidatePricingPasses
+                      << ",\"treeRebuilds\":" << solved.treeRebuilds
+                      << ",\"incrementalTreeUpdates\":" << solved.incrementalTreeUpdates
+                      << ",\"treeNodesVisited\":" << solved.treeNodesVisited
+                      << ",\"cycleEdges\":" << solved.cycleEdges
+                      << ",\"warmPivots\":" << warm.pivots
+                      << ",\"warmFullPricingScans\":" << warm.fullPricingScans
+                      << ",\"warmCandidatePricingPasses\":" << warm.candidatePricingPasses
+                      << ",\"warmTreeRebuilds\":" << warm.treeRebuilds
+                      << ",\"warmIncrementalTreeUpdates\":" << warm.incrementalTreeUpdates
+                      << ",\"warmTreeNodesVisited\":" << warm.treeNodesVisited;
             std::cout << "}\n";
             return 0;
         }
-        Config c;
+        for (int field = 0; field < 2; ++field) {
+            auto invalid = c;
+            if (field == 0) invalid.gpuSlots = 0;
+            else invalid.dispatcherThreads = 0;
+            bool rejected = false;
+            try { algorithm::validateConfig(invalid); }
+            catch (const std::invalid_argument &) { rejected = true; }
+            require(rejected, "invalid slot/dispatcher configuration rejected");
+        }
         c.captureTrace = true;
         if (const char *device = std::getenv("FGW_DEVICE"))
             c.device = std::stoi(device);
@@ -428,9 +479,10 @@ int main(int argc, char **argv) {
             validateFixed(pooledFixed);
             require(pooledFixed.starts[0].iterations == 1,
                     "uniform start restored after feasible multi-start");
-            require(pooledFixed.executionTimes.cpuOtMilliseconds > 0 &&
+            require((pooledFixed.executionTimes.cpuOtMilliseconds > 0 ||
+                     pooledFixed.executionTimes.gpuOtMilliseconds > 0) &&
                         pooledFixed.executionTimes.deviceMilliseconds > 0,
-                    "session profiling measures CPU and device work");
+                    "session profiling measures CPU or GPU OT and device work");
             auto drained = session.submit(fixed.right);
             session.close();
             validateFixed(drained.get());
@@ -447,6 +499,169 @@ int main(int argc, char **argv) {
                         pooledStats.failed == 1 && pooledStats.maximumQueued <= 1,
                     "session accounting and bounded queue");
         }
+        // Multiple streams per dispatcher must execute the untraced GPU path.
+        auto asyncConfig = c;
+        asyncConfig.captureTrace = false;
+        asyncConfig.maxConcurrentComparisons = 8;
+        asyncConfig.gpuSlots = 8;
+        asyncConfig.dispatcherThreads = 2;
+        asyncConfig.queueCapacity = 1;
+        asyncConfig.profileExecution = true;
+        SessionStatistics asyncStats;
+        Result asyncFixed;
+        auto validateAsync = [&](const Result &actual, const Result &expected) {
+            require(actual.rows == expected.rows && actual.columns == expected.columns &&
+                        actual.starts.size() == expected.starts.size(),
+                    "async result dimensions/starts");
+            for (std::size_t i = 0; i < actual.starts.size(); ++i) {
+                const auto &a = actual.starts[i];
+                const auto &e = expected.starts[i];
+                require(a.status == e.status && a.iterations == e.iterations, "async stopping/updates");
+                matrix(a.correspondence, e.correspondence, "async final correspondence");
+                near(a.costs.material, e.costs.material, "async material cost");
+                near(a.costs.structure, e.costs.structure, "async structure cost");
+                near(a.costs.fgw, e.costs.fgw, "async FGW cost");
+                near(a.finalGap, e.finalGap, "async fresh terminal gap");
+                require(a.trace.size() == e.trace.size(), "async iteration count");
+                for (std::size_t k = 0; k < a.trace.size(); ++k) {
+                    const auto &t = a.trace[k];
+                    near(t.costs.fgw, e.trace[k].costs.fgw, "async iteration objective");
+                    near(t.gap, e.trace[k].gap, "async iteration gap");
+                    near(t.step.gamma, e.trace[k].step.gamma, "async quadratic step");
+                    near(t.ot.linearCost, t.ot.dualCost, "async actual LP certificate");
+                    require(t.marginals.finite && t.marginals.row < 1e-9 && t.marginals.column < 1e-9 &&
+                                t.marginals.total < 1e-9,
+                            "async original marginals at every iteration");
+                    require(t.correspondence.empty() && t.gradient.empty() && t.direction.empty(),
+                            "async intermediate matrices remain on device");
+                }
+            }
+            require(actual.left.nodes[0].amount == expected.left.nodes[0].amount &&
+                        actual.right.instanceId == expected.right.instanceId,
+                    "async source mapping");
+        };
+        // Exercise untouched solver defaults even when an alternate mode is selected above.
+        Config defaultConfig;
+        defaultConfig.device = c.device;
+        auto validateDefault = [&](const Result &actual) {
+            validateAsync(actual, r);
+            std::size_t pivots = 0;
+            for (const auto &state : actual.starts[0].trace) {
+                require(state.ot.treeRebuilds == 1 &&
+                            state.ot.incrementalTreeUpdates == state.ot.pivots &&
+                            state.ot.candidatePricingPasses == state.ot.pivots &&
+                            state.ot.fullPricingScans > 0,
+                        "default device OT uses incremental trees and certified candidate pricing");
+                pivots += state.ot.pivots;
+            }
+            require(pivots > 0, "default optimisation fixture exercises a pivot");
+        };
+        validateDefault(CudaFgwEngine().compare(fixed, defaultConfig));
+        {
+            CudaFgwSession session(fixed.left, defaultConfig);
+            validateDefault(session.submit(fixed.right).get());
+        }
+        {
+            CudaFgwSession session(fixed.left, asyncConfig);
+            std::vector<std::future<Result>> futures;
+            for (int i = 0; i < 96; ++i)
+                futures.push_back(session.submit(fixed.right));
+            for (auto &future : futures)
+                validateAsync(future.get(), r);
+            auto warmed = session.statistics();
+            for (int i = 0; i < 96; ++i)
+                futures[i] = session.submit(fixed.right);
+            for (auto &future : futures)
+                validateAsync(future.get(), r);
+            auto reused = session.statistics();
+            require(warmed.workerDeviceAllocations == reused.workerDeviceAllocations &&
+                        warmed.workerDeviceBytes == reused.workerDeviceBytes,
+                    "async capacity reuse");
+            auto multi = session.submit(fixed.right, unequalStarts.initialMatrices).get();
+            validateAsync(multi, unequalResult);
+            auto changedTarget = graph({0, 1, 2, 3, 3}, {1, 2, 3}, {0, 1, 1.5, 2}, "async-larger-target");
+            auto expectedChanged = run({fixed.left, changedTarget, {}}, c);
+            validateAsync(session.submit(changedTarget).get(), expectedChanged);
+            asyncFixed = session.submit(fixed.right).get();
+            validateAsync(asyncFixed, r);
+            require(asyncFixed.executionTimes.gpuOtMilliseconds > 0 &&
+                        asyncFixed.executionTimes.cpuOtMilliseconds == 0,
+                    "async OT stays on device");
+            auto bad = fixed.right;
+            bad.embeddings.pop_back();
+            bool rejected = false;
+            try {
+                session.submit(bad).get();
+            } catch (const std::invalid_argument &) {
+                rejected = true;
+            }
+            require(rejected, "async failed target isolated");
+            auto overflow = fixed.right;
+            std::fill(overflow.embeddings.begin(), overflow.embeddings.end(), 1e200);
+            auto failed = session.submit(overflow).get();
+            require(failed.starts[0].status == Status::NUMERICAL_FAILURE,
+                    "async nonfinite GPU costs rejected");
+            validateAsync(session.submit(fixed.right).get(), r);
+            auto drained = session.submit(fixed.right);
+            session.close();
+            validateAsync(drained.get(), r);
+            asyncStats = session.statistics();
+            require(asyncStats.workersCreated == 2 && asyncStats.gpuSlotsCreated == 8 &&
+                        asyncStats.maximumInFlight > asyncStats.workersCreated &&
+                        asyncStats.maximumInFlight <= 8 && asyncStats.maximumQueued <= 1 &&
+                        asyncStats.accepted == 199 && asyncStats.completed == 198 && asyncStats.failed == 1,
+                    "async dispatcher/slot accounting and bounded execution");
+        }
+        auto unprofiled = asyncConfig;
+        unprofiled.profileExecution = false;
+        validateAsync(CudaFgwEngine().compare(fixed, unprofiled), r);
+        auto capped = asyncConfig;
+        capped.gpuSlots = 3;
+        capped.dispatcherThreads = 6;
+        {
+            CudaFgwSession session(fixed.left, capped);
+            validateAsync(session.submit(fixed.right).get(), r);
+            auto stats = session.statistics();
+            require(stats.gpuSlotsCreated == 3 && stats.workersCreated == 3,
+                    "dispatcher count is capped by independent slot capacity");
+        }
+        auto asyncLimit = asyncConfig;
+        asyncLimit.maxIterations = 0;
+        validateAsync(CudaFgwEngine().compare(fixed, asyncLimit), limited);
+        asyncLimit.maxIterations = 1;
+        validateAsync(CudaFgwEngine().compare(fixed, asyncLimit), afterOne);
+        auto asyncOrdering = CudaFgwEngine().compareBatch({fixed, ordering, swapped}, asyncConfig);
+        validateAsync(asyncOrdering[0], r);
+        validateAsync(asyncOrdering[1], ordered);
+        validateAsync(asyncOrdering[2], swappedResult);
+        auto referenceConfig = unprofiled;
+        referenceConfig.otSolver = LinearOtSolver::CPU_REFERENCE;
+        auto cpuOt = CudaFgwEngine().compare(fixed, referenceConfig);
+        matrix(cpuOt.starts[0].correspondence, r.starts[0].correspondence, "explicit CPU OT fallback");
+        std::vector<int> offsets(320), edges(318);
+        std::vector<double> values(319, 0);
+        for (int i = 0; i < 319; ++i) {
+            offsets[i] = std::min(i, 318);
+            values[i] = i / 159.;
+        }
+        offsets[319] = 318;
+        for (int i = 0; i < 318; ++i)
+            edges[i] = i + 1;
+        auto oversized = graph(offsets, edges, values, "cpu-size-fallback");
+        auto fallbackConfig = unprofiled;
+        fallbackConfig.maxIterations = 0;
+        auto fallback = CudaFgwEngine().compare({fixed.left, oversized, {}}, fallbackConfig);
+        require(fallback.columns == 319 && fallback.starts[0].status != Status::NUMERICAL_FAILURE &&
+                    fallback.executionTimes.cpuOtMilliseconds > 0,
+                "oversized exact CPU OT fallback");
+        std::vector<std::future<Result>> asyncDrained;
+        {
+            CudaFgwSession session(fixed.left, asyncConfig);
+            for (int i = 0; i < 24; ++i)
+                asyncDrained.push_back(session.submit(fixed.right));
+        }
+        for (auto &future : asyncDrained)
+            validateAsync(future.get(), r);
         // Destruction drains work even when the caller retains an unresolved future.
         std::future<Result> drained;
         {
@@ -471,7 +686,7 @@ int main(int argc, char **argv) {
         require(cudaGetDeviceProperties(&properties, c.device) == cudaSuccess, "CUDA device properties");
         cudaDriverGetVersion(&driverVersion);
         cudaRuntimeGetVersion(&runtimeVersion);
-        *out << "{\"execution\":\"CUDA\",\"deviceInfo\":{\"name\":";
+        *out << "{\"execution\":\"CUDA\",\"simplexMode\":" << simplexMode << ",\"deviceInfo\":{\"name\":";
         testjson::string(*out, properties.name);
         *out << ",\"device\":" << c.device << ",\"computeMajor\":" << properties.major
              << ",\"computeMinor\":" << properties.minor << ",\"driverVersion\":" << driverVersion
@@ -487,6 +702,11 @@ int main(int argc, char **argv) {
         *out << ",\"orderingReverse\":";
         testjson::result(*out, swappedResult);
 #ifdef FGW_CUDA_TEST
+        *out << ",\"asyncFixed\":";
+        testjson::result(*out, asyncFixed);
+        *out << ",\"asyncSessionChecks\":\"PASS\",\"asyncSessionStatistics\":{\"dispatchers\":"
+             << asyncStats.workersCreated << ",\"slots\":" << asyncStats.gpuSlotsCreated
+             << ",\"maximumInFlight\":" << asyncStats.maximumInFlight << '}';
         *out << ",\"pooledFixed\":";
         testjson::result(*out, pooledFixed);
         *out << ",\"sessionChecks\":\"PASS\",\"sessionStatistics\":{\"accepted\":" << pooledStats.accepted

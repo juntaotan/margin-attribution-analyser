@@ -32,6 +32,10 @@ target/
 hs_err_pid*
 replay_pid*
 
+# Python bytecode caches
+__pycache__/
+*.pyc
+
 # mvn
 target/
 pom.xml.tag
@@ -55,9 +59,7 @@ buildNumber.properties
 
 # Markdown documentation
 *.md
-/docs/tasks/**/*.json
 !AGENTS.md
-!/docs/tasks/**/*.md
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
 !cuda/README.md
@@ -66,6 +68,11 @@ buildNumber.properties
 !docs/algorithms/FGW CUDA Implementation — Numerical Test Case.md
 !docs/algorithms/Production Anomaly Analysis — Agent Workflow.md
 !docs/Agent Prompt_ Restore Product Production Trees Using FIFO.md
+
+# Keep task summaries and readable validation reports; retain raw run artefacts locally.
+/docs/tasks/**
+!/docs/tasks/**/
+!/docs/tasks/**/*.md
 
 # environment variables
 .env

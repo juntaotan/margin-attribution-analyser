@@ -203,6 +203,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--counts", default="100,500,1000,2000,5000,10000")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--gpu-slots", type=int, default=32)
+    parser.add_argument("--dispatchers", type=int, default=2)
+    parser.add_argument("--simplex-mode", type=int, choices=range(4), default=3,
+                        help="Exact OT mode: 0=reference, 1=incremental tree, 2=candidate pricing, 3=combined (default)")
     parser.add_argument("--threads", type=int, default=4, help="Total CPU BLAS thread budget; divided across workers")
     parser.add_argument("--warmup", type=int, default=64)
     parser.add_argument("--pool-size", type=int, default=16)
@@ -213,14 +217,16 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     counts = [int(x) for x in args.counts.split(",")]
-    if min(counts) < 1 or args.workers < 1 or args.threads < args.workers or args.threads < 2 or args.warmup < 0 or not 1 <= args.pool_size <= 1024 or not np.isfinite(args.max_seconds) or args.max_seconds < 0:
-        parser.error("Require positive counts/workers, >=2 CPU threads and >=workers, nonnegative warm-up/limit, pool size 1..1024")
+    if args.gpu_slots < 1 or args.dispatchers < 1 or min(counts) < 1 or args.workers < 1 or args.threads < args.workers or args.threads < 2 or args.warmup < 0 or not 1 <= args.pool_size <= 1024 or not np.isfinite(args.max_seconds) or args.max_seconds < 0:
+        parser.error("Require positive counts/workers/slots/dispatchers, >=2 CPU threads and >=workers, nonnegative warm-up/limit, pool size 1..1024")
     if args.cuda_run:
         if not args.cuda_validation_report:
             parser.error("CUDA benchmarking requires passing CUDA numerical evidence")
         evidence = json.loads(args.cuda_validation_report.read_text())
         if evidence["cpuResult"] != "PASS" or evidence["coverage"]["cuda"] != "CUDA":
             parser.error("CUDA numerical correctness must pass before benchmarking")
+        if evidence.get("simplexMode", 0) != args.simplex_mode:
+            parser.error("CUDA numerical evidence must match the selected simplex mode")
     left = graph(128, 42)
     targets = target_pool(160, args.pool_size)
     rows = []
@@ -228,10 +234,13 @@ def main():
                 numpy=np.__version__, scipy=scipy.__version__, POT=ot.__version__, nodes=[128, 160],
                 embeddingDimension=384, poolSize=len(targets), seed=[42, 43, "1000+targetIndex"],
                 requestedCounts=counts, workers=args.workers, cpuThreadBudget=args.threads,
+                gpuSlots=args.gpu_slots, dispatcherThreads=args.dispatchers, warmupComparisons=args.warmup,
+                simplexMode=args.simplex_mode,
+                cudaDeviceMaxConnections=os.environ.get("CUDA_DEVICE_MAX_CONNECTIONS", "driver default"),
                 maxSecondsPerExecution=args.max_seconds, alpha=.8, tolAbs=1e-6, tolRel=1e-5, tolGapAbs=1e-6,
                 tolGapRel=1e-5, maxIterations=200, costScaleFloor=1e-12,
                 cpuBaseline="Independent SciPy/NumPy FGW; persistent baseline; fixed workers; multicore BLAS; POT exact network simplex",
-                cudaOt="Native exact balanced transportation-simplex CPU solver; solver differences are a comparison confound",
+                cudaOt="Device exact balanced transportation simplex; CPU fallback above N+M=320; solver differences are a comparison confound",
                 timing="One process/session per count, warm-up in that session; complete target preparation/solve/transfers/output; no result cache",
                 deviceTiming="CUDA event intervals include kernels, transfers and host submission gaps; synchronisation overlaps these intervals",
                 results=rows)
@@ -258,7 +267,8 @@ def main():
                 if args.cuda_run:
                     output = Path(directory) / "cuda.json"
                     command = [str(args.cuda_run.resolve()), "--batch", str(path), str(count), str(args.workers),
-                               str(args.device), str(args.warmup), str(args.max_seconds), str(output)]
+                               str(args.device), str(args.warmup), str(args.max_seconds), str(output),
+                               str(args.gpu_slots), str(args.dispatchers), str(args.simplex_mode)]
                     execution = subprocess.run(command, check=False)
                     if execution.returncode not in (0, 2):
                         raise RuntimeError(f"CUDA benchmark exit {execution.returncode}")

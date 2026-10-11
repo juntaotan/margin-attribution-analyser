@@ -39,9 +39,9 @@ double milliseconds(Clock::time_point start) {
     return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
 }
 int batch(int argc, char **argv) {
-    if (argc != 9)
+    if (argc != 9 && argc != 11 && argc != 12)
         throw std::invalid_argument(
-            "Usage: fgw_cuda_run --batch fixture requested workers device warmup maxSeconds output");
+            "Usage: fgw_cuda_run --batch fixture requested workers device warmup maxSeconds output [gpuSlots dispatchers [simplexMode:0..3]]");
     const auto requested = std::stoull(argv[3]);
     const int workers = std::stoi(argv[4]), device = std::stoi(argv[5]);
     const auto warmup = std::stoull(argv[6]);
@@ -59,8 +59,17 @@ int batch(int argc, char **argv) {
         targets.push_back(readGraph(input, i + 1));
     fgw::Config config;
     config.device = device;
-    config.maxConcurrentComparisons = workers;
-    config.queueCapacity = 2 * static_cast<std::size_t>(workers);
+    const int slots = argc >= 11 ? std::stoi(argv[9]) : workers;
+    config.maxConcurrentComparisons = slots;
+    config.gpuSlots = slots;
+    config.dispatcherThreads = argc >= 11 ? std::stoi(argv[10]) : 2;
+    const int simplexMode = argc == 12 ? std::stoi(argv[11]) :
+        ((config.incrementalOtTree ? 1 : 0) | (config.candidateOtPricing ? 2 : 0));
+    if (simplexMode < 0 || simplexMode > 3)
+        throw std::invalid_argument("Simplex mode must be 0..3.");
+    config.incrementalOtTree = (simplexMode & 1) != 0;
+    config.candidateOtPricing = (simplexMode & 2) != 0;
+    config.queueCapacity = 2 * static_cast<std::size_t>(slots);
     config.profileExecution = true;
     const auto totalBegin = Clock::now();
     std::size_t freeBytes = 0, totalBytes = 0;
@@ -76,6 +85,8 @@ int batch(int argc, char **argv) {
     std::deque<Pending> pending;
     std::size_t completed = 0;
     fgw::ExecutionTimes times;
+    fgw::LinearOtResult work;
+    std::size_t otSolves = 0;
     double serviceMilliseconds = 0, maximumMarginalError = 0;
     double initializationMilliseconds = 0, warmupMilliseconds = 0, steadyMilliseconds = 0,
            totalMilliseconds = 0;
@@ -90,7 +101,7 @@ int batch(int argc, char **argv) {
             reference[i] = session.submit(targets[i]).get();
         for (std::size_t i = 0; i < warmup; ++i) {
             pending.push_back({i % poolSize, session.submit(targets[i % poolSize])});
-            if (pending.size() >= 2 * static_cast<std::size_t>(workers)) {
+            if (pending.size() >= 2 * static_cast<std::size_t>(slots)) {
                 auto value = pending.front().future.get();
                 if (value.starts[value.bestStart].status == fgw::Status::NUMERICAL_FAILURE)
                     throw std::runtime_error("Warm-up numerical failure.");
@@ -123,14 +134,26 @@ int batch(int argc, char **argv) {
             ++completed;
             serviceMilliseconds += result.totalMilliseconds;
             times.cpuOtMilliseconds += result.executionTimes.cpuOtMilliseconds;
+            times.gpuOtMilliseconds += result.executionTimes.gpuOtMilliseconds;
             times.deviceMilliseconds += result.executionTimes.deviceMilliseconds;
             times.synchronizationMilliseconds += result.executionTimes.synchronizationMilliseconds;
+            for (const auto &start : result.starts)
+                for (const auto &state : start.trace) {
+                    ++otSolves;
+                    work.pivots += state.ot.pivots;
+                    work.fullPricingScans += state.ot.fullPricingScans;
+                    work.candidatePricingPasses += state.ot.candidatePricingPasses;
+                    work.treeRebuilds += state.ot.treeRebuilds;
+                    work.incrementalTreeUpdates += state.ot.incrementalTreeUpdates;
+                    work.treeNodesVisited += state.ot.treeNodesVisited;
+                    work.cycleEdges += state.ot.cycleEdges;
+                }
         };
         for (std::size_t i = 0; i < requested; ++i) {
             if (i && maxSeconds > 0 && milliseconds(steadyBegin) >= maxSeconds * 1000)
                 break;
             pending.push_back({i % poolSize, session.submit(targets[i % poolSize])});
-            if (pending.size() >= 2 * static_cast<std::size_t>(workers))
+            if (pending.size() >= 2 * static_cast<std::size_t>(slots))
                 consume();
             if (completed && completed % 1000 == 0)
                 std::cerr << "CUDA completed " << completed << '/' << requested << '\n';
@@ -150,6 +173,9 @@ int batch(int argc, char **argv) {
     out << std::setprecision(17) << "{\"execution\":\"CUDA\",\"requested\":" << requested
         << ",\"completed\":" << completed << ",\"status\":\""
         << (completed == requested ? "PASS" : "INCOMPLETE_TIME_LIMIT") << "\",\"workers\":" << workers
+        << ",\"gpuSlots\":" << slots << ",\"dispatcherThreads\":" << config.dispatcherThreads
+        << ",\"simplexMode\":" << simplexMode
+        << ",\"warmupComparisons\":" << warmup << ",\"referenceComparisons\":" << poolSize
         << ",\"poolSize\":" << poolSize << ",\"initializationMilliseconds\":" << initializationMilliseconds
         << ",\"destructionMilliseconds\":" << destructionMilliseconds
         << ",\"warmupMilliseconds\":" << warmupMilliseconds
@@ -158,11 +184,20 @@ int batch(int argc, char **argv) {
         << ",\"comparisonsPerSecond\":" << completed * 1000.0 / steadyMilliseconds
         << ",\"meanServiceMilliseconds\":" << serviceMilliseconds / completed
         << ",\"meanCpuOtMilliseconds\":" << times.cpuOtMilliseconds / completed
+        << ",\"meanGpuOtMilliseconds\":" << times.gpuOtMilliseconds / completed
         << ",\"meanDeviceIntervalMilliseconds\":" << times.deviceMilliseconds / completed
         << ",\"meanSynchronizationMilliseconds\":" << times.synchronizationMilliseconds / completed
         << ",\"maximumMarginalError\":" << maximumMarginalError
+        << ",\"otWork\":{\"solves\":" << otSolves << ",\"pivots\":" << work.pivots
+        << ",\"fullPricingScans\":" << work.fullPricingScans
+        << ",\"candidatePricingPasses\":" << work.candidatePricingPasses
+        << ",\"treeRebuilds\":" << work.treeRebuilds
+        << ",\"incrementalTreeUpdates\":" << work.incrementalTreeUpdates
+        << ",\"treeNodesVisited\":" << work.treeNodesVisited
+        << ",\"cycleEdges\":" << work.cycleEdges << '}'
         << ",\"resources\":{\"baselinePreparations\":" << final.baselinePreparations
-        << ",\"workersCreated\":" << final.workersCreated << ",\"maximumQueued\":" << final.maximumQueued
+        << ",\"workersCreated\":" << final.workersCreated << ",\"gpuSlotsCreated\":" << final.gpuSlotsCreated
+        << ",\"maximumInFlight\":" << final.maximumInFlight << ",\"maximumQueued\":" << final.maximumQueued
         << ",\"workerDeviceBytes\":" << final.workerDeviceBytes
         << ",\"allocationsAfterWarmup\":" << final.workerDeviceAllocations - warmed.workerDeviceAllocations
         << "},\"reference\":[";

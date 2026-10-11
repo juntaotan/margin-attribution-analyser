@@ -182,6 +182,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--native-report", type=Path)
     parser.add_argument("--cuda-report", type=Path)
+    parser.add_argument("--cuda-executable", type=Path, help="Check device exact OT against independent HiGHS/POT")
     parser.add_argument("--native-executable", type=Path, help="Check native exact OT against independent HiGHS/POT")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -274,6 +275,26 @@ def main():
             stats = native["sessionStatistics"]
             for key, value in dict(accepted=29, completed=28, failed=1, workersCreated=2, baselinePreparations=1, maximumQueued=1).items():
                 report.check("session " + key, stats[key], value)
+            asynchronous = native["asyncFixed"]
+            report.prefix = "CUDA ASYNC "
+            report.condition("dispatcher regressions", native["asyncSessionChecks"] == "PASS")
+            async_stats = native["asyncSessionStatistics"]
+            report.check("host dispatchers", async_stats["dispatchers"], 2)
+            report.check("GPU slots", async_stats["slots"], 8)
+            report.condition("independent stream concurrency", 2 < async_stats["maximumInFlight"] <= 8)
+            final = asynchronous["starts"][0]
+            report.check("final P", np.array(final["P"]).reshape(2, 3), ref["P"])
+            report.feasible("final P", np.array(final["P"]).reshape(2, 3))
+            report.condition("fresh stopping", final["converged"] and final["iterations"] == 1)
+            for i, state in enumerate(final["trace"]):
+                expected_state = ref["trace"][i]
+                report.check(f"iteration {i} original FGW", state["costs"]["fgw"], expected_state["costs"]["fgw"])
+                report.check(f"iteration {i} gap", state["gap"], expected_state["gap"])
+                lp_value = np.sum(np.asarray(expected_state["G"]) * np.asarray(expected_state["S"]))
+                report.check(f"iteration {i} actual LP cost", state["linearCost"], lp_value)
+                report.check(f"iteration {i} actual LP dual", state["dualCost"], lp_value)
+                for key in ["rowError", "columnError", "totalError", "dualViolation"]:
+                    report.check(f"iteration {i} {key}", state[key], 0)
             report.prefix = "CUDA "
         multi = native["unequalMultiStart"]
         report.condition("unequal-size multi-start count", len(multi["starts"]) == 2)
@@ -289,7 +310,7 @@ def main():
                 report.feasible(label + " " + key + " start " + str(i), np.array(start["P"]).reshape(3, 3))
     report.prefix = ""
     ot_fixtures = []
-    if args.native_executable:
+    if args.native_executable or args.cuda_executable:
         # Unequal sizes, one-node graphs, negative gradients and tied LP optima.
         # Tied optima are checked by linear objective and marginals, not identity.
         costs = [np.array([[0., 0., 0.], [0., 0., 0.]]),
@@ -303,32 +324,38 @@ def main():
         for n, m in [(4, 7), (7, 4), (8, 8), (16, 20), (128, 160)]:
             costs.append(rng.normal(0, 2, (n, m)))
             costs.append(rng.integers(-3, 4, (n, m)).astype(np.float64))
-        with tempfile.TemporaryDirectory(prefix="fgw-ot-") as directory:
-            for i, cost in enumerate(costs):
-                n, m = cost.shape
-                path = Path(directory) / "cost.txt"
-                path.write_text(f"{n} {m}\n" + " ".join(map(str, cost.ravel())) + "\n")
-                actual = json.loads(subprocess.run([str(args.native_executable.resolve()), "--ot", str(path)],
-                                                   capture_output=True, text=True, check=True).stdout)
-                P = np.asarray(actual["P"]).reshape(n, m)
-                p, q = np.full(n, 1 / n), np.full(m, 1 / m)
-                independent = linear_ot(cost, p, q)
-                pot = ot.emd(p, q, cost, numItermax=100000, check_marginals=True)
-                report.feasible(f"Exact OT fixture {i}", P)
-                report.check(f"Exact OT fixture {i} HiGHS objective", np.sum(cost * P), np.sum(cost * independent))
-                report.check(f"Exact OT fixture {i} POT objective", np.sum(cost * P), np.sum(cost * pot))
-                report.check(f"Exact OT fixture {i} dual objective", actual["linearCost"], actual["dualCost"])
-                report.check(f"Exact OT fixture {i} reduced costs", actual["dualViolation"], 0.)
-                warm = np.asarray(actual["warmP"]).reshape(n, m)
-                warm_pot = ot.emd(p, q, -cost, numItermax=100000, check_marginals=True)
-                report.feasible(f"Warm exact OT fixture {i}", warm)
-                report.check(f"Warm exact OT fixture {i} POT objective", np.sum(-cost * warm), np.sum(-cost * warm_pot))
-                report.check(f"Warm exact OT fixture {i} dual objective", actual["warmLinearCost"], actual["warmDualCost"])
-                report.check(f"Warm exact OT fixture {i} reduced costs", actual["warmDualViolation"], 0.)
-                ot_fixtures.append(dict(cost=cost, actual=P, highs=independent, POT=pot, warm=warm, warmPOT=warm_pot, certificate=actual))
+        for label, executable in [("CPU", args.native_executable), ("GPU", args.cuda_executable)]:
+            if executable is None:
+                continue
+            report.prefix = label + " "
+            with tempfile.TemporaryDirectory(prefix="fgw-ot-") as directory:
+                for i, cost in enumerate(costs):
+                    n, m = cost.shape
+                    path = Path(directory) / "cost.txt"
+                    path.write_text(f"{n} {m}\n" + " ".join(map(str, cost.ravel())) + "\n")
+                    actual = json.loads(subprocess.run([str(executable.resolve()), "--ot", str(path)],
+                                                       capture_output=True, text=True, check=True).stdout)
+                    P = np.asarray(actual["P"]).reshape(n, m)
+                    p, q = np.full(n, 1 / n), np.full(m, 1 / m)
+                    independent = linear_ot(cost, p, q)
+                    pot = ot.emd(p, q, cost, numItermax=100000, check_marginals=True)
+                    report.feasible(f"Exact OT fixture {i}", P)
+                    report.check(f"Exact OT fixture {i} HiGHS objective", np.sum(cost * P), np.sum(cost * independent))
+                    report.check(f"Exact OT fixture {i} POT objective", np.sum(cost * P), np.sum(cost * pot))
+                    report.check(f"Exact OT fixture {i} dual objective", actual["linearCost"], actual["dualCost"])
+                    report.check(f"Exact OT fixture {i} reduced costs", actual["dualViolation"], 0.)
+                    warm = np.asarray(actual["warmP"]).reshape(n, m)
+                    warm_pot = ot.emd(p, q, -cost, numItermax=100000, check_marginals=True)
+                    report.feasible(f"Warm exact OT fixture {i}", warm)
+                    report.check(f"Warm exact OT fixture {i} POT objective", np.sum(-cost * warm), np.sum(-cost * warm_pot))
+                    report.check(f"Warm exact OT fixture {i} dual objective", actual["warmLinearCost"], actual["warmDualCost"])
+                    report.check(f"Warm exact OT fixture {i} reduced costs", actual["warmDualViolation"], 0.)
+                    ot_fixtures.append(dict(execution=label, cost=cost, actual=P, highs=independent, POT=pot, warm=warm, warmPOT=warm_pot, certificate=actual))
+        report.prefix = ""
     data = dict(versions=dict(python=platform.python_version(), numpy=np.__version__, scipy=scipy.__version__, POT=ot.__version__),
                 configuration=POT_CONFIG, dtype="float64", G0=P0, coverage=coverage, otFixtures=ot_fixtures,
                 cudaDeviceInfo=json.loads(args.cuda_report.read_text()).get("deviceInfo") if args.cuda_report else None,
+                simplexMode=json.loads(args.cuda_report.read_text()).get("simplexMode", 0) if args.cuda_report else None,
                 checks=report.checks, reference=ref, orderingInitials=ordering_starts,
                 orderingReference=ordering, orderingPotCosts=ordering_pot,
                 potLosses=pot_log["loss"], cpuResult="FAIL" if any(c["result"] == "FAIL" for c in report.checks) else "PASS")

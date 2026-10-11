@@ -1,0 +1,18 @@
+Start time: 2026-10-11 10:43:19 Pacific/Auckland (UTC+13:00)
+End time: 2026-10-11 11:33:18 Pacific/Auckland (UTC+13:00)
+Summary: Implemented on-device Batched GPU Transportation Simplex in CUDA FGW engine with cooperative Matrix-Minimum Greedy Initial Basis and fast shared-memory BFS traversal, validated mathematical equivalence against POT, and executed complete 4-tier benchmark comparisons.
+Details:
+- Changes: `backend/src/main/resources/cuda/fgw_engine.cuh`: added `LinearOtSolver` enum (`GPU_SIMPLEX`, `CPU_REFERENCE`) with `GPU_SIMPLEX` as the default in `Config`. Added `gpuOtMilliseconds` to `ExecutionTimes`. Declared `transportationSimplexKernel` in namespace `fgw::algorithm`.
+- Changes: `backend/src/main/resources/cuda/fgw.cu`: added device helper functions `deviceGcd`, `addEdgeDevice`, and `removeEdgeDevice`. Replaced naive Northwest-corner basis initialisation with cooperative parallel Matrix-Minimum Greedy Basis construction using 256-thread warp shuffle reductions. Caching arc costs directly in shared memory (`edgeCost`) and introducing tokenised tree traversal (`visitedToken`) to eliminate quadratic per-pivot visited-array zeroing. Cold-start pivots reduced from 1,248 to 219 pivots, dropping cold-start latency from 234 ms to 36.39 ms.
+- Changes: `backend/src/main/resources/cuda/fgw_engine.cu`: added `otFlow`, `otBasic`, and `otPivots` buffers to `Worker`. Added `finishOt` to `DeviceInterval` to accurately profile GPU OT time. Updated `Worker::compare` to dispatch `transportationSimplexKernel` directly on device streams when `otSolver == LinearOtSolver::GPU_SIMPLEX`, eliminating intermediate host roundtrips for gradient and direction tensors, with automatic fallback to `exactLinearOt` for problem sizes exceeding shared memory bounds or when `CPU_REFERENCE` is selected.
+- Changes: `backend/src/main/resources/cuda/test/fgw/fgw_test.cpp`: updated profiling assertion to accept `gpuOtMilliseconds > 0` or `cpuOtMilliseconds > 0`.
+- Validation: Native host test (`fgw_host_test`) and CUDA test (`fgw_cuda_test`) passed (CTest 2/2 passed, 100%).
+- Validation: Independent POT and HiGHS numerical validation (`validate.py`) executed on the generated native CUDA test report: 558/558 checks passed with CUDA coverage, with all errors below 1e-8 tolerance (maximum reported absolute error ~4.4e-11).
+- Validation: 4-tier benchmark suite (100, 500, 1000, 2000 comparisons, 8 workers, RTX 5070 Ti) completed successfully:
+  - 100 tier: CPU 287.03 solves/s (348.40 ms), CUDA 36.80 solves/s (2717.61 ms), mean CPU OT 0.0000 ms, mean device interval 204.77 ms, Numerical Match: PASS.
+  - 500 tier: CPU 277.05 solves/s (1804.71 ms), CUDA 40.05 solves/s (12483.33 ms), mean CPU OT 0.0000 ms, mean device interval 198.89 ms, Numerical Match: PASS.
+  - 1000 tier: CPU 290.01 solves/s (3448.12 ms), CUDA 39.81 solves/s (25122.22 ms), mean CPU OT 0.0000 ms, mean device interval 199.07 ms, Numerical Match: PASS.
+  - 2000 tier: CPU 288.34 solves/s (6936.30 ms), CUDA 39.98 solves/s (50025.01 ms), mean CPU OT 0.0000 ms, mean device interval 199.01 ms, Numerical Match: PASS.
+  - Across all 3,600 comparisons, CPU OT time was 0.0000 ms (100% offload to GPU), steady throughput improved by 25-28% over Northwest-corner basis (~40 solves/s vs ~31 solves/s), and 100% of comparisons produced matching objectives against POT (< 1e-8).
+- Limitations: Shared memory capacity limits single-block GPU simplex to N + M <= 320 nodes; larger instances automatically fall back to CPU simplex. Pre-existing uncommitted changes outside the task scope were preserved. Working tree changes remain uncommitted per instructions.
+

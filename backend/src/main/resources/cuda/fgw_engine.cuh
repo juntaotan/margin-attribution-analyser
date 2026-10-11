@@ -42,6 +42,8 @@ struct Graph {
     int nodeCount() const;
 };
 
+enum class LinearOtSolver { GPU_SIMPLEX, CPU_REFERENCE };
+
 struct Config {
     double alpha = 0.8;
     double tolAbs = 1e-6;
@@ -56,9 +58,15 @@ struct Config {
     int device = 0;
     int maxConcurrentComparisons = 1;
     bool captureTrace = false;
-    std::size_t queueCapacity = 0; // Zero selects twice the worker count; limits pending inputs.
-    std::size_t workspaceBytes = 4 * 1024 * 1024; // Dedicated cuBLAS workspace per worker.
+    std::size_t queueCapacity = 0; // Zero selects twice the effective slot count; limits pending inputs.
+    std::size_t workspaceBytes = 4 * 1024 * 1024; // Dedicated cuBLAS workspace per slot.
     bool profileExecution = false;                // CUDA event intervals include kernels and transfers.
+    LinearOtSolver otSolver = LinearOtSolver::GPU_SIMPLEX;
+    int gpuSlots = 32;         // Effective stream count is min(gpuSlots, maxConcurrentComparisons).
+    int dispatcherThreads = 2; // Capped at the effective slot count; independent of streams.
+    // Combined exact-OT optimisation is the default. CPU/tracing fallbacks ignore these controls.
+    bool incrementalOtTree = true;
+    bool candidateOtPricing = true;
 };
 
 enum class Status { RUNNING, FW_GAP_REACHED, COST_STALLED, MAX_ITERATIONS, NUMERICAL_FAILURE };
@@ -78,6 +86,9 @@ struct LinearOtResult {
     double maximumReducedCostViolation = 0;
     std::size_t pivots = 0, degeneratePivots = 0;
     bool usedBlandRule = false;
+    // Device simplex work counters; zero for the CPU reference.
+    std::size_t fullPricingScans = 0, candidatePricingPasses = 0, treeRebuilds = 0;
+    std::size_t incrementalTreeUpdates = 0, treeNodesVisited = 0, cycleEdges = 0;
 };
 struct LineSearch {
     double a = 0, b = 0, gamma = 0;
@@ -117,6 +128,7 @@ struct SourceMapping {
  * time. */
 struct ExecutionTimes {
     double cpuOtMilliseconds = 0;
+    double gpuOtMilliseconds = 0;
     double deviceMilliseconds = 0;
     double synchronizationMilliseconds = 0;
 };
@@ -137,20 +149,24 @@ struct Comparison {
     std::vector<std::vector<double>> initialMatrices;
 };
 
-/** Resource and queue accounting for validation/monitoring, never objective terms. */
+/** Resource and queue accounting for validation/monitoring, never objective
+ * terms. */
 struct SessionStatistics {
     std::size_t accepted = 0, completed = 0, failed = 0;
-    std::size_t workersCreated = 0, baselinePreparations = 0;
+    std::size_t workersCreated = 0, baselinePreparations = 0; // workersCreated counts host dispatchers.
     std::size_t workerDeviceAllocations = 0, workerDeviceBytes = 0;
     std::size_t maximumQueued = 0;
+    std::size_t gpuSlotsCreated = 0, maximumInFlight = 0;
 };
 
 /**
  * Fixed-baseline CUDA processing session. The baseline is validated/prepared
  * once and its embeddings, structural distances, weights and structural
- * constants stay read-only on the selected device. A fixed pool of host threads
- * owns one stream, handle and dedicated workspace per thread, reusing buffers
- * across targets.
+ * constants stay read-only on the selected device. Each dispatcher exclusively
+ * owns several persistent stream/handle/workspace slots. GPU simplex
+ * comparisons advance through non-blocking iteration queries and pinned scalar
+ * transfers. Tracing, explicit CPU OT and sizes beyond the GPU simplex limit
+ * use the synchronous diagnostic path on the owning dispatcher.
  *
  * submit() transfers ownership of a target and explicit feasible starts. It
  * blocks when the bounded input queue is full, then returns a future; callers
@@ -160,10 +176,11 @@ struct SessionStatistics {
  * Constructor errors throw before accepting work. Numerical failures remain
  * explicit result statuses.
  *
- * close() rejects new submissions and starts draining accepted work. Destruction joins
- * all workers before releasing the baseline. close()/submit() are thread-safe;
- * the caller must not destroy the session concurrently with either call. Config
- * is immutable for the session. No production CPU fallback or Java integration.
+ * close() rejects new submissions and starts draining accepted work.
+ * Destruction joins all workers before releasing the baseline. close()/submit()
+ * are thread-safe; the caller must not destroy the session concurrently with
+ * either call. Config is immutable for the session. No production CPU fallback
+ * or Java integration.
  */
 class CudaFgwSession {
   public:
@@ -173,10 +190,12 @@ class CudaFgwSession {
     CudaFgwSession &operator=(const CudaFgwSession &) = delete;
     std::future<Result> submit(Graph target, std::vector<std::vector<double>> initialMatrices = {});
     void close();
-    /** Consistent snapshot; completed counts include numerical-failure results. */
+    /** Consistent snapshot; completed counts include numerical-failure results.
+     */
     SessionStatistics statistics() const;
 
   private:
+    friend class CudaFgwEngine;
     struct Impl;
     std::unique_ptr<Impl> impl;
 };
@@ -246,6 +265,43 @@ Status stoppingStatus(double gap, const Costs &costs, const MarginalErrors &marg
                       double previousCost, bool hasPrevious, const Config &config);
 bool objectiveIncreased(double previous, double current, const Config &config);
 std::size_t selectBestStart(const std::vector<StartResult> &starts);
+/** Check an exact OT primal/dual certificate and original uniform marginals.
+ * costEpsilon is the solver tolerance scaled by the maximum absolute arc cost.
+ * Invalid or nonfinite certificates return false rather than certifying a gap.
+ */
+bool linearOtCertified(const LinearOtResult &result, const MarginalErrors &marginals, double costEpsilon,
+                       double tolerance);
+
+/** Per-start device-to-host iteration summary. Scalar indices are shared by
+ * computational kernels and execution management; all entries use FP64. */
+enum SummaryIndex {
+    MaterialCost,
+    StructureCost,
+    DirectionalGradient,
+    DirectionProduct,
+    RowError,
+    ColumnError,
+    TotalError,
+    MinimumWeight,
+    FiniteWeights,
+    CandidateRowError,
+    CandidateColumnError,
+    CandidateTotalError,
+    CandidateMinimumWeight,
+    CandidateFiniteWeights,
+    LinearCost,
+    DualCost,
+    ReducedCostViolation,
+    OtSuccess,
+    OtCostEpsilon,
+    OtFullPricingScans,
+    OtCandidatePricingPasses,
+    OtTreeRebuilds,
+    OtIncrementalTreeUpdates,
+    OtTreeNodesVisited,
+    OtCycleEdges,
+    SummaryCount
+};
 } // namespace algorithm
 
 #ifdef __CUDACC__
@@ -264,6 +320,11 @@ __global__ void costGradientKernel(const double *material, const double *fixed, 
 __global__ void directionKernel(const double *candidate, const double *current, double *direction,
                                 std::size_t count);
 __global__ void updateKernel(double *current, const double *direction, double gamma, std::size_t count);
+__global__ void transportationSimplexKernel(const double *cost, int *flow, bool *basic, double *candidate,
+                                            int *pivots, int n, int m, double tol, bool warmStart,
+                                            std::size_t count, double *summary = nullptr,
+                                            bool incrementalTree = true, bool candidatePricing = true);
+__global__ void marginalSummaryKernel(const double *matrix, double *summary, int n, int m);
 } // namespace algorithm
 #endif
 } // namespace fgw
