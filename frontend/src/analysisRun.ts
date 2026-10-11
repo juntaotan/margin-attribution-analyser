@@ -1,3 +1,4 @@
+import { JSONParser } from '@streamparser/json';
 import type { StreamCsrGraph } from './analysisGraph';
 
 export interface RecordedNode { inventoryId: string; quantity: string; cost: string | null }
@@ -82,17 +83,27 @@ export function correspondenceValue(result: FgwResult, row: number, column: numb
   return mode === 'mass' ? mass : result.p[row] > 0 ? mass / result.p[row] : null;
 }
 
-/** Read NDJSON with cancellation, chunk boundaries and a final unterminated line. */
+/**
+ * Parse UTF-8 workflow events incrementally without constructing a complete JSON line.
+ * Complete event objects retain the original evidence; the response reader is cancelled
+ * on parsing or consumer failure so the backend can stop submitting further work.
+ */
 export async function readWorkflowStream(response: Response, onEvent: (event: WorkflowEvent) => void): Promise<void> {
   if (!response.body) throw new Error('Analysis response has no stream.');
-  const reader = response.body.getReader(); const decoder = new TextDecoder(); let pending = '';
+  const reader = response.body.getReader();
+  const parser = new JSONParser({ paths: ['$'], separator: '\n' });
+  parser.onValue = ({ value }) => onEvent(value as unknown as WorkflowEvent);
+  let finished = false;
   try {
     while (true) {
-      const { value, done } = await reader.read(); pending += decoder.decode(value, { stream: !done });
-      const lines = pending.split('\n'); pending = lines.pop() || '';
-      for (const line of lines) if (line.trim()) onEvent(JSON.parse(line) as WorkflowEvent);
+      const { value, done } = await reader.read();
       if (done) break;
+      parser.write(value);
     }
-    if (pending.trim()) onEvent(JSON.parse(pending) as WorkflowEvent);
-  } finally { reader.releaseLock(); }
+    parser.end();
+    finished = true;
+  } finally {
+    if (!finished) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
 }

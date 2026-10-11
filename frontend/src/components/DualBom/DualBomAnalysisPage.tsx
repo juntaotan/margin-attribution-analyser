@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { AnalysisHeader } from './AnalysisHeader';
 import { ScopeControlsBar } from './ScopeControlsBar';
@@ -9,7 +9,8 @@ import { accelerationPreference, canvasGraph, readWorkflowStream, recorded, type
 import type { StreamNode } from '../../analysisGraph';
 
 const STAGES: Record<string, string> = { loading: 'Loading warehouse data', graph: 'Period graphs built', branches: 'Abnormal branches discovered', 'production-trees': 'Production trees restored', embeddings: 'Embeddings prepared', comparison: 'Comparing production instances', completed: 'Analysis complete' };
-export const DualBomAnalysisPage: React.FC = () => {
+/** Retains the analysis connection and results while application navigation hides this page. */
+export const DualBomAnalysisPage: React.FC<{ active?: boolean; onStatusChange?: (status: string) => void }> = ({ active = true, onStatusChange }) => {
   const [periodFrom, setPeriodFrom] = useState('2026-01-01'); const [periodTo, setPeriodTo] = useState('2026-01-31');
   const [comparablePeriodFrom, setComparablePeriodFrom] = useState('2025-01-01'); const [comparablePeriodTo, setComparablePeriodTo] = useState('2025-01-31');
   const [threshold, setThreshold] = useState(250); const [leafThreshold, setLeafThreshold] = useState(100);
@@ -18,12 +19,18 @@ export const DualBomAnalysisPage: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false); const [stage, setStage] = useState('');
   const [error, setError] = useState<string | null>(null); const [outcome, setOutcome] = useState<AnalysisOutcome | null>(null);
   const [graphs, setGraphs] = useState<{ analysisId: string; actual: PeriodSnapshot; comparable: PeriodSnapshot } | null>(null);
+  const [visibleGraphs, setVisibleGraphs] = useState<typeof graphs>(null);
   const [selected, setSelected] = useState<StreamNode | null>(null); const [product, setProduct] = useState<string | null>(null);
   const [resultScope, setResultScope] = useState(''); const [submittedOptions, setSubmittedOptions] = useState('');
   const request = useRef<AbortController | null>(null); const version = useRef(0);
   const scope = `${periodFrom}|${periodTo}|${comparablePeriodFrom}|${comparablePeriodTo}|${leafThreshold}|${threshold}`;
   const options = `${currency}|${costScope}|${complete}|${repeated}`;
   useEffect(() => () => { version.current++; request.current?.abort(); }, []);
+  // Defer new canvas creation until visible; existing canvases retain their viewport while hidden.
+  useEffect(() => { if (active) setVisibleGraphs(graphs); }, [active, graphs]);
+  useEffect(() => {
+    onStatusChange?.(isAnalyzing ? 'Running' : error ? 'Failed' : outcome ? 'Completed' : '');
+  }, [isAnalyzing, error, outcome, onStatusChange]);
   const closeProduct = useCallback(() => setProduct(null), []);
   const handleRunAnalysis = async () => {
     if (isAnalyzing) return;
@@ -52,8 +59,8 @@ export const DualBomAnalysisPage: React.FC = () => {
     } catch (err) { if (current === version.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Analysis failed.'); }
     finally { if (current === version.current) setIsAnalyzing(false); }
   };
-  const actual = graphs ? canvasGraph(graphs.actual, graphs.analysisId, 'actual') : null;
-  const comparable = graphs ? canvasGraph(graphs.comparable, graphs.analysisId, 'comparable') : null;
+  const actual = useMemo(() => visibleGraphs ? canvasGraph(visibleGraphs.actual, visibleGraphs.analysisId, 'actual') : null, [visibleGraphs]);
+  const comparable = useMemo(() => visibleGraphs ? canvasGraph(visibleGraphs.comparable, visibleGraphs.analysisId, 'comparable') : null, [visibleGraphs]);
   const nodes = new Set(outcome?.branches.flatMap(branch => branch.positions.map(i => `${outcome.analysisId}:actual:node:${i}`)) || []);
   const edges = new Set(outcome?.branches.flatMap(branch => branch.edges.map(edge => `${outcome.analysisId}:actual:edge:${edge.edgeIndex}`)) || []);
   const chooseNode = (node: StreamNode) => {
@@ -82,9 +89,9 @@ export const DualBomAnalysisPage: React.FC = () => {
     {error && <p className="px-4 py-2 text-xs text-[#A64242] bg-red-50" role="alert">{error}</p>}
     {outcome && <details className="px-4 py-2 text-xs bg-white border-b shrink-0"><summary className="cursor-pointer">Reconciliation paths and diagnostics ({outcome.branches.length})</summary><ul className="max-h-32 overflow-auto space-y-2 py-2">{outcome.branches.map((branch,i) => <li key={i}>{branch.positions.map(position => outcome.actual.graph.nodes[position]?.inventoryId).join(' → ')} · {branch.endReason} · recorded difference {recorded(branch.endingCostDifference)}</li>)}{outcome.diagnostics.map((diagnostic,i) => <li key={`d${i}`}>{diagnostic}</li>)}</ul></details>}
     <div className="flex-1 min-h-0 overflow-auto lg:overflow-hidden flex flex-col lg:flex-row">
-      <div className="flex-1 min-w-0 min-h-[400px] lg:min-h-0 flex flex-col result-enter">{actual && comparable ? <DualBomTreeCanvas actualGraph={actual} comparableGraph={comparable} actualLabel={`Actual ${graphs!.actual.start} to ${graphs!.actual.end}`} comparableLabel={`Comparable ${graphs!.comparable.start} to ${graphs!.comparable.end}`} highlightedNodeIds={nodes} highlightedEdgeIds={edges} selectedNodeId={selected?.id || null} onSelectNode={chooseNode} /> : <div className="flex-1 flex flex-col justify-center items-center p-8 text-sm text-slate-600"><p>{isAnalyzing ? 'Preparing recorded period graphs…' : 'Your analysis starts with the imported warehouse records.'}</p><p className="text-xs mt-2">Select two periods, confirm the data interpretation and run analysis.</p></div>}</div>
-      <AuditSidebar outcome={outcome} inventoryId={selected?.inventoryId || null} />
+      <div className="flex-1 min-w-0 min-h-[400px] lg:min-h-0 flex flex-col result-enter">{actual && comparable ? <DualBomTreeCanvas key={visibleGraphs!.analysisId} actualGraph={actual} comparableGraph={comparable} actualLabel={`Actual ${visibleGraphs!.actual.start} to ${visibleGraphs!.actual.end}`} comparableLabel={`Comparable ${visibleGraphs!.comparable.start} to ${visibleGraphs!.comparable.end}`} highlightedNodeIds={nodes} highlightedEdgeIds={edges} selectedNodeId={selected?.id || null} onSelectNode={chooseNode} /> : <div className="flex-1 flex flex-col justify-center items-center p-8 text-sm text-slate-600"><p>{isAnalyzing ? 'Preparing recorded period graphs…' : 'Your analysis starts with the imported warehouse records.'}</p><p className="text-xs mt-2">Select two periods, confirm the data interpretation and run analysis.</p></div>}</div>
+      <AuditSidebar outcome={outcome} inventoryId={selected?.inventoryId || null} active={active} />
     </div>
-    <ProductComparisonModal outcome={outcome} productId={product} alpha={0.8} onClose={closeProduct} />
+    <ProductComparisonModal outcome={outcome} productId={product} alpha={0.8} onClose={closeProduct} active={active} />
   </main>;
 };

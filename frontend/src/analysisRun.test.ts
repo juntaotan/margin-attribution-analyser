@@ -30,3 +30,44 @@ test('workflow stream handles split JSON and final unterminated events', async (
   await readWorkflowStream(new Response(stream), event => events.push(event.type));
   assert.deepEqual(events, ['graph', 'completed']);
 });
+
+test('large events are parsed from chunks without whole-line JSON.parse', async () => {
+  const encoder = new TextEncoder();
+  const rows = Array.from({ length: 20_000 }, (_, i) => ({ issueLineId: `issue-${i}`, reason: '记录 evidence', amount: '123.4500' }));
+  const originalParse = JSON.parse;
+  const wire = JSON.stringify({ type: 'production-trees', data: rows }) + '\n{"type":"completed"}\n';
+  let offset = 0;
+  const stream = new ReadableStream({ pull(controller) {
+    if (offset === wire.length) { controller.close(); return; }
+    const next = Math.min(offset + 1024, wire.length);
+    controller.enqueue(encoder.encode(wire.slice(offset, next))); offset = next;
+  } });
+  const events: unknown[] = [];
+  JSON.parse = ((text: string) => {
+    assert.ok(text.length < 1024, 'Do not parse a complete event string');
+    return originalParse(text);
+  }) as typeof JSON.parse;
+  try { await readWorkflowStream(new Response(stream), event => events.push(event)); }
+  finally { JSON.parse = originalParse; }
+  assert.deepEqual(events, [{ type: 'production-trees', data: rows }, { type: 'completed' }]);
+});
+
+test('workflow stream preserves UTF-8 across byte boundaries', async () => {
+  const bytes = new TextEncoder().encode('{"type":"error","message":"Evidence: £ and 记录"}\n');
+  let offset = 0;
+  const events: unknown[] = [];
+  await readWorkflowStream(new Response(new ReadableStream({ pull(controller) {
+    if (offset === bytes.length) controller.close();
+    else controller.enqueue(bytes.slice(offset, ++offset));
+  } })), event => events.push(event));
+  assert.deepEqual(events, [{ type: 'error', message: 'Evidence: £ and 记录' }]);
+});
+
+test('truncated workflow events fail and cancel the response reader', async () => {
+  await assert.rejects(readWorkflowStream(new Response('{"type":"completed","data":['), () => {}));
+  let cancelled = false;
+  await assert.rejects(readWorkflowStream(new Response(new ReadableStream({ start(controller) {
+    controller.enqueue(new TextEncoder().encode('{invalid}'));
+  }, cancel() { cancelled = true; } })), () => {}));
+  assert.equal(cancelled, true);
+});

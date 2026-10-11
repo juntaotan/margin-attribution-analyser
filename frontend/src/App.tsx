@@ -16,6 +16,12 @@ const getInitialRoute = (): string => {
 
 export const App: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState<string>(getInitialRoute);
+  const [analysisOpened, setAnalysisOpened] = useState(() => getInitialRoute() === '/margin-topology');
+  const [analysisStatus, setAnalysisStatus] = useState('');
+
+  useEffect(() => {
+    if (currentRoute === '/margin-topology') setAnalysisOpened(true);
+  }, [currentRoute]);
 
   useEffect(() => {
     // Default route into /margin-topology if accessed via root or legacy /bom-topology
@@ -96,6 +102,7 @@ export const App: React.FC = () => {
               >
                 <Network className="w-4 h-4 text-blue-600 shrink-0" />
                 <span className="hidden sm:inline">Dual-BOM Analysis</span>
+                {analysisStatus && <span className="hidden sm:inline text-[10px]" role="status">{analysisStatus}</span>}
               </button>
 
               {/* Report Studio -> /report-studio */}
@@ -155,17 +162,24 @@ export const App: React.FC = () => {
         </aside>
 
         {/* Dynamic Route Content */}
-        {currentRoute === '/data-browser' ? (
-          <DataBrowser />
-        ) : currentRoute === '/data-prep' ? (
-          <DataPreparation />
-        ) : currentRoute === '/settings' ? (
-          <SettingsPage />
-        ) : currentRoute === '/report-studio' ? (
-          <ReportStudioPage />
-        ) : (
-          <DualBomAnalysisPage />
-        )}
+        <div className="relative flex flex-1 min-w-0 min-h-0">
+          {analysisOpened && <div
+            className={`absolute inset-0 flex ${currentRoute === '/margin-topology' ? '' : 'invisible pointer-events-none'}`}
+            aria-hidden={currentRoute !== '/margin-topology'}
+            {...(currentRoute !== '/margin-topology' ? { inert: '' } : {})}
+          >
+            <DualBomAnalysisPage active={currentRoute === '/margin-topology'} onStatusChange={setAnalysisStatus} />
+          </div>}
+          {currentRoute === '/data-browser' ? (
+            <DataBrowser />
+          ) : currentRoute === '/data-prep' ? (
+            <DataPreparation />
+          ) : currentRoute === '/settings' ? (
+            <SettingsPage />
+          ) : currentRoute === '/report-studio' ? (
+            <ReportStudioPage />
+          ) : null}
+        </div>
       </div>
     </div>
   );

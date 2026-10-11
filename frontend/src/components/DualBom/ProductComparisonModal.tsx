@@ -4,13 +4,13 @@ import { recorded, type AnalysisOutcome, type PairResult } from '../../analysisR
 import { CorrespondenceHeatmap } from './CorrespondenceHeatmap';
 
 const TABS = ['Overview', 'Node correspondence', 'Data evidence', 'Calculation details'] as const;
-export const ProductComparisonModal: React.FC<{ outcome: AnalysisOutcome | null; productId: string | null; alpha: number; onClose: () => void }> = ({ outcome, productId, alpha, onClose }) => {
+export const ProductComparisonModal: React.FC<{ outcome: AnalysisOutcome | null; productId: string | null; alpha: number; onClose: () => void; active?: boolean }> = ({ outcome, productId, alpha, onClose, active = true }) => {
   const dialog = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<typeof TABS[number]>('Overview');
   const [selection, setSelection] = useState<Record<string, string>>({});
   useEffect(() => { setSelection({}); setTab('Overview'); }, [outcome?.analysisId]);
   useEffect(() => {
-    if (!productId) return;
+    if (!active || !productId || !outcome) return;
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.querySelector<HTMLButtonElement>('button')?.focus();
     const keyboard = (event: KeyboardEvent) => {
@@ -23,9 +23,9 @@ export const ProductComparisonModal: React.FC<{ outcome: AnalysisOutcome | null;
     };
     document.addEventListener('keydown', keyboard);
     const previousOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', keyboard); document.body.style.overflow = previousOverflow; previous?.focus(); };
-  }, [productId, onClose]);
-  if (!outcome || !productId) return null;
+    return () => { document.removeEventListener('keydown', keyboard); document.body.style.overflow = previousOverflow; if (previous?.getClientRects().length) previous.focus(); };
+  }, [active, productId, outcome, onClose]);
+  if (!active || !outcome || !productId) return null;
   const pairs = outcome.pairs.filter(pair => pair.productId === productId);
   const key = (pair: PairResult) => `${pair.leftProductionId}|${pair.rightProductionId}`;
   const pair = pairs.find(item => key(item) === selection[productId]) || pairs[0];

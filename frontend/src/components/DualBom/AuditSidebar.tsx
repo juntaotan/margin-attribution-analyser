@@ -5,7 +5,7 @@ import { ManagementCommentaryModal } from './ManagementCommentaryModal';
 
 interface RootCauseReport { inventoryId: string; category: string; categoryLabel: string; certainty: string; evidence: string[]; summary: string | null; aiGenerated: boolean; aiMessage: string | null }
 /** Shows exact loaded evidence independently of the backend's optional AI explanation. */
-export const AuditSidebar: React.FC<{ outcome: AnalysisOutcome | null; inventoryId: string | null }> = ({ outcome, inventoryId }) => {
+export const AuditSidebar: React.FC<{ outcome: AnalysisOutcome | null; inventoryId: string | null; active?: boolean }> = ({ outcome, inventoryId, active = true }) => {
   const [report, setReport] = useState<RootCauseReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,6 @@ export const AuditSidebar: React.FC<{ outcome: AnalysisOutcome | null; inventory
       {report && <><p>{report.categoryLabel} · {report.certainty}</p><ul className="list-disc pl-4 space-y-1">{report.evidence.map((evidence, i) => <li key={i}>{evidence}</li>)}</ul><div className="border-t pt-2"><p className="font-medium">{report.aiGenerated ? 'AI-assisted commentary' : 'Recorded-evidence explanation'}</p><p>{report.summary || report.aiMessage || 'Commentary unavailable.'}</p></div></>}
     </section>
     <div className="flex flex-col gap-2 text-xs"><button disabled={!outcome || opening} className="border rounded p-2 flex items-center justify-center gap-2 disabled:opacity-50" onClick={openStudio}>{opening ? <LoaderCircle size={14} className="animate-spin" /> : <FileText size={14} />} Open Report Studio</button><button disabled={!outcome} className="border rounded p-2 disabled:opacity-50" onClick={() => setCommentary(true)}>Management commentary</button></div>
-    {periods && <ManagementCommentaryModal isOpen={commentary} onClose={() => setCommentary(false)} {...periods} selectedNode={null} report={report} />}
+    {periods && <ManagementCommentaryModal isOpen={active && commentary} onClose={() => setCommentary(false)} {...periods} selectedNode={null} report={report} />}
   </aside>;
 };
