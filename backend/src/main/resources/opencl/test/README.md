@@ -53,3 +53,11 @@ Validation on an NVIDIA GeForce RTX 5070 Ti on 2026-10-01:
 The caller rejects nonempty graphs without edges. These graphs are outside the method's input contract and are not tested.
 
 Invalid node IDs, cycles, and duplicate terminal nodes do not yet have reliable input validation, so the suite does not submit them to the kernel. Randomized and concurrency tests increase coverage but cannot prove the absence of races under every possible scheduling order.
+
+## Balanced FGW engine
+
+The same CMake/CTest commands now include four actual-device FGW regressions
+(default combined simplex and modes 0, 1 and 2). See
+[the FGW port README](fgw/README.md) for the OpenCL and serial Java APIs, exact
+CPU-OT fallback, independent CPU/POT/CUDA numerical harness and matched-input
+benchmark. Device absence is a failure, not a passing skipped test.

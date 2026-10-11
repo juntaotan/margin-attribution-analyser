@@ -120,4 +120,16 @@ datasets/
 benchmark/results/
 
 # Native FGW build and validation instructions
+!benchmark/fgw/README.md
 !backend/src/main/resources/cuda/test/fgw/README.md
+
+# FGW port documentation and this task's readable records.
+!backend/src/main/resources/opencl/test/fgw/README.md
+!/docs/tasks/
+/docs/tasks/*
+!/docs/tasks/2026-10-11-165656-opencl-java-fgw.md
+!/docs/tasks/2026-10-11-165656-opencl-java-fgw/
+
+# FGW benchmark relocation record.
+!/docs/tasks/2026-10-11-175803-central-fgw-benchmark.md
+!/docs/tasks/2026-10-11-175803-central-fgw-benchmark/
