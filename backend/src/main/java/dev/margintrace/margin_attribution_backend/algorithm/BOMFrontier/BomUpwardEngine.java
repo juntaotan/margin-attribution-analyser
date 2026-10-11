@@ -8,7 +8,7 @@ import java.util.Arrays;
  * A selected child stops propagating and therefore blocks shared ancestors.
  * Node values are supplied values, not accumulated here.
  */
-public final class BomUpwardEngine {
+public final class BomUpwardEngine implements FrontierEngine {
 
     /** Per-run timings used by the cross-backend benchmark. */
     public record RunTimings(double inputMs, double computeMs, double outputMs, double totalMs) {

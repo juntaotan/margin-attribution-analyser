@@ -376,6 +376,7 @@ public final class FgwEngine {
             boolean hasPrevious = false;
             double previous = 0;
             for (;;) {
+                if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException("FGW cancelled");
                 Iteration t = new Iteration();
                 t.updates = out.iterations;
                 double[] prod = product(d1, p, d2, n, m), h = new double[count], gradient = new double[count];
@@ -568,6 +569,7 @@ public final class FgwEngine {
         double[] dual = new double[nodes];
         LinearOtResult out = new LinearOtResult();
         for (;;) {
+            if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException("Exact OT cancelled");
             if (!c.incrementalOtTree || out.pivots == 0) {
                 parent[0] = 0;
                 depth[0] = 0;

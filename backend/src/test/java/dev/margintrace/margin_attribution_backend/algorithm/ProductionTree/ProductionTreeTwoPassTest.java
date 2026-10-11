@@ -183,7 +183,7 @@ class ProductionTreeTwoPassTest {
         ProductionTreeBuilderTest baseline = new ProductionTreeBuilderTest();
         ProductionTree left = baseline.build("P1",rows,ProductionTreeBuilderTest.evidence(rows,Scope.DIRECT_CONSUMPTION,Map.of()));
         ProductionTree right = baseline.build("P2",rows,ProductionTreeBuilderTest.evidence(rows,Scope.FULL_LINEAGE,Map.of()));
-        var result = new ProductionTreeFgwAdapter().compare(new dev.margintrace.margin_attribution_backend.analysis.dto.ProductionTreeResponse(
+        var result = new dev.margintrace.margin_attribution_backend.analysis.service.ProductionComparisonAdapter().compare(new dev.margintrace.margin_attribution_backend.analysis.dto.ProductionTreeResponse(
                 List.of(left,right),List.of(),"","",null),new dev.margintrace.margin_attribution_backend.analysis.dto.ProductionComparisonRequest(
                 null,"P1","P2",Map.of(),null,null));
         assertTrue(result.statuses().contains("INCOMPATIBLE_TOPOLOGY_SCOPE")); assertNull(result.result());

@@ -1,0 +1,66 @@
+[
+  {
+    "mode": 0,
+    "status": "PASS",
+    "checks": 397,
+    "maximumAbsoluteError": 4.4444337099491804e-11,
+    "versions": {
+      "python": "3.14.3",
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "POT": "0.9.7.post1"
+    },
+    "coverage": {
+      "host": "JAVA_SERIAL",
+      "cuda": "UNVERIFIED: no native execution report supplied"
+    }
+  },
+  {
+    "mode": 1,
+    "status": "PASS",
+    "checks": 397,
+    "maximumAbsoluteError": 4.4444337099491804e-11,
+    "versions": {
+      "python": "3.14.3",
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "POT": "0.9.7.post1"
+    },
+    "coverage": {
+      "host": "JAVA_SERIAL",
+      "cuda": "UNVERIFIED: no native execution report supplied"
+    }
+  },
+  {
+    "mode": 2,
+    "status": "PASS",
+    "checks": 397,
+    "maximumAbsoluteError": 4.4444337099491804e-11,
+    "versions": {
+      "python": "3.14.3",
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "POT": "0.9.7.post1"
+    },
+    "coverage": {
+      "host": "JAVA_SERIAL",
+      "cuda": "UNVERIFIED: no native execution report supplied"
+    }
+  },
+  {
+    "mode": 3,
+    "status": "PASS",
+    "checks": 397,
+    "maximumAbsoluteError": 4.4444337099491804e-11,
+    "versions": {
+      "python": "3.14.3",
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "POT": "0.9.7.post1"
+    },
+    "coverage": {
+      "host": "JAVA_SERIAL",
+      "cuda": "UNVERIFIED: no native execution report supplied"
+    }
+  }
+]

@@ -13,7 +13,10 @@ import java.util.Queue;
 /** Connects graph preparation and frontier pruning to the path-based analysis API. */
 public final class BomFrontierReconciler {
     private final BomGraphPreparer preparer = new BomGraphPreparer();
-    private final BomUpwardEngine engine = new BomUpwardEngine();
+    private final FrontierEngine engine;
+
+    public BomFrontierReconciler() { this(new BomUpwardEngine()); }
+    public BomFrontierReconciler(FrontierEngine engine) { this.engine = engine; }
 
     /**
      * Finds threshold boundary nodes and reconstructs material-to-boundary paths for display.

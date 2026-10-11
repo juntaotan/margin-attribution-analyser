@@ -34,6 +34,8 @@ public final class BomGraphPreparer {
      */
     public PreparedPruning prepare(CsrGraph actual, CsrGraph comparable,
             BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        validate(actual); validate(comparable);
+        validateThreshold(leafThreshold); validateThreshold(stopThreshold);
         Node[] actualNodes = actual.nodes();
         int nodeCount = actualNodes.length;
         Map<String, Node> comparableById = new HashMap<>();
@@ -96,5 +98,42 @@ public final class BomGraphPreparer {
     /** Converts a database-scale amount to exact signed long micro-units. */
     private static long microUnits(BigDecimal amount) {
         return amount.movePointRight(VALUE_SCALE).longValueExact();
+    }
+
+    /** Reject malformed, duplicate-identity or cyclic discovery graphs before traversal. */
+    public static void validate(CsrGraph graph) {
+        if (graph == null || graph.nodes() == null || graph.offset() == null || graph.successors() == null)
+            throw new IllegalArgumentException("Missing CSR arrays");
+        int n = graph.nodes().length;
+        if (graph.offset().length != n + 1 || graph.offset()[0] != 0 || graph.offset()[n] != graph.successors().length)
+            throw new IllegalArgumentException("Invalid CSR shape");
+        var ids = new java.util.HashSet<String>();
+        int[] degree = new int[n];
+        for (int i = 0; i < n; i++) {
+            if (graph.nodes()[i] == null || !ids.add(graph.nodes()[i].inventoryId()))
+                throw new IllegalArgumentException("Invalid or duplicate inventory ID");
+            if (graph.offset()[i] < 0 || graph.offset()[i] > graph.offset()[i + 1])
+                throw new IllegalArgumentException("Invalid CSR offsets");
+        }
+        for (int target : graph.successors()) {
+            if (target < 0 || target >= n) throw new IllegalArgumentException("Invalid CSR successor");
+            degree[target]++;
+        }
+        var pending = new java.util.ArrayDeque<Integer>();
+        for (int i = 0; i < n; i++) if (degree[i] == 0) pending.add(i);
+        int visited = 0;
+        while (!pending.isEmpty()) {
+            int node = pending.remove(); visited++;
+            for (int edge = graph.offset()[node]; edge < graph.offset()[node + 1]; edge++)
+                if (--degree[graph.successors()[edge]] == 0) pending.add(graph.successors()[edge]);
+        }
+        if (visited != n) throw new IllegalArgumentException("Discovery graph must be a DAG");
+    }
+
+    /** Thresholds must be nonnegative, exactly six-decimal representable signed-long micro-units. */
+    public static void validateThreshold(BigDecimal threshold) {
+        if (threshold == null || threshold.signum() < 0) throw new IllegalArgumentException("Invalid threshold");
+        try { microUnits(threshold); }
+        catch (ArithmeticException error) { throw new IllegalArgumentException("Threshold precision or range", error); }
     }
 }

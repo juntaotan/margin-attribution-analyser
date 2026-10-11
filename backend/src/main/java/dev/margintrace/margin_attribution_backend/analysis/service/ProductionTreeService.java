@@ -22,7 +22,7 @@ import java.util.*;
 public class ProductionTreeService {
     private final InventoryUsageRepository repository;
     private final ProductionTreeBuilder builder = new ProductionTreeBuilder();
-    private final ProductionTreeFgwAdapter adapter = new ProductionTreeFgwAdapter();
+    private final ProductionComparisonAdapter adapter = new ProductionComparisonAdapter();
     public ProductionTreeService(InventoryUsageRepository repository) { this.repository = repository; }
 
     /**

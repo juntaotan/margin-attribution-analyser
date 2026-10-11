@@ -200,7 +200,7 @@ class ProductionTreeBuilderTest {
         Map<String, IssueEvidence> issues = Map.of("a", new IssueEvidence("kg", MaterialKind.INTERMEDIATE, null, null, null, null),
                 "b", new IssueEvidence("kg", MaterialKind.INTERMEDIATE, null, null, null, null));
         Evidence direct = evidence(rows, Scope.DIRECT_CONSUMPTION, issues), full = evidence(rows, Scope.FULL_LINEAGE, issues);
-        var adapter = new ProductionTreeFgwAdapter();
+        var adapter = new dev.margintrace.margin_attribution_backend.analysis.service.ProductionComparisonAdapter();
         for (Evidence e : List.of(direct, full)) {
             ProductionTree l = build("P1", rows, e), r = build("P2", rows, e);
             Map<String, ProductionComparisonRequest.Embedding> vectors = new HashMap<>();
@@ -218,9 +218,13 @@ class ProductionTreeBuilderTest {
         List<Issue> rows = fixed(); Evidence e = evidence(rows, Scope.DIRECT_CONSUMPTION, Map.of());
         ProductionTree l = build("P1", rows, e), r = build("P2", rows, e);
         var response = new ProductionTreeResponse(List.of(l,r), List.of(), "mapping", "scope", null);
-        var adapter = new ProductionTreeFgwAdapter();
+        var adapter = new dev.margintrace.margin_attribution_backend.analysis.service.ProductionComparisonAdapter();
         var missing = adapter.compare(response, new ProductionComparisonRequest(null,"P1","P2",Map.of(),null,null));
         assertEquals(6, missing.missingVectors().size()); assertNull(missing.result());
+        Map<String, ProductionComparisonRequest.Embedding> nullVector = new HashMap<>();
+        nullVector.put(l.nodes().get(0).occurrenceId(), null);
+        var nullMissing = adapter.compare(response, new ProductionComparisonRequest(null,"P1","P2",nullVector,null,null));
+        assertEquals(missing.missingVectors(), nullMissing.missingVectors()); assertNull(nullMissing.result());
         Map<String, ProductionComparisonRequest.Embedding> vectors = new HashMap<>();
         for (ProductionTree tree : List.of(l,r)) for (Occurrence n : tree.nodes()) {
             double[] vector = new double[384]; vector[0] = n.index();

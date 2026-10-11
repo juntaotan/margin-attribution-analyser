@@ -144,3 +144,8 @@ benchmark/results/
 /docs/validation/production-tree-two-pass-2026-10-11/*
 !/docs/validation/production-tree-two-pass-2026-10-11/validation.md
 !/docs/validation/production-tree-two-pass-2026-10-11/fgw-validation.md
+
+# Independent analysis-library task record and captured acceptance evidence.
+!/docs/tasks/2026-10-12-005606-complete-analysis-library.md
+!/docs/tasks/2026-10-12-005606-complete-analysis-library/
+!/docs/tasks/2026-10-12-005606-complete-analysis-library/**
