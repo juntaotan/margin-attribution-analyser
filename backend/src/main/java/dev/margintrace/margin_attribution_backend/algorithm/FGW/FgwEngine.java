@@ -103,13 +103,18 @@ public final class FgwEngine {
         public final List<Iteration> trace = new ArrayList<>();
         public boolean converged() { return status == Status.FW_GAP_REACHED; }
     }
+    /** Overlapping native execution intervals; these must not be summed into wall time. */
+    public static final class ExecutionTimes {
+        public double cpuOtMilliseconds, gpuOtMilliseconds, deviceMilliseconds, synchronizationMilliseconds;
+    }
     public static final class Result {
         public int rows, columns, bestStart;
         public SourceMapping left, right;
         public double[] p, q, materialDistances = {}, leftDistances = {}, rightDistances = {};
         public final List<StartResult> starts = new ArrayList<>();
         public double totalMilliseconds;
-        public final String execution = "JAVA_SERIAL_EXACT_SIMPLEX";
+        public String execution = "JAVA_SERIAL_EXACT_SIMPLEX";
+        public ExecutionTimes executionTimes = new ExecutionTimes();
     }
 
     /**

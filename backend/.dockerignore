@@ -5,3 +5,8 @@ mvnw
 mvnw.cmd
 *.iml
 *.log
+
+# Native validation output must not become application resources or image build input.
+src/main/resources/opencl/build
+src/main/resources/cuda/build
+src/main/resources/native/build

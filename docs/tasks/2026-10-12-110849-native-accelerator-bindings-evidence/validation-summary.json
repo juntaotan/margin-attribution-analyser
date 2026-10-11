@@ -1,0 +1,111 @@
+{
+  "backend": {
+    "tests": 204,
+    "passed": 199,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 5,
+    "gpuAcceptanceTests": 7,
+    "skippedTests": [
+      "AnalysisWorkflowTest.realModelSensitivityAndWarmCacheEvidence",
+      "AnalysisWorkflowTest.realModelFullFlowFromOriginalRecords",
+      "ImportAnalysisIntegrationTest.importedRecordsReachRealModelAndFgwThroughHttpAndStreaming",
+      "ComputerManufacturingImportIntegrationTest.allGeneratedExcelRowsReachWarehouseWithoutValueLoss",
+      "PythonEmbeddingProviderTest.timeoutAndInterruptionReleaseOwnedInferenceWaits"
+    ]
+  },
+  "cpuWithoutNativeLibraries": {
+    "tests": 11,
+    "passed": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3
+  },
+  "nativeSuites": {
+    "opencl": {
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    "cuda": {
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "jniOracle": {
+    "cuda": {
+      "status": "PASS",
+      "checks": 584,
+      "maximumAbsoluteError": 4.444455914409673e-11,
+      "tolerance": 1e-08,
+      "coverage": {
+        "host": "CUDA_JNI",
+        "cuda": "CUDA"
+      },
+      "rawJsonSha256": "20bc777cebbb9f90a2ff227281388653b7d80e3e5298245798d0a9ec69778e1f",
+      "rawJsonLocation": "/tmp/margin-cuda-jni-validation.json"
+    },
+    "opencl": {
+      "status": "PASS",
+      "checks": 584,
+      "maximumAbsoluteError": 4.444455914409673e-11,
+      "tolerance": 1e-08,
+      "coverage": {
+        "host": "OPENCL_JNI",
+        "cuda": "CUDA"
+      },
+      "rawJsonSha256": "a866eb9def098bce89cf686ce9bd460c86a1989b2dc6b85e9821a68d95d27f3f",
+      "rawJsonLocation": "/tmp/margin-opencl-jni-validation.json"
+    }
+  },
+  "jvmJniChecks": {
+    "cuda": "PASS: no warnings",
+    "opencl": "PASS: no warnings"
+  },
+  "cudaJniFgwMemcheck": {
+    "errors": 0,
+    "leakedBytes": 0,
+    "leakedAllocations": 0
+  },
+  "frontend": {
+    "dockerBuild": "PASS",
+    "isolatedBrowser": "PASS: inventory, vendor changes, persistence, automatic choice, legacy OpenCL ID"
+  },
+  "optionalImages": {
+    "opencl": "BUILD PASS",
+    "cuda": "BUILD PASS",
+    "gpuExecution": "UNVERIFIED: Docker could not select a device driver with capabilities [[gpu]]",
+    "noDeviceLibraryChecks": {
+      "cuda": "CUDA_INITIALISATION_UNAVAILABLE: CUDA driver version is insufficient for CUDA runtime version",
+      "opencl": "OPENCL_INITIALISATION_UNAVAILABLE: clGetPlatformIDs: -1001"
+    }
+  },
+  "environment": {
+    "os": "Ubuntu 26.04.1 LTS",
+    "java": "21.0.12.1",
+    "cmake": "4.2.3",
+    "cudaToolkit": "13.1.115",
+    "cudaArchitecture": "120",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti",
+    "driver": "595.99.02",
+    "cudaDevice": "0",
+    "openclDevice": "0:0",
+    "openclVendorScope": "NVIDIA ICD only; other vendors unverified",
+    "googleTest": "1.17.0 (temporary packaged sources)",
+    "oracle": {
+      "python": "3.14.4",
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "POT": "0.9.7.post1"
+    },
+    "imageToolkit": "CUDA 12.8.1, portable architecture 75/PTX; image GPU execution unverified"
+  },
+  "limitations": [
+    "Container GPU access unavailable; NVIDIA Container Toolkit/runtime configuration requires separate environment setup.",
+    "No cross-vendor OpenCL execution or cross-platform validation.",
+    "CUDA memcheck covers the JNI FGW fixture driver; no new memory/race instrumentation for OpenCL.",
+    "Deterministic embedding vectors used in GPU workflow fixture; real-model/semantic tests remain unverified.",
+    "Current pair scheduling remains serial, with one native slot/worker per comparator; no throughput optimisation or production-readiness claim."
+  ]
+}

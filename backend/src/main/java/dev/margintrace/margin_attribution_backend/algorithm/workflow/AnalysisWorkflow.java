@@ -72,65 +72,75 @@ public final class AnalysisWorkflow {
         if (cancelled.getAsBoolean()) status = "CANCELLED";
         else if (frontier.frontier() == null) status = "EXECUTION_UNAVAILABLE";
         else {
-            paths = new BomFrontierReconciler(frontier.frontier()).reconcile(actual.graph(), comparable.graph(), command.leafThreshold(), command.stopThreshold());
-            reports.set(reports.size() - 1, executed(frontier.report()));
+            try {
+                paths = new BomFrontierReconciler(frontier.frontier()).reconcile(actual.graph(), comparable.graph(), command.leafThreshold(), command.stopThreshold());
+            } catch (RuntimeException failure) {
+                if (!frontier.currentReport().status().equals("UNAVAILABLE")) throw failure;
+            }
+            reports.set(reports.size() - 1, executed(frontier.currentReport()));
             emit.accept("branches", paths);
-            if (paths.isEmpty()) status = "NO_ABNORMAL_BRANCHES";
+            if (frontier.currentReport().status().equals("UNAVAILABLE")) status = "EXECUTION_UNAVAILABLE";
+            else if (paths.isEmpty()) status = "NO_ABNORMAL_BRANCHES";
             else if (command.comparison() == null || command.comparison().evidence() == null) status = "COMPARISON_INPUT_REQUIRED";
             else if (cancelled.getAsBoolean()) status = "CANCELLED";
             else {
                 selected = productions.load(actual, comparable, paths, command.comparison().evidence());
                 emit.accept("production-trees", selected);
                 var plannedPairs = new ProductionPairSelector().select(selected.trees()); planned = plannedPairs.size();
-                var fgw = backends.resolve("FGW", policy); reports.add(fgw.report());
-                EmbeddingProvider provider = null;
-                try {
-                    if (!cancelled.getAsBoolean()) {
-                        try { provider = providers.apply(settings); }
-                        catch (RuntimeException missing) { diagnostics.add("EMBEDDING_INPUT_REQUIRED:" + missing.getMessage()); }
-                    }
-                    var contextInputs = command.comparison().contextEvidence() == null ? Map.<String, MaterialContext.Evidence>of() : command.comparison().contextEvidence();
-                    embedded = preparation.prepare(selected.trees(), (tree, occurrence) -> contextInputs.containsKey(occurrence.occurrenceId())
-                            ? contextInputs.get(occurrence.occurrenceId()) : contexts.evidence(tree, occurrence), provider, settings,
-                            command.comparison().embeddings() == null ? Map.of() : command.comparison().embeddings(), cancelled);
-                } finally { if (provider != null) provider.close(); }
-                if (embedded.execution() != null) {
-                    var inference = embedded.execution();
-                    reports.add(new ExecutionReport("EMBEDDING", null, settings.backend(), inference.backend(), inference.device(),
-                            inference.fallbackReason(), inference.precision(), embedded.submittedInputs() > 0 ? (embedded.inferredInputs() == 0 ? "FAILED" : embedded.unresolved() > 0 ? "PARTIAL" : "EXECUTED")
-                            : settings.mode() == EmbeddingSettings.Mode.SUPPLIED_ONLY ? "SUPPLIED_ONLY" : "NO_INFERENCE"));
-                }
-                emit.accept("embeddings", embedded);
-                var adapter = fgw.fgw() == null ? null : new ProductionTreeFgwAdapter(fgw.fgw());
-                try {
-                for (var pair : plannedPairs) {
-                    String disposition; ProductionTreeFgwAdapter.Result result = null; String error = null;
-                    if (cancelled.getAsBoolean()) { disposition = "REJECTED"; error = "CANCELLED"; rejected++; }
-                    else if (adapter == null) { disposition = "REJECTED"; error = "FGW_EXECUTION_UNAVAILABLE"; rejected++; }
-                    else {
-                        try {
-                            result = adapter.compare(List.of(pair.left(), pair.right()), new ProductionTreeFgwAdapter.Request(
-                                    pair.left().productionId(), pair.right().productionId(), embedded.vectors(), command.comparison().config(), List.of()));
-                            if (result.result() == null) { disposition = "REJECTED"; rejected++; }
-                            else if (result.result().starts.get(result.result().bestStart).status == FgwEngine.Status.NUMERICAL_FAILURE) {
-                                disposition = "NUMERICAL_FAILURE"; failed++;
-                            } else { disposition = "EXECUTED"; executed++; }
-                        } catch (RuntimeException failure) {
-                            if (failure instanceof java.util.concurrent.CancellationException) { disposition = "REJECTED"; rejected++; }
-                            else { disposition = "NUMERICAL_FAILURE"; failed++; }
-                            error = failure.getMessage();
+                try (var fgw = backends.resolve("FGW", policy)) {
+                    reports.add(fgw.report());
+                    EmbeddingProvider provider = null;
+                    try {
+                        if (!cancelled.getAsBoolean()) {
+                            try { provider = providers.apply(settings); }
+                            catch (RuntimeException missing) { diagnostics.add("EMBEDDING_INPUT_REQUIRED:" + missing.getMessage()); }
                         }
+                        var contextInputs = command.comparison().contextEvidence() == null ? Map.<String, MaterialContext.Evidence>of() : command.comparison().contextEvidence();
+                        embedded = preparation.prepare(selected.trees(), (tree, occurrence) -> contextInputs.containsKey(occurrence.occurrenceId())
+                                ? contextInputs.get(occurrence.occurrenceId()) : contexts.evidence(tree, occurrence), provider, settings,
+                                command.comparison().embeddings() == null ? Map.of() : command.comparison().embeddings(), cancelled);
+                    } finally { if (provider != null) provider.close(); }
+                    if (embedded.execution() != null) {
+                        var inference = embedded.execution();
+                        reports.add(new ExecutionReport("EMBEDDING", null, settings.backend(), inference.backend(), inference.device(),
+                                inference.fallbackReason(), inference.precision(), embedded.submittedInputs() > 0 ? (embedded.inferredInputs() == 0 ? "FAILED" : embedded.unresolved() > 0 ? "PARTIAL" : "EXECUTED")
+                                : settings.mode() == EmbeddingSettings.Mode.SUPPLIED_ONLY ? "SUPPLIED_ONLY" : "NO_INFERENCE"));
                     }
-                    var output = new AnalysisOutcome.PairResult(pair.left().namespace(), pair.left().productId(), pair.left().productionId(),
-                            pair.right().productionId(), disposition, result, error);
-                    pairs.add(output); emit.accept("comparison", output);
+                    emit.accept("embeddings", embedded);
+                    var adapter = fgw.fgw() == null ? null : new ProductionTreeFgwAdapter(fgw.fgw());
+                    try {
+                    for (var pair : plannedPairs) {
+                        String disposition; ProductionTreeFgwAdapter.Result result = null; String error = null;
+                        if (cancelled.getAsBoolean()) { disposition = "REJECTED"; error = "CANCELLED"; rejected++; }
+                        else if (adapter == null) { disposition = "REJECTED"; error = "FGW_EXECUTION_UNAVAILABLE"; rejected++; }
+                        else {
+                            try {
+                                result = adapter.compare(List.of(pair.left(), pair.right()), new ProductionTreeFgwAdapter.Request(
+                                        pair.left().productionId(), pair.right().productionId(), embedded.vectors(), command.comparison().config(), List.of()));
+                                if (result.result() == null) { disposition = "REJECTED"; rejected++; }
+                                else if (result.result().starts.get(result.result().bestStart).status == FgwEngine.Status.NUMERICAL_FAILURE) {
+                                    disposition = "NUMERICAL_FAILURE"; failed++;
+                                } else { disposition = "EXECUTED"; executed++; }
+                            } catch (RuntimeException failure) {
+                                if (failure instanceof java.util.concurrent.CancellationException) { disposition = "REJECTED"; rejected++; }
+                                else if (fgw.currentReport().status().equals("UNAVAILABLE")) { disposition = "EXECUTION_UNAVAILABLE"; failed++; }
+                                else { disposition = "NUMERICAL_FAILURE"; failed++; }
+                                error = failure.getMessage();
+                            }
+                        }
+                        var output = new AnalysisOutcome.PairResult(pair.left().namespace(), pair.left().productId(), pair.left().productionId(),
+                                pair.right().productionId(), disposition, result, error);
+                        pairs.add(output); emit.accept("comparison", output);
+                    }
+                    } finally {
+                        for (int i = 0; i < reports.size(); i++) if (reports.get(i).stage().equals("FGW")) reports.set(i, fgw.currentReport());
+                    }
+                    if (executed + failed > 0) {
+                        for (int i = 0; i < reports.size(); i++) if (reports.get(i).stage().equals("FGW")) reports.set(i, executed(fgw.currentReport()));
+                    }
+                    status = cancelled.getAsBoolean() ? "CANCELLED" : planned == 0 ? "INSUFFICIENT_PRODUCTION_INSTANCES"
+                            : fgw.fgw() == null || fgw.currentReport().status().equals("UNAVAILABLE") ? "EXECUTION_UNAVAILABLE" : failed > 0 ? "NUMERICAL_FAILURE" : rejected > 0 ? "COMPARISON_INPUT_REQUIRED" : "COMPLETED";
                 }
-                } finally { if (fgw.fgw() != null) fgw.fgw().close(); }
-                if (executed + failed > 0) {
-                    for (int i = 0; i < reports.size(); i++) if (reports.get(i).stage().equals("FGW")) reports.set(i, executed(fgw.report()));
-                }
-                status = cancelled.getAsBoolean() ? "CANCELLED" : planned == 0 ? "INSUFFICIENT_PRODUCTION_INSTANCES"
-                        : failed > 0 ? "NUMERICAL_FAILURE" : rejected > 0 ? "COMPARISON_INPUT_REQUIRED" : "COMPLETED";
             }
         }
         var outcome = new AnalysisOutcome(id, status, actual, comparable, paths, selected, embedded, List.copyOf(pairs),
@@ -138,6 +148,7 @@ public final class AnalysisWorkflow {
         emit.accept("completed", outcome); return outcome;
     }
     private static ExecutionReport executed(ExecutionReport r) {
+        if (r.status().equals("UNAVAILABLE")) return r;
         return new ExecutionReport(r.stage(), r.supplied(), r.requested(), r.actual(), r.device(), r.fallbackReason(), r.numericalMode(), "EXECUTED");
     }
     private static void dates(java.time.LocalDate start, java.time.LocalDate end) {

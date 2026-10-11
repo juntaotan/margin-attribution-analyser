@@ -10,7 +10,8 @@ import java.io.UncheckedIOException;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisRunResponse;
-import dev.margintrace.margin_attribution_backend.algorithm.execution.BackendRegistry;
+import dev.margintrace.margin_attribution_backend.algorithm.execution.ExecutionReport;
+import dev.margintrace.margin_attribution_backend.infrastructure.acceleration.NativeAcceleration;
 import dev.margintrace.margin_attribution_backend.algorithm.execution.ExecutionPolicy;
 
 /** Direct synchronous adapter for the reusable original-record analysis workflow. */
@@ -46,10 +47,26 @@ public class AnalysisRunController {
     /** Report registered backend capabilities, rather than browser GPU availability. */
     @GetMapping("/capabilities")
     public Map<String, Object> capabilities() {
-        var registry = new BackendRegistry();
-        return Map.of("cpu", registry.resolve("FGW", ExecutionPolicy.cpu()).report(),
-                "cuda", registry.resolve("FGW", new ExecutionPolicy(true, true, null, false)).report(),
-                "opencl", registry.resolve("FGW", new ExecutionPolicy(true, false, null, false)).report());
+        var cuda = NativeAcceleration.inventory("CUDA");
+        var opencl = NativeAcceleration.inventory("OPENCL");
+        return Map.of("cpu", capability("JAVA_CPU", null, "FGW", true),
+                "cuda", capability("CUDA", cuda, "FGW", true),
+                "opencl", capability("OPENCL", opencl, "FGW", false),
+                "stages", Map.of("cuda", Map.of("frontier", capability("CUDA", cuda, "FRONTIER", true),
+                        "fgw", capability("CUDA", cuda, "FGW", true)),
+                        "opencl", Map.of("frontier", capability("OPENCL", opencl, "FRONTIER", false),
+                        "fgw", capability("OPENCL", opencl, "FGW", false))),
+                "devices", Map.of("cuda", cuda.devices(), "opencl", opencl.devices()));
+    }
+    private static ExecutionReport capability(
+            String family, NativeAcceleration.Inventory inventory,
+            String stage, boolean nvidia) {
+        boolean available = inventory == null || inventory.devices().stream().anyMatch(d -> stage.equals("FGW") ? d.fgw() : d.frontier());
+        String reason = available ? null : inventory.unavailableReason() == null ? family + "_STAGE_UNAVAILABLE" : inventory.unavailableReason();
+        return new ExecutionReport(stage,
+                family.equals("JAVA_CPU") ? ExecutionPolicy.cpu() : new ExecutionPolicy(true, nvidia, null, false),
+                family, available ? family : null, null, reason, stage.equals("FRONTIER") ? "SIGNED_LONG_MICRO_UNITS" : "FP64/EXACT_SIMPLEX",
+                available ? "AVAILABLE" : "UNAVAILABLE");
     }
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> invalid(IllegalArgumentException error) {

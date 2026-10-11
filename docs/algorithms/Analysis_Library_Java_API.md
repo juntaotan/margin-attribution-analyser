@@ -103,3 +103,26 @@ python3 -m venv .venv-fgw
 ```
 
 This checks the captured vectors/CSR, every FW state, original tensor objectives/gradients, exact HiGHS/POT OT objectives, marginals, line search and fresh terminal gap at `1e-8`. The existing fixed regression and exact-OT harness remain separately required. Reports preserve human-labelled correspondence masses and scales; no fixed FGW score or semantic acceptance threshold is invented. Native bridge/device validation and calibrated semantic acceptance remain unverified.
+
+## Optional native execution
+
+The analysis run workflow now has optional JNI adapters for the existing CUDA and
+OpenCL frontier/FGW engines. See [native binding setup and contracts](../../backend/src/main/resources/native/README.md)
+for build/runtime prerequisites, backend device inventory, lazy initialisation,
+explicit CPU fallback and resource lifetime. The prior CPU-only/missing-binding
+descriptions refer to the initial integration stage. Existing supplied-vector
+production comparison endpoints retain their CPU contract.
+
+`GET /api/v1/analysis/capabilities` keeps its original family reports and adds
+`devices.cuda`, `devices.opencl` (device ID/name and frontier/FGW capability flags),
+and `stages.cuda`/`stages.opencl` (separate frontier/FGW reports). CUDA IDs are
+indices; OpenCL IDs are platform:device pairs. Null selects a suitable device
+within the caller-selected family. Inventory availability is distinct from an
+executed numerical result.
+
+FGW results retain their existing fields and add `executionTimes` for overlapping
+native intervals. `execution` now reports actual solver placement, including
+exact CPU OT inside GPU FGW. Stage execution reports retain initialisation and
+fallback reasons; failed device initialisation is `EXECUTION_UNAVAILABLE`, not
+a successful or converged calculation. Numerical statuses/tolerances and decimal
+evidence are unchanged.

@@ -106,8 +106,8 @@ class AnalysisWorkflowTest {
         assertThrows(IllegalArgumentException.class, () -> new ExecutionPolicy(true, null, null, false));
         var registry = new BackendRegistry();
         for (boolean nvidia : List.of(true, false)) {
-            var unavailable = registry.resolve("FGW", new ExecutionPolicy(true, nvidia, "0", false)); assertNull(unavailable.fgw()); assertEquals(nvidia ? "CUDA" : "OPENCL", unavailable.report().requested());
-            var fallback = registry.resolve("FGW", new ExecutionPolicy(true, nvidia, "0", true)); assertNotNull(fallback.fgw()); assertEquals("JAVA_CPU", fallback.report().actual()); assertNotNull(fallback.report().fallbackReason());
+            var unavailable = registry.resolve("FGW", new ExecutionPolicy(true, nvidia, "2147483647", false)); assertNull(unavailable.fgw()); assertEquals(nvidia ? "CUDA" : "OPENCL", unavailable.report().requested());
+            var fallback = registry.resolve("FGW", new ExecutionPolicy(true, nvidia, "2147483647", true)); assertNotNull(fallback.fgw()); assertEquals("JAVA_CPU", fallback.report().actual()); assertNotNull(fallback.report().fallbackReason());
         }
         assertEquals("CANCELLED", workflow(new RecordingProvider()).run(command(), e -> {}, () -> true).status());
         var base = workflow(new RecordingProvider()).run(command()).selection().trees().getFirst(); var pairs = new ProductionPairSelector();
@@ -116,6 +116,27 @@ class AnalysisWorkflowTest {
         assertEquals(4950, pairs.select(java.util.stream.IntStream.range(0,100).mapToObj(i -> copyIdentity(base, "P" + i, base.namespace(), base.productId())).toList()).size());
         assertEquals(0, pairs.select(List.of(base, base, copyIdentity(base,"OTHER","other",base.productId()),copyIdentity(base,"OTHER",base.namespace(),"other"))).size());
         assertEquals(0,pairs.select(List.of(copyIdentity(base,"P1","a\u0000b","c"),copyIdentity(base,"P2","a","b\u0000c"))).size());
+    }
+    @Test
+    @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(named = "MARGIN_TEST_GPU", matches = "true")
+    void actualGpuWorkflowRetainsOriginalRecordEvidenceAndCpuParity() throws Exception {
+        var expected = workflow(new RecordingProvider()).run(command());
+        for (boolean cuda : List.of(true, false)) {
+            var c = command();
+            var gpuCommand = new AnalysisCommand(c.actualStartDate(), c.actualEndDate(), c.comparableStartDate(), c.comparableEndDate(),
+                    c.leafThreshold(), c.stopThreshold(), new ExecutionPolicy(true, cuda, null, false), c.embedding(), c.comparison());
+            var result = workflow(new RecordingProvider()).run(gpuCommand);
+            assertEquals("COMPLETED", result.status(), result.diagnostics().toString());
+            assertTrees(result.selection().trees()); assertEquals(expected.branches(), result.branches());
+            assertEquals(expected.planned(), result.planned()); assertEquals(expected.executed(), result.executed());
+            assertTrue(result.execution().stream().filter(e -> Set.of("FRONTIER", "FGW").contains(e.stage()))
+                    .allMatch(e -> e.actual().equals(cuda ? "CUDA" : "OPENCL") && e.status().equals("EXECUTED") && e.device() != null));
+            var actual = result.pairs().getFirst().comparison().result(); var cpu = expected.pairs().getFirst().comparison().result();
+            assertEquals(cpu.starts.get(cpu.bestStart).costs.fgw(), actual.starts.get(actual.bestStart).costs.fgw(), 1e-8);
+            assertEquals(cpu.starts.get(cpu.bestStart).status, actual.starts.get(actual.bestStart).status);
+            var out = Path.of("target/native-validation"); Files.createDirectories(out);
+            new ObjectMapper().writeValue(out.resolve((cuda ? "cuda" : "opencl") + "-original-record-workflow.json").toFile(), result);
+        }
     }
     static ProductionTree copyIdentity(ProductionTree t, String id, String namespace, String product) {
         return new ProductionTree(namespace, id, namespace + ":" + id, product, t.scope(), t.rootIndex(), t.nodes(), t.edges(), t.sourceIssues(), t.rowOffsets(), t.colIndices(), t.outputQuantity(), t.recordedOutputCost(), t.recordedMaterialAmount(), t.outputCostDifference(), t.statuses(), t.directComplete(), t.lineageComplete(), t.selectionReferences(), t.topDownScope(), t.issueDecisions(), t.processingDecisions(), t.calculatedTotalCost(), t.knownTotalCost(), t.laborCost(), t.overheadCost(), t.costComplete(), t.totalOutputCostDifference());

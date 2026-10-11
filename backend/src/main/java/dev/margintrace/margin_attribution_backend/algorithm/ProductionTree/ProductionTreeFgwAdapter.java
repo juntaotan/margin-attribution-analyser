@@ -4,9 +4,9 @@ import dev.margintrace.margin_attribution_backend.algorithm.FGW.FgwEngine;
 import java.util.*;
 
 /**
- * Semantic gate around the existing serial Java engine. It never adds attribute
- * penalties or modifies weights, distances or solver tolerances. A session is
- * constructed and consumed synchronously inside this call on its owning thread.
+ * Semantic gate around the caller-selected FGW engine. It never adds attribute
+ * penalties or modifies weights, distances or solver tolerances. Comparison resources are
+ * supplied by the caller and consumed synchronously on the calling thread.
  */
 public final class ProductionTreeFgwAdapter {
     public record Embedding(String version, double[] values) {

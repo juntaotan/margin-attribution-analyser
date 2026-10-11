@@ -1,0 +1,81 @@
+{
+  "tolerance": 1e-08,
+  "executions": [
+    "JAVA_SERIAL",
+    "OPENCL",
+    "CUDA"
+  ],
+  "modes": [
+    {
+      "mode": 0,
+      "checks": {
+        "java": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        },
+        "opencl": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        }
+      }
+    },
+    {
+      "mode": 1,
+      "checks": {
+        "java": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        },
+        "opencl": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        }
+      }
+    },
+    {
+      "mode": 2,
+      "checks": {
+        "java": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        },
+        "opencl": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        }
+      }
+    },
+    {
+      "mode": 3,
+      "checks": {
+        "java": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        },
+        "opencl": {
+          "status": "PASS",
+          "count": 824,
+          "maximumAbsoluteError": 4.444455914409673e-11
+        }
+      }
+    }
+  ],
+  "sources": {
+    "backend/src/main/java/dev/margintrace/margin_attribution_backend/algorithm/FGW/FgwEngine.java": "bda80fcffb8a687c2a98dd573afe71131c5e5a7ee89deeaa00ccedac4c5591ea",
+    "backend/src/test/java/dev/margintrace/margin_attribution_backend/algorithm/FGW/FgwFixtures.java": "27037b6b0c7bf63db73a35b4ca3e7f6c46dd251df5dbef54f88f6ab77341aab0",
+    "backend/src/main/resources/opencl/fgw.cl": "3fc5b835490b240170c2e0b01b6fc519f6caa76d08405d85818d90c4931ea6e4",
+    "backend/src/main/resources/opencl/fgw_engine.cpp": "b8141fd14d9d519f6e742569545457624264a89b03a74374cc3b932fd1dcf81a",
+    "backend/src/main/resources/opencl/fgw_engine.hpp": "d313edc4b8180a8adf480e93723dc10651f37d91ab2778e33e220401db94ea57",
+    "backend/src/main/resources/cuda/fgw.cu": "89da2676c929cd18c35568836fbd2409b343f7442f6e6370de9e006cabe2c86d",
+    "backend/src/main/resources/cuda/fgw_engine.cu": "38b92b5d5bbe1fe7cf9f3e637c1d38dba2cd1fa3361352a5f2975846b0b70d4a",
+    "backend/src/main/resources/cuda/fgw_engine.cuh": "80c6f5e6b98262212643530e6dd17220e09ade3805a9a62aa477205ef67135eb"
+  },
+  "status": "PASS"
+}

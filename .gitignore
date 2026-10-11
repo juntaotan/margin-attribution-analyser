@@ -159,3 +159,9 @@ benchmark/results/
 !/docs/tasks/2026-10-12-101130-direct-python-excel-export.md
 !/docs/tasks/2026-10-12-102106-single-import-submission.md
 !/docs/tasks/2026-10-12-104844-resident-analysis-navigation.md
+
+# Optional Java accelerator bindings and their readable validation evidence.
+!/backend/src/main/resources/native/README.md
+!/docs/tasks/2026-10-12-110849-native-accelerator-bindings.md
+!/docs/tasks/2026-10-12-110849-native-accelerator-bindings-evidence/
+!/docs/tasks/2026-10-12-110849-native-accelerator-bindings-evidence/**
