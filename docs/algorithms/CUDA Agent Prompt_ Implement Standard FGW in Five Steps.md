@@ -2,13 +2,28 @@
 
 # Background
 
-Assume that complete production trees with FIFO-restored actual quantities and amounts are already available. Compare different material compositions and production structures of the **same product** using FGW.
+Assume that eligible actual consumption trees grouped by production ID, with recorded quantities and amounts, are already available. The user-confirmed production identifier is `inventory_usage.order_no`. Compare different production IDs of the **same product** at the same declared topology scope using FGW. Full multilevel lineage requires explicit upstream production links; FIFO allocation is not part of tree preparation.
+
+This is File 2 of [the production analysis workflow](<Production Anomaly Analysis — Agent Workflow.md>). Validate supplied trees through [the production-ID tree specification](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>), whose historical filename is retained, and validate FGW through [the fixed numerical regression](<FGW CUDA Implementation — Numerical Test Case.md>). These are separate stages; work on this native solver does not establish that production-ID tree construction or backend integration is complete.
 
 # Objective
 
 The feature of finding out the abnormal transactions uses the **standard balanced Fused Gromov-Wasserstein (FGW)**  algorithm in CUDA and OpenCL for comparing manufacturing graphs with different node counts and unordered structures. Each node has one caller-supplied 384-dimensional material content embedding aligned with its CSR index. Use the node's own content vector, not the three-block neighbourhood vector or six-block BOM embedding. Graph topology is stored in CSR format. Embedding generation and model inference are outside this FGW implementation; report missing or misaligned embeddings rather than fabricating them.
 
 Follow these five steps. For each step, specify inputs, outputs, and computation.
+
+# Current Implementation and Scope
+
+The following status describes the repository implementation reviewed on 11 October 2026. Preserve implemented behaviour when extending it; distinguish subsequent requirements from capabilities actually delivered and tested.
+
+- The native CUDA module is implemented in [`fgw.cu`](../../backend/src/main/resources/cuda/fgw.cu), [`fgw_engine.cu`](../../backend/src/main/resources/cuda/fgw_engine.cu) and [`fgw_engine.cuh`](../../backend/src/main/resources/cuda/fgw_engine.cuh). It uses FP64 and cuBLAS. No FP32 execution path is supplied.
+- The public interface supplies single-pair comparison, ordered comparisons of arbitrary pairs, and a persistent fixed-baseline session with bounded submission and independent GPU slots. Baseline preparation and execution resources can be reused across successive submissions.
+- Exact device transportation simplex is implemented for `N+M <= 320`. Incremental basis-tree updates and candidate-edge pricing are enabled together by default. Each active start currently launches its own one-block simplex kernel on its slot's stream. Cross-target simplex problems are not grouped into a shared multi-block launch by the engine.
+- cuBLAS batched matrix products process multiple starts within a comparison. Concurrent comparisons use separate streams. Describe these two implemented forms of parallelism precisely when reporting batching coverage.
+- Full tracing, explicit CPU OT and larger transport problems use exact CPU OT inside the CUDA engine. This is an OT fallback, and still requires CUDA for the remaining calculation. The independent CPU FGW reference and benchmark are test tools; no complete production CPU FGW engine is exposed.
+- Embedding generation, production-ID tree construction, Java/backend orchestration and an OpenCL implementation of this FGW module remain outside the delivered native CUDA stage. The wider CUDA/OpenCL objective above does not imply OpenCL delivery or test coverage.
+
+The [native module README](../../backend/src/main/resources/cuda/test/fgw/README.md) documents the API, reproducible builds, device requirements, validation and benchmark entry points.
 
 # Step 1: Calculate Distance Matrices
 
@@ -146,6 +161,63 @@ tolGapRel     = 1e-5
 costScaleFloor = 1e-12
 ```
 
+The implementation counts applied correspondence updates in `iterations`; the terminal fresh-gap check is retained as a diagnostic iteration without incrementing this count. `converged()` is true only for `FW_GAP_REACHED`. Cost stalling uses the absolute **or** relative change threshold after checking the fresh gap; reaching the update limit takes precedence over cost stalling.
+
+# Input and Output Contract
+
+- `Graph` supplies product/instance identifiers, a root index, unweighted CSR, exactly `nodeCount * 384` finite embedding values, and one `NodeSource` per CSR node. Reject empty or invalid graphs, disconnected undirected topology, incompatible product identities, invalid configuration, and dimension/mapping mismatches. Value validation cannot establish whether a caller semantically aligned an embedding with the correct material.
+- Preserve occurrence, material, production-order and issue-line identifiers. Map the scoped production ID to `Graph.instanceId` and each occurrence's receiving production ID to `NodeSource.productionOrderId`. Keep additional upstream-source/completeness metadata alongside the native input/output. Leave the existing `NodeSource.fifoAllocationIds` empty for the production-ID workflow; retain the field for compatibility. Copy `quantity` and `amount` decimal text verbatim; neither changes the mathematical objective or node weights.
+- Empty `Comparison.initialMatrices` means exactly one uniform outer-product start. Otherwise evaluate every supplied feasible row-major `[N,M]` matrix without appending an implicit uniform start. Keep each start's state independent.
+- Return row/column source mappings, fixed weights, all start results, selected `bestStart`, final correspondence, separate material/structure/FGW costs, fresh gap, applied-update count, terminal status and any numerical diagnostic. Select the lowest finite cost amongst numerically valid starts. If every start fails, `bestStart=0` still refers to a failure; callers must inspect its status.
+- Keep per-evaluation scalar diagnostics and OT certificates even when `captureTrace=false`. Full intermediate distance matrices and P/G/S/direction matrices are retained when tracing is enabled. Report original marginal errors and primal/dual/reduced-cost checks, rather than assuming correctness from the solver's termination.
+- Invalid pair arguments throw `std::invalid_argument`; CUDA/cuBLAS resource errors throw `std::runtime_error`. In a session, target errors arrive through its future, while numerical failures remain explicit result statuses. Constructor failures occur before work is accepted.
+
+# Additional Configuration Defaults
+
+The mathematical defaults above and the following controls are defined by `Config` in `fgw_engine.cuh`:
+
+| Control | Default | Meaning |
+| --- | --- | --- |
+| `feasibilityTolerance` | `1e-9` | Transport feasibility checks. |
+| `numericalTolerance` | `1e-10` | Numerical checks, including objective/line-search handling. |
+| `otTolerance` | `1e-12` | Exact linear OT tolerance; retain the solver's scale-aware certificate checks. |
+| `device` | `0` | Configurable CUDA device index. |
+| `maxConcurrentComparisons` | `1` | Maximum executing comparisons. |
+| `gpuSlots` | `32` | Requested persistent stream/handle slots, capped by the comparison limit. |
+| `dispatcherThreads` | `2` | Requested host dispatchers, capped by the effective slot count. |
+| `queueCapacity` | `0` | Zero selects twice the effective slot count; bounds pending inputs. |
+| `workspaceBytes` | `4 * 1024 * 1024` | Dedicated cuBLAS workspace bytes per slot; minimum 256 bytes. |
+| `captureTrace` | `false` | Full diagnostic matrices; enabling this selects the synchronous CPU-OT path. |
+| `profileExecution` | `false` | Collect overlapping CUDA event intervals and host wait timings. |
+| `otSolver` | `LinearOtSolver::GPU_SIMPLEX` | Preferred exact OT execution path, subject to tracing and size limits. |
+| `incrementalOtTree` | `true` | Incrementally update the device simplex basis tree. |
+| `candidateOtPricing` | `true` | Reprice cached candidate edges before a full device pricing scan. |
+
+With untouched defaults the effective pool contains **one slot and one dispatcher**. To exercise the measured 32-slot/two-dispatcher configuration, explicitly set `maxConcurrentComparisons=32`, `gpuSlots=32` and `dispatcherThreads=2`. The benchmark driver configures its comparison limit from its requested slot count; library defaults remain as shown above.
+
+# Exact GPU Simplex Optimisations
+
+Preserve the exact balanced LP and its certificate when changing solver internals:
+
+- Uniform marginal masses are represented as integral units of `1/lcm(N,M)`. Initialise a feasible basis for every new comparison/start. Retain that basis across its Frank–Wolfe iterations, recompute prices for changed gradient costs, and reset it before another comparison uses the slot. Similar target structure does not currently reuse another target's basis or answer.
+- With incremental tree updates enabled, build the rooted basis tree and potentials at the beginning of an OT solve. A pivot removes the leaving edge and reattaches the affected component at the entering edge, updating its parents, depths and potentials. Avoid a complete tree rebuild after every pivot.
+- With candidate pricing enabled, a full scan caches one improving nonbasic arc per CUDA thread. Recompute cached reduced costs using current potentials on subsequent pivots. Refresh with a complete scan when the cache contains no improving edge. Require a complete scan with no improving edge before certifying optimality; candidate exhaustion alone is insufficient.
+- Preserve device degeneracy and tie handling, including the lowest arc index for tied leaving choices. The CPU reference separately detects repeated degenerate bases and activates Bland's rule; the device kernel does not implement that repeated-basis mechanism. Reject nonfinite costs, disconnected bases and exhaustion of the device's 100,000-pivot safety limit explicitly. Perform primal/dual and original-marginal checks after solving.
+- Expose `fullPricingScans`, `candidatePricingPasses`, `treeRebuilds`, `incrementalTreeUpdates`, `treeNodesVisited` and `cycleEdges` with the pivot diagnostics. CPU OT leaves these device counters zero. Compare work counters alongside runtime to distinguish reduced work from scheduling effects.
+
+The pivot sequence within an OT problem remains dependent on preceding pivots. Pricing is parallel, while tree/cycle updates retain serial work. Current cross-target parallelism comes from independent stream submissions; grouping several ready targets into one simplex launch remains a subsequent optimisation requiring implementation and independent numerical/performance validation.
+
+Keep explicit ablation modes available in the test and benchmark tools:
+
+| Mode | `incrementalOtTree` | `candidateOtPricing` | Behaviour |
+| --- | --- | --- | --- |
+| `0` | `false` | `false` | Reference device solver. |
+| `1` | `true` | `false` | Incremental tree updates only. |
+| `2` | `false` | `true` | Candidate pricing only. |
+| `3` | `true` | `true` | Combined solver, the current default. |
+
+Tests use `FGW_SIMPLEX_MODE`; `benchmark.py` uses `--simplex-mode`. CPU/tracing fallbacks ignore these two device controls. Different exact pivot orders can select different optimal matrices for tied LPs; retain the objective/marginal comparisons specified in Step 4.
+
 # Implementation Requirements
 
 - Use exactly three production CUDA implementation files as specified below. Keep the mathematical algorithm in one file and separate it from CUDA execution management.
@@ -155,7 +227,7 @@ costScaleFloor = 1e-12
 - Preserve standard balanced FGW mathematics; do not silently replace exact Linear OT with Sinkhorn.
 - Validate numerical correctness against ​**Python Optimal Transport (POT)** .
 - Record the POT version, explicit floating-point inputs, initial matrix, `loss_fun="square_loss"`, `symmetric=True`, `alpha`, `armijo=False`, and tolerances for reference validation.
-- Keep root, node-occurrence, quantity, amount, and FIFO source mappings available in the comparison output.
+- Keep root, production-ID, node-occurrence, quantity, amount and issue/source mappings available in the comparison output. Legacy FIFO identifiers remain empty for production-ID trees.
 - State which operations run on CPU or GPU, including exact linear OT. Benchmark transfers and synchronization as part of complete runtime.
 - Verify gradients using feasible zero-row-sum and zero-column-sum directions against the original quadratic objective.
 - Reject invalid CSR or disconnected inputs rather than propagating infinite structural distances.
@@ -165,6 +237,28 @@ costScaleFloor = 1e-12
 # Fixed-Baseline CUDA Execution
 
 The primary workload compares one fixed baseline product tree with many nearby target trees of the same product. This execution model changes resource management only; retain the five mathematical steps, objective scale, exact balanced OT, uniform initialisation, tolerances, feasible starts and multi-start behaviour above.
+
+## Public Execution Interfaces
+
+- `CudaFgwEngine::compare` creates a session for one pair and executes with a comparison limit of one. Repeated calls recreate resources.
+- `CudaFgwEngine::compareBatch` uses a persistent slot pool for the supplied vector, supports unequal pair sizes and returns all results in input order. Distinct baselines are prepared as needed. Inputs and outputs are materialised, so their memory grows with the vector size.
+- `CudaFgwSession(baseline, config)` prepares one baseline and retains resources across repeated `submit(target, initialMatrices)` calls, including idle periods. Submit targets and consume futures in bounded groups for large workloads. A full pending queue applies backpressure, but callers must separately bound outstanding futures and retained results.
+
+For example, after supplying validated `baselineTree` and `targetTree` values:
+
+```cpp
+fgw::Config config;
+config.maxConcurrentComparisons = 32;
+config.gpuSlots = 32;
+config.dispatcherThreads = 2;
+config.queueCapacity = 64;
+fgw::CudaFgwSession session(baselineTree, config);
+auto pending = session.submit(targetTree);
+auto result = pending.get();
+session.close();
+```
+
+The example submits one comparison. Sustained parallel execution requires several outstanding submissions within a bounded window. `close()` rejects further submissions and starts draining accepted work; session destruction joins dispatchers before releasing the baseline. Do not destroy the session concurrently with `submit()` or `close()`.
 
 ## Baseline Lifetime
 
@@ -187,6 +281,14 @@ The primary workload compares one fixed baseline product tree with many nearby t
 - Profiling must not add blocking event waits to asynchronous iteration submission. Collect elapsed CUDA event intervals after the stream is ready. GPU OT intervals overlap the complete device intervals; do not sum them into wall time.
 - Bound queued inputs and outstanding results. Keep accepted task/CSR/pointer-array storage alive until its stream has finished. Report failures individually, drain device work before buffer reuse, reject submissions after closure, and finish accepted work before releasing baseline resources.
 
+`SessionStatistics.workersCreated` counts host dispatchers; `gpuSlotsCreated` counts actual GPU slots. Report `maximumInFlight`, `maximumQueued`, baseline preparation count and device allocations/bytes as well. Completed statistics include numerical-failure results, so numerical acceptance requires checking each result's status. `Result.totalMilliseconds` measures comparison service time, excluding queue wait and session initialisation; use end-to-end wall time for throughput.
+
+## Scale and Remaining Limits
+
+Million-comparison workloads mean a large number of separate target requests. The session API supports incremental submission, but its existing short-run evidence does not validate million-request endurance. Do not merge targets into a single tree, reuse cached FGW answers, or reduce graph structure without a separate specification and numerical validation.
+
+The `N+M <= 320` restriction applies to the nodes of each pair. For example, 128-by-160 uses device simplex; 128-by-1,600 exceeds its capacity and uses CPU OT while retaining CUDA for other work. Larger individual graphs also require dense FP64 `D1`, `D2` and correspondence/work matrices, with storage growing as `N^2 + M^2 + N*M` per active problem, plus multiple work buffers and starts. Increasing the request count or stream count does not enlarge the device solver's supported per-pair capacity. Larger device simplex, sparse/approximate formulations and cross-target shared launches are subsequent work; any formulation change needs explicit authorisation and a separate correctness specification.
+
 ## Throughput Validation
 
 Complete the prescribed numerical regression, independent CPU comparison and POT validation before performance measurements. Also validate baseline preparation/resource counts, independent dispatcher/slot counts, queue and active-comparison bounds, reuse across batch boundaries, fresh initialisation after different starts, unequal target sizes, failure isolation and draining at session closure.
@@ -200,6 +302,26 @@ Use equivalent inputs, precision, parameters, initialisation and stopping settin
 Report initialisation, warm-up, steady processing, destruction and total elapsed time separately, with completed/requested counts, throughput, resource counts, marginal errors and numerical agreement. Record CPU and GPU exact-OT time, actual dispatcher/slot counts, CUDA event intervals for device work/transfers and host synchronisation waits; explain overlapping intervals rather than summing them into wall time. If CPU and CUDA paths use different exact OT implementations, disclose that comparison confound instead of attributing their performance difference solely to GPU execution.
 
 An explicitly time-limited run is a measured prefix, not a completed benchmark at the requested count. Preserve its actual completed count, mark it incomplete, and never present an extrapolated duration as an actual million-comparison measurement.
+
+# Validation Entry Points and Existing Evidence
+
+Use the [native README's Docker or intentionally available host-toolchain commands](../../backend/src/main/resources/cuda/test/fgw/README.md). Configure the native module with `FGW_ONLY=ON` to build only FGW CUDA targets; `FGW_CPU_ONLY=ON` builds host mathematical validation without CUDA. The existing CMake configuration defines `cuda_fgw`, `fgw_host_test`, `fgw_cuda_test` and `fgw_cuda_run`.
+
+For solver changes, complete this checklist before declaring numerical correctness or measuring performance:
+
+1. Run `fgw_host_test` and actual-device `fgw_cuda_test`, retaining JSON output. CUDA CTest includes the default combined solver and explicit modes 0, 1 and 2, plus the host test: five tests in total. Device exit code 77 or a CTest skip means CUDA coverage is unverified.
+2. Run [`validate.py`](../../backend/src/main/resources/cuda/test/fgw/validate.py) with native/device reports and executable paths. Complete every fixed-fixture intermediate check, independent original-objective/directional-derivative check, SciPy HiGHS exact-OT comparison and POT comparison at FP64 tolerance `1e-8`. Direct device OT fixtures and cold/warm solves are required; a tracing run through CPU OT alone does not establish device simplex correctness.
+3. Verify feasible multiple starts, fresh terminal gaps, ordering invariance, unequal target sizes, error recovery, baseline preparation once, slot/dispatcher/queue bounds, resource reuse and shutdown draining. Retain source mappings and unchanged fixture expectations.
+4. For changes to simplex memory or concurrency, run the README's compatible-device memory/leak checks and applicable shared-memory race checks. Report their actual scope and any unavailable prerequisite; racecheck alone does not establish host/global-memory race freedom.
+5. Only after correctness passes, run [`benchmark.py`](../../backend/src/main/resources/cuda/test/fgw/benchmark.py) with matching CUDA numerical provenance and the six complete tiers above. Use [`simplex_experiment.py`](../../backend/src/main/resources/cuda/test/fgw/simplex_experiment.py) when comparing all four exact-solver modes. Preserve counts, precision, parameters, seeds and source/executable identity in evidence.
+
+Existing evidence is historical validation of the documented native implementation, rather than tests performed by updating this document:
+
+- [Default combined-solver validation](../tasks/2026-10-11-151443-default-combined-simplex/validation-summary.md) records CTest 5/5 without skips and 824 independent numerical checks, with maximum absolute error `4.444455914409673e-11` against `1e-8`.
+- [The six-tier combined benchmark](../tasks/2026-10-11-152002-combined-fgw-benchmark/benchmark.md) completed 18,600 comparisons per path. At 10,000 requests, 32 slots/two dispatchers achieved 500.713 comparisons/s and 19.972 seconds of steady CUDA processing; the eight-worker CPU reference achieved 291.883/s and 34.260 seconds. The measured throughput ratio was 1.715 on that synthetic workload and device.
+- [The 64-slot/four-dispatcher experiment](../tasks/2026-10-11-153004-fgw-64-streams/benchmark.md) achieved 290.891/s; its immediate 32-slot/two-dispatcher control achieved 500.569/s. More streams/dispatchers did not improve this workload, and defaults remain unchanged.
+
+These records identify the tested hardware, solver differences, runtime phases and limitations. They do not predict performance for larger individual graphs, arbitrary production trees or million-request runs, and do not establish backend integration or production readiness.
 
 # File Organisation
 

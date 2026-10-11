@@ -1,361 +1,202 @@
-# Agent Prompt: Restore Product Production Trees Using FIFO
+# Agent Prompt: Build Product Production Trees by Production ID
 
 # Objective
 
-Starting from the identified abnormal branches, locate the affected final products, expand each product into its complete production tree, and restore the actual quantities and amounts belonging to that tree using material issue relationships and FIFO allocation.
+Build one actual consumption tree for each `productionId`, using material issue records explicitly associated with that production instance. Compare different production IDs of the **same product** through [standard balanced FGW](<algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
 
-Each final product instance must have its own tree. Preserve all leaf materials and intermediate semi-finished products or products. Supply the restored trees to [the standard FGW implementation](<algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>) for comparison between actual trees of the same product.
+A production instance represents the recorded batch or order, including all its issue lines and output records. It does not represent a physical single unit or an issue document. Never merge separate production IDs solely because they produce the same product.
 
-Follow these steps. For each step, specify inputs, outputs, and computation.
+This specification replaces FIFO restoration. Its existing filename is retained to preserve references. Do not perform FIFO allocation, infer batches from timestamps, estimate missing consumption with Bayesian methods, or substitute BOM quantities for actual consumption.
 
-# Step 1: Locate the Affected Products
+# Verified Database State and Identifier Mapping
 
-**Inputs:**
+The PostgreSQL database connected to the running backend was inspected through read-only queries on 11 October 2026. `public.inventory_usage` contains:
 
-- Existing abnormal-branch results.
-- Directed manufacturing relationships.
-- Product, semi-finished product, and production-order identifiers.
+```text
+id, date, movement_no, product_no, product_num, product_total_cost,
+order_no, material_no, material_num, material_total_cost
+```
 
-**Outputs:**
+There is **no dedicated `productionId` or `production_id` column** in that table. The [initial migration](../backend/src/main/resources/db/migration/V1__create_core_tables.sql), [Java entity](../backend/src/main/java/dev/margintrace/margin_attribution_backend/warehouse/model/InventoryUsage.java) and [import mapping](../backend/src/main/java/dev/margintrace/margin_attribution_backend/importation/mapping/SchemaMappingPresetCatalog.java) agree with that schema.
 
-- The affected products.
-- The affected final product instances.
-- Paths connecting each abnormal branch to those products.
+The user has confirmed that the existing `order_no` / `orderNo` **is the receiving production ID** for this workflow. Use that confirmed mapping directly; a dedicated new column or a further identifier-inference step is unnecessary:
+
+```text
+productionId = inventory_usage.order_no
+productId = inventory_usage.product_no
+issueLineId = (inventory_usage.id, inventory_usage.date)
+issueDocumentId = inventory_usage.movement_no
+```
+
+The inspected dataset had six rows, four distinct nonblank production IDs, no ID associated with multiple products, and no conflicting non-null output quantities within a production/product group. The user supplies the identifier semantics; the queries validate the inspected schema and grouping consistency only.
+
+Requirements:
+
+- Record the confirmed identifier mapping and dataset scope. Do not rename the existing database field solely to introduce the logical name `productionId`.
+- Require one receiving product per production ID. Return `AMBIGUOUS_PRODUCTION_PRODUCT` for multiple products, rather than silently splitting one ID into accepted trees or inventing a co-product allocation.
+- Retain an explicit source-system/organisation namespace if IDs are not globally unique. Do not manufacture batch identity from dates or material numbers.
+- Return `MISSING_PRODUCTION_ID` for absent or blank IDs. Do not use a movement number or generated row ID as a replacement production ID. Other source datasets must map their production identifiers explicitly into `order_no`.
+- The inspected table has no explicit upstream source-production link for consumed semi-finished products. A receiving production ID alone does not identify the supplying batch.
+- This specification describes subsequent implementation, not already implemented functionality. This documentation task does not authorise database writes or schema changes.
+
+# Step 1: Select Production Instances
+
+**Inputs:** Explicit product/production-ID selection or existing abnormal-branch results, actual manufacturing relationships, verified ID mapping, reporting scope and source namespace.
+
+**Outputs:** Selected production IDs/products, selection evidence and identity statuses.
 
 **Computation:**
 
-(1) Read the abnormal branches from the existing detection workflow. Reuse that workflow rather than replacing its detection algorithm.
+(1) Select requested production IDs directly. For abnormal-branch selection, reuse the existing detection and follow actual relationships to affected products, then select their production instances. Product-level detection identifies candidates; it does not establish that every instance caused the anomaly.
 
-(2) Traverse each branch upward through its downstream semi-finished products and products.
+(2) Deduplicate by scoped production ID, preserving all contributing abnormal-branch references. Apply the confirmed `order_no` mapping and verify nonblank identity and the single-product requirement.
 
-(3) Record all affected product nodes along the paths. Continue to the final product instances within the analysis scope.
+(3) Use the reporting period to select instances, then retrieve **all available records for each selected production ID**, including related records outside that period. Do not truncate an instance at a reporting boundary. Report incomplete imported coverage explicitly.
 
-(4) Preserve all reachable final product instances when one abnormal branch feeds several products.
+# Step 2: Collect Recorded Consumption and Output
 
-(5) Deduplicate repeated discovery of the same final product instance while preserving every contributing abnormal-branch reference.
+**Inputs:** Selected IDs, their issue/output records, units and any explicit manufacturing-step/source-production links.
 
-**Requirements:**
-
-- Use material-to-product edge direction for upward traversal.
-- Distinguish a product number from a production instance.
-- Do not stop at the first affected product if other affected final products remain reachable.
-
-# Step 2: Expand Each Product to All Leaf Materials
-
-**Inputs:**
-
-- Affected final product instances.
-- Manufacturing relationships.
-- Production and material issue records.
-
-**Outputs:**
-
-- One complete manufacturing tree per final product instance.
-- Every leaf material and intermediate node.
-- Stable node occurrences, directed edges, and root-to-leaf paths.
+**Outputs:** Traceable issue sets, output metadata, validation statuses and unresolved source relationships.
 
 **Computation:**
 
-(1) Set the final product instance as the tree root.
+(1) Query by the confirmed receiving production ID. Check product consistency; do not collect all issues for a product number across unrelated production IDs.
 
-(2) Follow incoming material-to-product relationships downward from the root until all leaf materials have been reached.
+(2) Preserve each issue row using `(id, date)` and its document reference. Include each row once. Equal materials, amounts or document numbers alone do not establish duplicates.
 
-(3) Record every intermediate semi-finished product or product and every manufacturing edge.
+(3) Read actual `material_num` and `material_total_cost`. Preserve missing values as missing, never as zero. Do not obtain replacement consumption or prices from BOM or receipt layers.
 
-(4) Include all related branches, including branches outside the originally identified abnormal path.
+(4) Resolve output quantity from authoritative output records where available. With the current denormalised table, require a verified instance-total interpretation of `product_num`: repeated totals on material lines count **once**, not once per line. Conflicting totals return `OUTPUT_QUANTITY_CONFLICT`; absent totals return `MISSING_OUTPUT_QUANTITY`. Equal values alone do not prove their semantics. If quantities represent separate output receipts, require explicit receipt identities before summing; equal quantities must not deduplicate independent receipts.
 
-(5) Preserve separate occurrences of the same material when it appears in different manufacturing positions, production orders, or attributed source-production instances.
+(5) Apply the same interpretation checks to `product_total_cost`. Retain output cost separately from summed issue amounts, since their cost scopes may differ.
 
-(6) Retain source-record references so that each manufacturing relationship can later be linked to actual consumption.
+(6) Identify missing materials, units and relationship references. Reconcile returns/reversals only through explicit transaction links and a declared netting rule. The current material-value constraint does not support assuming negative return rows are present.
 
-**Requirements:**
+# Step 3: Build One Tree per Production ID
 
-- Tree display may run from root product to leaf materials; stored directed edges must retain the project's material-to-product convention.
-- Do not replace the complete tree with only the original abnormal path.
-- If source relationships are shared, preserve occurrence-level attribution when projecting them into separate product trees.
-- Detect cycles and incomplete relationships. Do not silently produce a truncated complete tree.
-- Keep inventory-layer bookkeeping in allocation metadata; do not add artificial manufacturing nodes solely because an issue spans several receipt layers.
+**Inputs:** Instance identity/output metadata, actual issues and any explicit step/upstream links.
 
-# Step 3: Link Actual Issues to the Receiving Production Step
-
-**Inputs:**
-
-- Expanded product trees.
-- Material issue records.
-- Production-order and recipient semi-finished product/product identifiers.
-- Source receipt or opening-inventory records.
-
-**Outputs:**
-
-- Actual issue records mapped to their receiving manufacturing steps.
-- The actual quantity and recorded amount for each mapped issue.
-- Eligible source-layer candidates for FIFO allocation.
+**Outputs:** One rooted actual consumption tree per production ID, stable occurrences/edges, issue references and completeness statuses.
 
 **Computation:**
 
-(1) Identify the receiving semi-finished product or product using the issue record's target and production-order relationship.
+(1) Create the root from `(source namespace, productionId, productId)`. All issue documents for that instance feed the same root.
 
-(2) Link the issued material to that specific manufacturing step.
+(2) Attach issued materials to their recorded receiving steps. With the current table alone, build the root and its directly recorded material children; do not invent intermediate steps.
 
-(3) Use the actual issued quantity. Preserve the issue's recorded amount and valuation information for reconciliation.
+(3) Aggregate issue lines into one material occurrence only when receiving step, material, unit and explicit source-production relationship agree. Keep every contributing issue-line ID. Issue-document splitting must not itself create manufacturing nodes.
 
-(4) Resolve eligible source layers for that material and receiving step using the available source identifiers, inventory scope, unit, and transaction time.
+(4) Retain separate occurrences for different manufacturing positions or explicitly different upstream production instances, even when material numbers match.
 
-(5) Include opening inventory and earlier source production when required by an issue. Do not restrict source availability to the final product's reporting period.
+(5) Expand intermediates only through explicit links identifying their supplying production instances. Load those instances' actual inputs. If an explicit consumed share of homogeneous upstream output is available, project that share of its input quantities/amounts with decimal arithmetic and retain source references. Never infer shares or choose source instances by SKU, chronology or FIFO.
 
-**Requirements:**
+(6) Keep an intermediate without a source link as a boundary node, with `UNRESOLVED_SOURCE_PRODUCTION`. Do not label it a fully restored raw-material leaf. Report missing material classification as well. Such a direct consumption tree remains inspectable but is not a complete multilevel lineage tree.
 
-- Do not allocate by material number alone when the issue provides a specific recipient or order.
-- Do not distribute an issue to unrelated products or branches.
-- Preserve separate issue lines even when their material numbers are identical.
-- Do not substitute theoretical BOM consumption for actual issue quantities.
-- If the recipient or eligible source inventory cannot be resolved, return an unresolved record with its identifiers.
+(7) Detect cycles, self-consumption requiring an unrecorded step, and incomplete relationships. Do not silently truncate and claim completeness.
 
-# Step 4: Allocate Actual Consumption Using FIFO
+Requirements:
 
-**Inputs:**
+- Store edges in material-to-product direction; display may run from root to leaves.
+- Actual records define branches. BOM may supply reference information, but cannot add unsupported actual branches, remove unexpected materials or supply theoretical consumption.
+- Project shared upstream relationships into occurrence-specific branches with explicit source shares. Do not copy the whole upstream batch into every receiving tree.
+- Keep issue-document and inventory bookkeeping out of manufacturing topology.
 
-- Mapped actual issue records.
-- Eligible receipt layers, including produced semi-finished product layers.
-- Available quantities, attributed amounts, timestamps, and stable source identifiers.
+# Step 4: Attach Quantities, Amounts and Evidence
 
-**Outputs:**
+**Inputs:** Trees, original issue/output records, explicit upstream shares, declared units/currency/cost scope.
 
-- FIFO allocation records.
-- Remaining quantity and amount for each source layer.
-- Actual attributed consumption for each receiving step.
-- Source lineage for each allocated quantity and amount.
+**Outputs:** Recorded quantities/amounts at occurrences and edges, separate output metadata, source evidence and reconciliation statuses.
 
 **Computation:**
 
-(1) Process inventory events in their recorded chronological order. Resolve equal timestamps using an explicit, stable sequence such as transaction sequence and record ID.
+(1) Sum original issue quantities and amounts within valid occurrence groups using decimal arithmetic. Preserve missing-input flags even when a known subtotal can be calculated.
 
-Include other recorded issues competing for the same source inventory, even when their receiving products are outside the selected trees. Their consumption still changes the source availability used by FIFO.
+(2) Root output quantity comes from output records, not the sum of child quantities. Keep different units separate.
 
-(2) For each issue, sort eligible available layers by receipt time and the same deterministic tie-breaking rule.
+(3) Calculate `recordedMaterialAmount` from non-overlapping receiving-instance issue contributions. Keep `recordedOutputCost` separate. Where scopes are comparable, report discrepancies; never force equality or invent labour/overhead costs.
 
-(3) Allocate from the oldest eligible layer first:
+(4) For an explicitly expanded intermediate, preserve upstream input amounts separately from its downstream issue valuation. Do not add upstream amounts to the intermediate issue amount again in receiving-tree financial totals. Distinguish valuation differences from missing lineage.
 
-```text
-allocatedQuantity = min(issueRemainingQuantity, layerRemainingQuantity)
-```
+(5) Optionally report consumption per output unit when output quantity is resolved and positive. This derived metric does not change FGW weights, embeddings or objective.
 
-(4) Continue to the next layer until the issue is fully allocated or eligible inventory is exhausted.
+# Step 5: Prepare Production-ID Trees for FGW
 
-(5) Restore the attributed amount from the selected layer's quantity and remaining attributed amount:
+**Inputs:** Trees with source/completeness metadata, caller-supplied 384-dimensional content embeddings and comparable IDs of the same product.
 
-```text
-allocatedAmount = layerRemainingAmount
-                * allocatedQuantity / layerRemainingQuantity
-```
-
-Use the layer state before this allocation. When consuming the entire remaining layer, assign its exact remaining amount.
-
-(6) Update the issue remainder and source-layer remainder. Record each allocation's source layer, receiving step, issue line, quantity, amount, and FIFO sequence.
-
-(7) For produced semi-finished products, carry their already restored input-material lineage into the output layer. Allocate that output layer to later receiving production steps using the same FIFO rule.
-
-(8) Compare restored FIFO amounts with recorded issue amounts under the declared valuation scope. Report any discrepancy; do not silently overwrite source amounts or change the valuation method to force agreement.
-
-**Requirements:**
-
-- An issue cannot consume a future receipt or unavailable stock.
-- Use a shared allocation ledger for the analysis dataset. Do not reset source availability independently for each product tree.
-- When projecting a tree from existing allocations, reuse those allocations instead of consuming inventory again.
-- Use decimal arithmetic for recorded quantities and monetary values. Apply the declared monetary precision and preserve allocation remainders.
-- Preserve already known issue-to-recipient relationships. FIFO selects eligible source layers; it does not select an unrelated receiving product.
-- Return an explicit shortage or reconciliation status if allocation cannot be completed.
-- Reconcile reversals and returns with their source transactions before treating a snapshot as complete.
-
-# Step 5: Restore Quantities and Amounts Through the Tree
-
-**Inputs:**
-
-- Complete manufacturing trees.
-- FIFO allocations.
-- Actual production output quantities.
-- Input lineage of produced semi-finished product layers.
-
-**Outputs:**
-
-- Restored actual quantity and amount at every node occurrence and manufacturing relationship.
-- The portion of each leaf material attributable to the final product instance.
-- Traceable allocation lineage from leaf materials to the final product.
+**Outputs:** Aligned CSR/embeddings, production-ID/source mappings, explicit eligibility and pairwise FGW inputs.
 
 **Computation:**
 
-(1) Start with actual leaf-material consumption mapped to its receiving production step.
+(1) Assign stable occurrence indices and build CSR, retaining root identity and all actual branches. Align each node's own 384-dimensional embedding and preserve its version. Report missing vectors; embedding generation is outside this stage.
 
-(2) Trace the allocation lineage upward through intermediate semi-finished products and products.
+(2) Map the scoped production ID to native `Graph.instanceId` and receiving product to `Graph.productId`. Populate `NodeSource.productionOrderId` with the confirmed receiving production ID for that occurrence's step. Preserve issue IDs and decimal quantity/amount text. Retain upstream-source and edge metadata alongside native input when its current fields cannot represent them.
 
-(3) For each intermediate output layer, preserve the actual produced quantity and the restored amounts of its recorded inputs.
+(3) Leave legacy `NodeSource.fifoAllocationIds` empty. Preserve that field for interface compatibility; do not fabricate FIFO references or repurpose it for production IDs.
 
-(4) When only part of a homogeneous intermediate output layer is consumed by a product tree, attribute the corresponding fraction of that output layer's recorded inputs and amounts:
+(4) Compare different IDs of the same product at the same declared topology scope. Complete direct-consumption trees may be compared at direct-consumption scope. Accept full-lineage comparisons only when required upstream links are resolved. Report incompatible/incomplete inputs instead of claiming a complete comparison. Keep provenance/completeness evidence alongside native results; the solver does not validate these semantics.
 
-```text
-outputFraction = outputQuantityAttributedToTree / sourceOutputQuantity
-inputQuantityAttributedToTree = recordedInputQuantity * outputFraction
-inputAmountAttributedToTree   = restoredInputAmount * outputFraction
-```
+(5) Preserve standard balanced FGW mathematics. Quantity and amount remain explanation metadata, not distance terms. Quantity or price changes alone are not detected by the current FGW objective.
 
-Record this within-layer proportional attribution convention separately from FIFO selection between layers. Do not infer a physical unit-level genealogy that the source records do not provide.
+# Validation Requirements for Subsequent Implementation
 
-(5) Repeat through all intermediate production steps until the final product instance's tree has been fully attributed.
+Implement and run automated tests, reporting PASS/FAIL for:
 
-(6) Keep leaf quantities, intermediate quantities, final output quantities, and their units distinct. Parent output quantity comes from the production record and its attributed share; it is not the sum of child quantities with different units.
+1. Direct `order_no` to `productionId` mapping, missing IDs and scoped identity.
+2. Several issue documents/dates for one ID yielding one tree; two IDs of the same product yielding two trees.
+3. Multiple products under one ID yielding `AMBIGUOUS_PRODUCTION_PRODUCT`.
+4. Full-instance retrieval across reporting boundaries and incomplete dataset coverage.
+5. Actual issue quantity/amount conservation, decimal precision and each row included once.
+6. Repeated output totals counted once, conflicting totals reported and independent receipt identities respected.
+7. Same-position material aggregation preserving references; distinct positions/source instances remaining separate.
+8. Actual unexpected materials retained despite unreliable BOM.
+9. Explicit multilevel links and partial upstream shares without duplicate consumption or double-counted amounts; missing links reported without chronological/FIFO inference.
+10. Missing inputs/units, output-cost discrepancies, returns, cycles and incomplete relationships.
+11. CSR, embeddings, root, production IDs and source references aligned after reindexing; legacy FIFO references empty.
+12. Same-product eligibility and matching topology scope. Keep the fixed FGW numerical fixture and expected values unchanged.
 
-(7) Preserve restored subtree amounts at intermediate nodes for comparison and explanation. Compute financial totals from non-overlapping original allocation contributions, not by adding all cumulative node amounts.
+# Fixed Production-ID Grouping Test
 
-**Requirements:**
-
-- Every restored value must map back to an actual issue, source layer, or production record.
-- The same source allocation share must not be counted in two product trees.
-- Preserve the attributed share when a semi-finished product supplies multiple final products.
-- Use explicit source allocation rules for co-products, losses, or other outputs that cannot use the homogeneous single-output convention. Report unresolved cases rather than inventing a split.
-- Keep the monetary scope consistent. Include only recorded cost components covered by that scope.
-
-# Step 6: Prepare the Trees for FGW Comparison
-
-**Inputs:**
-
-- Restored trees.
-- Caller-supplied 384-dimensional material content embeddings for every tree node occurrence.
-- Product-instance and node-occurrence identifiers.
-
-**Outputs:**
-
-- One FGW-ready tree per final product instance.
-- CSR topology and one 384-dimensional material content embedding per node, aligned to the same index order.
-- Restored quantities, amounts, units, and source references aligned to those indices.
-- Comparable actual-tree pairs for the same product.
-
-**Computation:**
-
-(1) Assign a stable root identifier and node-occurrence identifiers to each tree.
-
-(2) Build CSR arrays from the manufacturing edges. Retain every intermediate node and leaf material.
-
-(3) Load each node's 384-dimensional material content embedding and preserve its version. Use the node's own content vector, not the three-block neighbourhood vector or six-block BOM embedding. Do not generate embeddings in this stage; report missing or misaligned vectors rather than inventing them.
-
-(4) Keep the restored actual values and allocation references beside the graph input. Preserve the mapping from FGW indices back to tree occurrences and source records.
-
-(5) Select multiple actual trees of the same product for comparison. Keep unit, monetary scope, and known production conditions available to assess comparability.
-
-(6) Pass the trees to [CUDA Agent Prompt: Implement Standard FGW in Five Steps](<algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>). Follow its objective and weighting rules.
-
-**Requirements:**
-
-- Each final product instance retains its own complete tree.
-- Do not aggregate separate trees into a product-number-only graph.
-- Do not discard restored quantities and amounts during CSR conversion.
-- Root and allocation metadata must survive node reindexing.
-
-# Validation Requirements
-
-1. Verify upward discovery when an abnormal branch affects more than one final product.
-2. Verify downward expansion includes all intermediate nodes and all leaf branches.
-3. Verify each issue is linked to its recorded receiving semi-finished product or product.
-4. Verify FIFO ordering, chronological availability, and deterministic ties.
-5. Verify source-layer quantity and amount conservation.
-6. Verify one issue spanning multiple source layers.
-7. Verify one source layer serving multiple final product trees without duplicate consumption.
-8. Verify partial semi-finished output attribution and multi-level restoration.
-9. Verify repeated materials in different branches retain separate occurrences.
-10. Verify shortage, unresolved recipient, amount discrepancy, return, and incomplete-source statuses.
-11. Verify CSR indices, embeddings, restored values, and source mappings remain aligned.
-
-# Fixed FIFO Allocation Test
-
-**Inputs:**
-
-P1 and P2 are separate final product instances of the same product type. Their issues share one inventory allocation ledger.
+Treat `order_no` as a confirmed receiving production ID and `product_num` as a repeated instance total. Issue quantities use one unit per material; amounts share one currency and material-cost scope.
 
 ```text
-Material B, one inventory scope and one unit:
-
-Older layer: quantity = 100, amount = 200
-Newer layer: quantity = 100, amount = 300
-
-Earlier issue to product P1: quantity = 120, recorded amount = 260
-Later issue to product P2:   quantity = 30,  recorded amount = 90
+productionId  productId  issueLineId  movementNo  outputQty  material  issueQty  amount
+P1            A          L1           M1          20         B         100       200
+P1            A          L2           M2          20         B          20        60
+P1            A          L3           M3          20         C           5        40
+P2            A          L4           M4          10         B          30        90
+P2            A          L5           M5          10         C           2        20
 ```
 
-**Expected outputs:**
+Expected results:
 
 ```text
-P1:
-  Older layer allocation = quantity 100, amount 200
-  Newer layer allocation = quantity 20,  amount 60
-  Total                  = quantity 120, amount 260
+Exactly two trees, both for product A:
 
-P2:
-  Newer layer allocation = quantity 30, amount 90
-  Total                  = quantity 30, amount 90
+P1 root: output quantity 20, recorded material amount 300
+  B: quantity 120, amount 260, issue references [L1, L2]
+  C: quantity   5, amount  40, issue references [L3]
 
-Remaining inventory:
-  Older layer = quantity 0,  amount 0
-  Newer layer = quantity 50, amount 150
+P2 root: output quantity 10, recorded material amount 110
+  B: quantity  30, amount  90, issue references [L4]
+  C: quantity   2, amount  20, issue references [L5]
 
-Conservation:
-  Quantity: 200 = 120 + 30 + 50
-  Amount:   500 = 260 + 90 + 150
+Recorded issue conservation:
+  B quantity: 150 = 120 + 30
+  C quantity:   7 =   5 +  2
+  Amount:     410 = 300 + 110
+
+No receipt-layer allocation or FIFO calculation occurs.
 ```
 
-Both issues must share the same allocation ledger. Verify their recipient trees preserve the respective allocation references.
+The root material amount is a labelled child subtotal, not another financial contribution. Do not sum it with the children again. Changing input order or splitting L1 into two explicitly distinct source rows with the same combined quantity/amount must preserve material topology and totals, while retaining the new references. FGW must preserve P1/P2 instance IDs. Identical topology and material embeddings give identical mathematical FGW inputs despite different quantity/amount metadata.
 
-# Additional Test: Restore Through a Semi-Finished Product
+# Deliverables for Subsequent Implementation
 
-**Inputs:**
+- Verified production-ID mapping and instance selection.
+- One actual consumption tree per ID, with source evidence and completeness statuses.
+- Recorded quantity/amount aggregation and explicit upstream lineage where available.
+- FGW adapter preserving production IDs, source mappings and unchanged mathematics.
+- Automated grouping/tree/evidence tests and a PASS/FAIL report.
 
-```text
-Semi-finished production instance S:
-  Actual output quantity = 20
-  Actual material B input = quantity 120, restored amount 260
-
-Final product instance P1:
-  Actual output quantity = 4
-  Actual S consumption = 8
-
-Final product instance P2:
-  Actual output quantity = 3
-  Actual S consumption = 6
-```
-
-Use the same single homogeneous S output layer for both receiving steps. Preserve its original B issue allocations as input lineage.
-
-**Expected outputs:**
-
-```text
-P1 tree:
-  Attributed S quantity = 8
-  Attributed B quantity = 48
-  Restored material amount = 104
-
-P2 tree:
-  Attributed S quantity = 6
-  Attributed B quantity = 36
-  Restored material amount = 78
-
-Remaining S layer:
-  Quantity = 6
-  Amount = 78
-  Embodied B quantity = 36
-
-S output quantity: 20 = 8 + 6 + 6
-B input lineage quantity: 120 = 48 + 36 + 36
-Restored material amount: 260 = 104 + 78 + 78
-```
-
-The embodied B in remaining S is already consumed input lineage, not available raw-material inventory. Verify that projection into the P1 and P2 trees does not consume those original B issues again or add cumulative parent amounts to the same material amount twice.
-
-# Deliverables
-
-- Affected-product discovery and complete product-tree expansion.
-- Actual issue-to-production-step mapping.
-- FIFO quantity and amount allocation.
-- Multi-level actual quantity and amount restoration.
-- One complete attributed tree per final product instance.
-- FGW input adapter with stable source mappings.
-- Automated allocation/restoration tests and a PASS/FAIL report.
-
-After these deliverables pass their checks, execute the second and third instruction files listed in [the agent workflow](<algorithms/Production Anomaly Analysis — Agent Workflow.md>).
+Follow [the agent workflow](<algorithms/Production Anomaly Analysis — Agent Workflow.md>) for separately scoped FGW implementation and numerical validation. Rewriting this document does not require executing those implementation stages.

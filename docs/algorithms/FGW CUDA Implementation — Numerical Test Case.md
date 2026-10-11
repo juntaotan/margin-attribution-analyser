@@ -4,7 +4,7 @@
 
 Execute this as File 3 of [the production analysis agent workflow](<Production Anomaly Analysis — Agent Workflow.md>) to validate [the FGW implementation](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
 
-Use the fixed synthetic inputs and expected values below. Do not replace this regression with FIFO production data or alter its distance definitions. Validate [FIFO restoration](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>) separately through its prescribed allocation and restoration tests.
+Use the fixed synthetic inputs and expected values below. Do not replace this regression with production-ID data or alter its distance definitions. Validate [production-ID tree construction](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>) separately through its prescribed grouping, tree and evidence tests. The linked file retains its historical filename; its current specification uses `inventory_usage.order_no` as the confirmed production ID and requires no FIFO allocation.
 
 ## Objective
 
