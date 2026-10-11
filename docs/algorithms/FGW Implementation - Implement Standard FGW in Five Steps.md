@@ -1,4 +1,4 @@
-# CUDA Agent Prompt: Implement Standard FGW in Five Steps
+# FGW Implementation - Implement Standard FGW in Five Steps
 
 # Background
 

@@ -1,4 +1,4 @@
-# FGW CUDA Implementation — Numerical Test Case
+# FGW Implementation - Test Case
 
 ## Workflow Position
 
