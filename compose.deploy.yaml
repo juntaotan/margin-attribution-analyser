@@ -18,7 +18,8 @@ services:
       start_period: 10s
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    build:
+      context: ./minio
     restart: unless-stopped
     command: server /data
     environment:

@@ -53,7 +53,8 @@ public final class RecordProductionDataProvider implements ProductionDataProvide
         for (var selected : selections.entrySet()) {
             var period = periods.get(selected.getKey());
             Map<String, String> roots = new TreeMap<>();
-            all.stream().filter(r -> r.productionId() != null && r.productId() != null)
+            // Scope roots to this selection; other periods can contain products absent from this CSR.
+            all.stream().filter(r -> selected.getKey().equals(r.productionId()) && r.productId() != null)
                     .forEach(r -> roots.putIfAbsent(r.productionId(), r.productId()));
             var graph = period.graph();
             var nodes = Arrays.stream(graph.nodes()).map(n -> new ProductionTree.GraphNode(n.inventoryId(), n.inventoryId())).toList();

@@ -28,6 +28,8 @@ This stack runs the web app, Java backend, PostgreSQL, and MinIO in Linux contai
    docker compose --env-file .env.deploy -f compose.deploy.yaml logs --tail=100 backend
    ```
 
-The first build requires access to the container registries, Maven Central, and the npm registry. PostgreSQL and MinIO use separate named Docker volumes, so their data survives container recreation and host restarts. Only the web service publishes a host port. Nginx forwards `/api/` and `/imports` requests to the backend.
+The first build requires access to the container registries, GitHub, the Go module proxy, Maven Central, and the npm registry. MinIO is built from the fixed upstream `RELEASE.2025-10-15T17-29-55Z` source tag using `minio/Dockerfile`; it does not pull the unavailable `quay.io/minio/minio` image. The upstream [community repository](https://github.com/minio/minio) is archived and distributes source only. This source build fixes image availability; it does not establish production readiness or ongoing upstream maintenance.
+
+PostgreSQL and MinIO use separate named Docker volumes, so their data survives container recreation and host restarts. The web service and ONLYOFFICE publish host ports. Nginx forwards `/api/` and `/imports` requests to the backend.
 
 Flyway runs when the backend starts. Its `V3__sample_topology_data.sql` migration inserts sample data, so this configuration is intended for deployment practice. Address sample data and off-host backups before long-term use. Do not run `docker compose down -v` against data you want to keep: `-v` removes the named volumes.

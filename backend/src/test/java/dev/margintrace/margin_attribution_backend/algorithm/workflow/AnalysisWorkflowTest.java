@@ -18,6 +18,24 @@ class AnalysisWorkflowTest {
     static AnalysisWorkflow workflow(EmbeddingProvider provider) {
         return new AnalysisWorkflow(new RecordPeriodGraphProvider(records()), new RecordProductionDataProvider(), AnalysisFixtures::context, settings -> provider);
     }
+    @Test void unrelatedProductionRootsOutsidePeriodGraphDoNotInvalidateSelection() {
+        var original = records();
+        var issues = new ArrayList<>(original.issues());
+        issues.add(new ProductionTree.Issue("unrelated-line", SEPTEMBER.minusYears(1), "unrelated-document",
+                "unrelated-production", "unrelated-product", "unrelated-material", d("1"), d("1"), d("1"), d("1")));
+        // An unrelated historical production must not become a root of the selected period CSR.
+        var inputs = new PeriodRecords(original.sales(), issues, true);
+        var graphs = new RecordPeriodGraphProvider(inputs);
+        var cmd = command();
+        var actual = graphs.load(cmd.actualStartDate(), cmd.actualEndDate());
+        var comparable = graphs.load(cmd.comparableStartDate(), cmd.comparableEndDate());
+        var paths = new BomFrontierReconciler().reconcile(actual.graph(), comparable.graph(), cmd.leafThreshold(), cmd.stopThreshold());
+        var selection = new RecordProductionDataProvider().load(actual, comparable, paths, cmd.comparison().evidence());
+        assertTrees(selection.trees());
+        assertTrue(selection.identities().isEmpty());
+        for (var tree : selection.trees())
+            assertEquals(Map.of(tree.productionId(), "A"), tree.topDownScope().sourceGraph().roots());
+    }
     @Test void computationalStepsStartFromOriginalRecordsAndConnectSourceIdentities() {
         var graphs = new RecordPeriodGraphProvider(records()); var command = command();
         var actual = graphs.load(command.actualStartDate(), command.actualEndDate());

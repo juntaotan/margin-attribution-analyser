@@ -21,6 +21,8 @@ export const DataPreparation: React.FC = () => {
   const [importRecords, setImportRecords] = useState<ImportJob[]>([]);
   const [activeJob, setActiveJob] = useState<ImportJob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const importInFlight = useRef(false);
+  const [fileSubmitted, setFileSubmitted] = useState(false);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [fileProgress, setFileProgress] = useState(0);
@@ -81,12 +83,15 @@ export const DataPreparation: React.FC = () => {
   }, [activeJob?.jobId, activeJob?.status, refreshHistory]);
 
   const startImport = async (file: File, result: FileRecognition) => {
+    if (importInFlight.current || fileSubmitted || (activeJob && !isTerminalImportStatus(activeJob.status))) return;
+    importInFlight.current = true;
     setIsUploading(true);
     setFileError('');
     setFileProgress(0);
     appendLog(`Uploading to data lake for target table ${result.table}…`);
     try {
       const job = await uploadImport(file, result.table, setFileProgress);
+      setFileSubmitted(true);
       setActiveJob(job);
       setImportRecords((records) => [job, ...records.filter((record) => record.jobId !== job.jobId)]);
       setFileProgress(job.progress);
@@ -96,14 +101,17 @@ export const DataPreparation: React.FC = () => {
       setFileError(message);
       appendLog(message);
     } finally {
+      importInFlight.current = false;
       setIsUploading(false);
     }
   };
 
   const handleFile = (file?: File) => {
-    if (!file) return;
+    if (!file || importInFlight.current || (activeJob && !isTerminalImportStatus(activeJob.status))) return;
     fileReader.current?.abort();
     setSelectedFile(file);
+    setFileSubmitted(false);
+    setActiveJob(null);
     setImportLog([{ time: new Date().toLocaleTimeString(), message: `Selected file: ${file.name}` }]);
     appendLog('Reading file…');
     setImportPath(file.name);
@@ -126,9 +134,6 @@ export const DataPreparation: React.FC = () => {
       appendLog(result
         ? `Identified table: ${result.table}; module: ${MODULE_LABELS[result.module]}.`
         : 'No matching table found. Use a supported table name or alias as the file name.');
-      if (result) {
-        void startImport(file, result);
-      }
     };
     reader.onerror = () => {
       if (fileReader.current !== reader) return;
@@ -140,7 +145,7 @@ export const DataPreparation: React.FC = () => {
   };
 
   const handleImport = () => {
-    if (!fileReady || !recognition || !selectedFile || isUploading) return;
+    if (!fileReady || !recognition || !selectedFile || isUploading || fileSubmitted) return;
     void startImport(selectedFile, recognition);
   };
 
@@ -372,15 +377,15 @@ export const DataPreparation: React.FC = () => {
         <button
           type="button"
           onClick={handleImport}
-          disabled={!fileReady || !selectedPartition || isUploading || Boolean(activeJob && !isTerminalImportStatus(activeJob.status))}
+          disabled={!fileReady || !selectedPartition || isUploading || fileSubmitted || Boolean(activeJob && !isTerminalImportStatus(activeJob.status))}
           className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-slate-800"
         >
           <Play className="w-4 h-4 fill-white" />
-          <span>{isUploading ? 'Uploading…' : activeJob && !isTerminalImportStatus(activeJob.status) ? 'Processing…' : 'Import Again'}</span>
+          <span>{isUploading ? 'Uploading…' : activeJob && !isTerminalImportStatus(activeJob.status) ? 'Processing…' : fileSubmitted ? 'Submitted' : 'Import'}</span>
         </button>
 
         <span className="text-xs text-slate-400">
-          Recognized files start automatically; this button retries the selected file.
+          Review the recognised table, then import once. Select a file again to start another job.
         </span>
       </div>
 

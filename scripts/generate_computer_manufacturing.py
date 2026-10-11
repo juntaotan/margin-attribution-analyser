@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate English computer-manufacturing records using only the standard library.
+"""Generate English computer-manufacturing CSV evidence and import-ready Excel files.
 
 Standard recipes are separate from independently mutated production occurrences.
 Every original component occurrence gets independent structure/material draws;
@@ -17,9 +17,15 @@ from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
+from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
+
 D = Decimal
 ZERO = D("0")
 PRECISION = D("0.000001")
+IMPORT_TABLES = ("material_master", "bill_of_material", "inventory_usage", "purchases", "sales_details")
 FAMILIES = (
     ("Office Desktop", 8), ("Gaming Desktop", 8), ("Ultrabook", 6),
     ("Gaming Laptop", 6), ("All-in-One", 4), ("Workstation", 4),
@@ -227,6 +233,8 @@ class Generator:
         Child output valuation is the parent's material contribution exactly
         once. Local processing pools are allocated equally by material position,
         with the rounding remainder assigned explicitly to the last position.
+        Repeated material codes at separate positions use separate synthetic
+        issue documents to satisfy the warehouse's date/document/material key.
         """
         order_no = order_no or self.order()
         children = []
@@ -234,6 +242,7 @@ class Generator:
             children.append(child)
             if hasattr(child, "extra"):
                 children.append(child.extra)
+        material_counts = Counter(child.code for child in children)
         materials = []
         for child in children:
             issued = quantity * child.usage
@@ -285,6 +294,8 @@ class Generator:
                 self.issue_counter += 1
                 line_id = f"LINE-{self.issue_counter:08d}"
                 movement = f"ISS-{order_no}-{split + 1}"
+                if material_counts[child.code] > 1:
+                    movement += f"-P{index + 1}"
                 issue_day = day - timedelta(days=1 - split)
                 self.tables["inventory_usage"].append(dict(
                     date=issue_day.isoformat(), movement_no=movement, product_no=node.code,
@@ -353,7 +364,14 @@ class Generator:
         return self
 
     def write(self, destination):
-        """Write basic import CSVs and sidecars; return an inspectable manifest."""
+        """Write CSV evidence, five typed XLSX imports and exact-string fixtures.
+
+        Excel files and input.json are placed in the excel subdirectory. Numeric
+        dates use the default Excel epoch for compatibility with the POI importer.
+        Decimal calculations remain authoritative in CSV/JSON; Excel numeric
+        export rejects values that lose precision at the six-place ledger scale.
+        Returns a manifest describing the generated records.
+        """
         destination.mkdir(parents=True, exist_ok=True)
         tables = dict(self.tables)
         tables["material_master"] = list(self.master.values())
@@ -369,6 +387,7 @@ class Generator:
                 writer = csv.DictWriter(stream, fieldnames=headers)
                 writer.writeheader()
                 writer.writerows({k: text(v) for k, v in row.items()} for row in rows)
+        self.write_excel(destination / "excel", tables)
         manifest = dict(
             generator="computer_manufacturing_v1", seed=self.args.seed,
             namespace="COMPUTER_DEMO", currency=self.args.currency,
@@ -392,6 +411,54 @@ class Generator:
         )
         (destination / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         return manifest
+
+    @staticmethod
+    def write_excel(destination, tables):
+        """Export basic warehouse tables as single-sheet, typed Excel workbooks.
+
+        Retain original strings alongside the files for independent HTTP import
+        reconciliation. This method does not aggregate or remove evidence rows.
+        """
+        destination.mkdir(parents=True, exist_ok=True)
+        fixture = {}
+        for name in IMPORT_TABLES:
+            rows = tables[name]
+            headers = list(rows[0])
+            for row in rows:
+                for key, value in row.items():
+                    if isinstance(value, D) and money(D(format(float(value), ".16g"))) != money(value):
+                        raise ValueError(f"Excel numeric precision exceeds six-place ledger scale: {name}.{key}")
+            fixture[name] = dict(headers=headers, rows=[[str(text(row[key])) for key in headers] for row in rows])
+            workbook = Workbook(write_only=True, iso_dates=False)
+            sheet = workbook.create_sheet(name)
+            sheet.freeze_panes = "A2"
+            sheet.sheet_view.showGridLines = False
+            sheet.row_dimensions[1].height = 24
+            for column, key in enumerate(headers, 1):
+                width = max(len(key), max(len(str(text(row[key]))) for row in rows)) + 3
+                sheet.column_dimensions[get_column_letter(column)].width = max(18, min(100, width))
+            header_cells = []
+            for key in headers:
+                cell = WriteOnlyCell(sheet, value=key)
+                cell.font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+                cell.fill = PatternFill("solid", fgColor="263B53")
+                header_cells.append(cell)
+            sheet.append(header_cells)
+            for row in rows:
+                cells = []
+                for key in headers:
+                    value = row[key]
+                    cell = WriteOnlyCell(sheet, value=date.fromisoformat(value) if key == "date" else value)
+                    cell.font = Font(name="Arial", size=10)
+                    if key == "date":
+                        cell.number_format = "yyyy-mm-dd"
+                    elif isinstance(value, D):
+                        cell.number_format = "0.000000"
+                    cells.append(cell)
+                sheet.append(cells)
+            sheet.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(rows) + 1}"
+            workbook.save(destination / f"{name}.xlsx")
+        (destination / "input.json").write_text(json.dumps(fixture, indent=2) + "\n", encoding="utf-8")
 
 
 def parser():

@@ -35,6 +35,7 @@ replay_pid*
 # Python bytecode caches
 __pycache__/
 *.pyc
+.venv-computer-data/
 
 # mvn
 target/
@@ -154,3 +155,6 @@ benchmark/results/
 !/scripts/README-computer-data.md
 !/docs/tasks/2026-10-12-084206-computer-manufacturing-generator.md
 !/docs/tasks/2026-10-12-085001-computer-data-import-validation.md
+!/docs/tasks/2026-10-12-100936-computer-issue-identity.md
+!/docs/tasks/2026-10-12-101130-direct-python-excel-export.md
+!/docs/tasks/2026-10-12-102106-single-import-submission.md

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Network, Database, Settings, FileText } from 'lucide-react';
+import { DataBrowser } from './DataBrowser';
 import { DataPreparation } from './DataPreparation';
 import { DualBomAnalysisPage } from './components/DualBom/DualBomAnalysisPage';
 import { ReportStudioPage } from './components/ReportStudio/ReportStudioPage';
@@ -7,7 +8,7 @@ import { SettingsPage } from './components/Settings/SettingsPage';
 
 const getInitialRoute = (): string => {
   const path = window.location.pathname;
-  if (path === '/data-prep' || path === '/settings' || path === '/report-studio') {
+  if (path === '/data-browser' || path === '/data-prep' || path === '/settings' || path === '/report-studio') {
     return path;
   }
   return '/margin-topology';
@@ -40,7 +41,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#f6f8fa] text-slate-800 font-sans select-none overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-[#f6f8fa] text-slate-800 font-sans overflow-hidden">
       {/* 1. Global Navigation Top Bar */}
       <header className="h-11 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -57,7 +58,9 @@ export const App: React.FC = () => {
           </span>
           <span>/</span>
           <span className="text-slate-600 font-medium">
-            {currentRoute === '/data-prep'
+            {currentRoute === '/data-browser'
+              ? 'Data Browser'
+              : currentRoute === '/data-prep'
               ? 'Data Preparation'
               : currentRoute === '/settings'
               ? 'Settings & Parameters'
@@ -123,6 +126,13 @@ export const App: React.FC = () => {
                 <span className="hidden sm:inline">Data Preparation</span>
               </button>
 
+              <button type="button" onClick={() => navigate('/data-browser')}
+                title="Data Browser"
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs ${currentRoute === '/data-browser' ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}>
+                <Database className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="hidden sm:inline">Data Browser</span>
+              </button>
+
               {/* Settings & Parameters */}
               <button
                 type="button"
@@ -145,7 +155,9 @@ export const App: React.FC = () => {
         </aside>
 
         {/* Dynamic Route Content */}
-        {currentRoute === '/data-prep' ? (
+        {currentRoute === '/data-browser' ? (
+          <DataBrowser />
+        ) : currentRoute === '/data-prep' ? (
           <DataPreparation />
         ) : currentRoute === '/settings' ? (
           <SettingsPage />

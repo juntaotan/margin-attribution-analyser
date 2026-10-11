@@ -7,11 +7,15 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
+from datetime import datetime
 from collections import defaultdict
 from decimal import Decimal as D
 from pathlib import Path
 
-from generate_computer_manufacturing import Generator, parser
+from openpyxl import load_workbook
+
+from generate_computer_manufacturing import Generator, IMPORT_TABLES, parser
 
 
 class ManufacturingDataTests(unittest.TestCase):
@@ -29,6 +33,8 @@ class ManufacturingDataTests(unittest.TestCase):
     def check_ledgers(self, tables):
         bom_keys = [(r["bom_no"], r["product_no"], r["material_no"]) for r in tables["bill_of_material"]]
         self.assertEqual(len(bom_keys), len(set(bom_keys)), "Standard BOM violates warehouse uniqueness")
+        issue_keys = [(r["date"], r["movement_no"], r["material_no"]) for r in tables["inventory_usage"]]
+        self.assertEqual(len(issue_keys), len(set(issue_keys)), "Actual issues violate warehouse uniqueness")
         outputs = {r["order_no"]: r for r in tables["production_outputs"]}
         self.assertEqual(len(outputs), len(tables["production_outputs"]))
         amounts, allocations, quantities, shares = (defaultdict(lambda: D(0)) for _ in range(4))
@@ -121,6 +127,25 @@ class ManufacturingDataTests(unittest.TestCase):
             self.assertTrue(all(D(r["difference_from_nominal"]) == 0 for r in tables["batch_expectations"]))
             self.assertTrue(all(r["maximum_depth"] == "10" for r in tables["batch_expectations"]))
 
+    def test_default_four_batches_preserve_repeated_material_positions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tables = self.generate(Path(tmp), "--batches", "4")
+            self.check_ledgers(tables)
+            issues = [row for row in tables["inventory_usage"]
+                      if row["order_no"] == "MO-0004158" and row["material_no"] == "RAW-006"]
+            self.assertEqual(len(issues), 4)
+            self.assertEqual({row["movement_no"] for row in issues},
+                             {f"ISS-MO-0004158-{split}-P{position}"
+                              for split in (1, 2) for position in (1, 3)})
+            self.assertEqual(sum(D(row["material_num"]) for row in issues), D("40"))
+            self.assertEqual(sum(D(row["material_total_cost"]) for row in issues), D("2"))
+            self.assertTrue(all(D(row["product_total_cost"]) == D("38") for row in issues))
+            evidence = [row for row in tables["issue_evidence"]
+                        if row["order_no"] == "MO-0004158" and row["material_no"] == "RAW-006"]
+            self.assertEqual(len({row["position"] for row in evidence}), 2)
+            self.assertEqual(len({row["purchase_order_no"] for row in evidence}), 4)
+            self.assertEqual(len({row["allocation_id"] for row in evidence}), 2)
+
     def test_every_position_can_mutate_in_both_periods(self):
         with tempfile.TemporaryDirectory() as tmp:
             tables = self.generate(Path(tmp), "--structure-rate", "1", "--material-rate", "1",
@@ -149,8 +174,65 @@ class ManufacturingDataTests(unittest.TestCase):
             left, right = Path(tmp) / "left", Path(tmp) / "right"
             self.generate(left)
             self.generate(right)
-            self.assertEqual({p.name: p.read_bytes() for p in left.iterdir()},
-                             {p.name: p.read_bytes() for p in right.iterdir()})
+            self.assertEqual({p.name: p.read_bytes() for p in left.iterdir() if p.is_file()},
+                             {p.name: p.read_bytes() for p in right.iterdir() if p.is_file()})
+            self.assertEqual((left / "excel/input.json").read_bytes(), (right / "excel/input.json").read_bytes())
+            for name in IMPORT_TABLES:
+                with zipfile.ZipFile(left / "excel" / f"{name}.xlsx") as a, \
+                     zipfile.ZipFile(right / "excel" / f"{name}.xlsx") as b:
+                    self.assertEqual(a.namelist(), b.namelist())
+                    for entry in a.namelist():
+                        if entry != "docProps/core.xml":
+                            self.assertEqual(a.read(entry), b.read(entry), entry)
+
+    def test_excel_files_match_exact_csv_fixtures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            tables = self.generate(output, "--batches", "4")
+            fixture = json.loads((output / "excel/input.json").read_text(encoding="utf-8"))
+            self.assertEqual(set(fixture), set(IMPORT_TABLES))
+            for name in IMPORT_TABLES:
+                path = output / "excel" / f"{name}.xlsx"
+                book = load_workbook(path)
+                try:
+                    self.assertEqual(book.sheetnames, [name])
+                    sheet = book[name]
+                    self.assertEqual(sheet.freeze_panes, "A2")
+                    self.assertFalse(sheet.sheet_view.showGridLines)
+                    headers = fixture[name]["headers"]
+                    self.assertEqual([c.value for c in sheet[1]], headers)
+                    self.assertEqual(sheet.max_row, len(tables[name]) + 1)
+                    self.assertEqual(fixture[name]["rows"], [[row[key] for key in headers] for row in tables[name]])
+                    for cells, source in zip(sheet.iter_rows(min_row=2), tables[name]):
+                        for cell, key in zip(cells, headers):
+                            if key == "date":
+                                self.assertIsInstance(cell.value, datetime)
+                                self.assertEqual(cell.value.date().isoformat(), source[key])
+                                self.assertEqual(cell.number_format, "yyyy-mm-dd")
+                            elif cell.data_type == "n" and cell.value is not None:
+                                self.assertEqual(D(str(cell.value)).quantize(D("0.000001")), D(source[key]))
+                                self.assertEqual(cell.number_format, "0.000000")
+                            else:
+                                self.assertEqual(cell.value or "", source[key])
+                    self.assertGreaterEqual(sheet.column_dimensions["A"].width, 18)
+                finally:
+                    book.close()
+                with zipfile.ZipFile(path) as archive:
+                    self.assertNotIn(b't="d"', archive.read("xl/worksheets/sheet1.xml"))
+
+    def test_excel_preserves_six_places_and_rejects_precision_loss(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            tables = {name: [dict(unit_cost=D("1.234567"))] for name in IMPORT_TABLES}
+            Generator.write_excel(output, tables)
+            book = load_workbook(output / "material_master.xlsx")
+            try:
+                self.assertEqual(D(str(book.active["A2"].value)), D("1.234567"))
+            finally:
+                book.close()
+            tables["material_master"][0]["unit_cost"] = D("123456789012.123456")
+            with self.assertRaisesRegex(ValueError, "Excel numeric precision exceeds"):
+                Generator.write_excel(output / "rejected", tables)
 
     def test_cli_rejects_invalid_input_and_preserves_existing_files(self):
         script = Path(__file__).with_name("generate_computer_manufacturing.py")
@@ -177,7 +259,7 @@ if __name__ == "__main__":
             with path.open(encoding="utf-8", newline="") as stream:
                 tables[path.stem] = list(csv.DictReader(stream))
         ManufacturingDataTests().check_ledgers(tables)
-        report = dict(status="PASS", checks=["Decimal cost conservation", "Source quantity and share conservation",
+        report = dict(status="PASS", checks=["Warehouse BOM and issue key uniqueness", "Decimal cost conservation", "Source quantity and share conservation",
                       "Explicit lineage and acyclic variable-depth trees", "Issue/output/purchase/sales consistency",
                       "Processing pool allocations", "Anomaly evidence references", "English ASCII values"],
                       rows={name: len(rows) for name, rows in tables.items()})
