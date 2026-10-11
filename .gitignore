@@ -130,3 +130,6 @@ benchmark/results/
 # FGW benchmark relocation record.
 !/docs/tasks/2026-10-11-175803-central-fgw-benchmark.md
 !/docs/tasks/2026-10-11-175803-central-fgw-benchmark/
+
+!/docs/tasks/2026-10-11-183228-java-production-tree-fgw.md
+!/docs/validation/production-tree-fgw-2026-10-11/validation.md
