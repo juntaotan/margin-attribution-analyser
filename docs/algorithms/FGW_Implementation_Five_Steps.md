@@ -1,16 +1,10 @@
-# FGW Implementation - Implement Standard FGW in Five Steps
+# FGW implementation in five steps
 
-# Background
+## Scope and dependencies
 
-Assume that eligible actual consumption trees grouped by production ID, with recorded quantities and amounts, are already available. The user-confirmed production identifier is `inventory_usage.order_no`. Compare different production IDs of the **same product** at the same declared topology scope using FGW. Full multilevel lineage requires explicit upstream production links; FIFO allocation is not part of tree preparation.
+Child of [FGW algorithm design](FGW_Algorithm_Design.md). This document owns the five mathematical steps, numerical/API contracts and native execution requirements. Trees must satisfy [tree construction and eligibility](FGW_Build_Production_Trees.md); numerical behaviour must satisfy [the fixed regression](FGW_Test_Case.md). Work on a solver does not establish tree construction, model generation or backend accelerator binding.
 
-This is File 2 of [the production analysis workflow](<Production Anomaly Analysis — Agent Workflow.md>). Validate supplied trees through [the production-ID tree specification](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>), whose historical filename is retained, and validate FGW through [the fixed numerical regression](<FGW CUDA Implementation — Numerical Test Case.md>). These are separate stages; work on this native solver does not establish that production-ID tree construction or backend integration is complete.
-
-# Objective
-
-The feature of finding out the abnormal transactions uses the **standard balanced Fused Gromov-Wasserstein (FGW)**  algorithm in CUDA and OpenCL for comparing manufacturing graphs with different node counts and unordered structures. Each node has one caller-supplied 384-dimensional material content embedding aligned with its CSR index. Use the node's own content vector, not the three-block neighbourhood vector or six-block BOM embedding. Graph topology is stored in CSR format. Embedding generation and model inference are outside this FGW implementation; report missing or misaligned embeddings rather than fabricating them.
-
-Follow these five steps. For each step, specify inputs, outputs, and computation.
+Inputs are different production IDs of the same product at the same declared topology scope, with CSR and one finite 384-dimensional vector per node. The parent [embedding stage](Embedding_Implementation.md#occurrence-context-embedding-preparation) owns contextual generation/provenance. Preserve existing supplied-vector callers and numerical fixtures; no inference occurs inside FGW. With fixed vectors, quantity/amount metadata does not change the objective. Regenerated context can change attribute distance, which is not a currency difference.
 
 # Current Implementation and Scope
 
@@ -28,7 +22,7 @@ The [native module README](../../backend/src/main/resources/cuda/test/fgw/README
 
 # Step 1: Calculate Distance Matrices
 
-**Inputs:**  Two CSR graphs (`G1`​, `G2`​) and material content embeddings `[N, 384]`​ and `[M, 384]` in the same node order as their respective CSR graphs.
+**Inputs:** Two CSR graphs (`G1`, `G2`) and node attribute embeddings `[N, 384]` and `[M, 384]` in the same node order as their respective CSR graphs, including roots. The proposed contextual profile is prepared and validated by the surrounding workflow.
 
 **Outputs:**  Material distance matrix `M_attr [N, M]`​and structural distance matrices `D1 [N, N]`​, `D2 [M, M]`.
 
@@ -167,7 +161,7 @@ The implementation counts applied correspondence updates in `iterations`; the te
 # Input and Output Contract
 
 - `Graph` supplies product/instance identifiers, a root index, unweighted CSR, exactly `nodeCount * 384` finite embedding values, and one `NodeSource` per CSR node. Reject empty or invalid graphs, disconnected undirected topology, incompatible product identities, invalid configuration, and dimension/mapping mismatches. Value validation cannot establish whether a caller semantically aligned an embedding with the correct material.
-- Preserve occurrence, material, production-order and issue-line identifiers. Map the scoped production ID to `Graph.instanceId` and each occurrence's receiving production ID to `NodeSource.productionOrderId`. Keep additional upstream-source/completeness metadata alongside the native input/output. Leave the existing `NodeSource.fifoAllocationIds` empty for the production-ID workflow; retain the field for compatibility. Copy `quantity` and `amount` decimal text verbatim; neither changes the mathematical objective or node weights.
+- Preserve occurrence, material, production-order and issue-line identifiers. Map the scoped production ID to `Graph.instanceId` and each occurrence's receiving production ID to `NodeSource.productionOrderId`. Keep additional upstream-source/completeness and contextual embedding provenance alongside the native input/output. Leave the existing `NodeSource.fifoAllocationIds` empty for the production-ID workflow; retain the field for compatibility. Copy `quantity` and `amount` decimal text verbatim; these metadata fields do not directly change the mathematical objective or node weights. A separately regenerated unit-cost context may change the supplied attribute vector.
 - Empty `Comparison.initialMatrices` means exactly one uniform outer-product start. Otherwise evaluate every supplied feasible row-major `[N,M]` matrix without appending an implicit uniform start. Keep each start's state independent.
 - Return row/column source mappings, fixed weights, all start results, selected `bestStart`, final correspondence, separate material/structure/FGW costs, fresh gap, applied-update count, terminal status and any numerical diagnostic. Select the lowest finite cost amongst numerically valid starts. If every start fails, `bestStart=0` still refers to a failure; callers must inspect its status.
 - Keep per-evaluation scalar diagnostics and OT certificates even when `captureTrace=false`. Full intermediate distance matrices and P/G/S/direction matrices are retained when tracing is enabled. Report original marginal errors and primal/dual/reduced-cost checks, rather than assuming correctness from the solver's termination.
@@ -264,7 +258,7 @@ The example submits one comparison. Sustained parallel execution requires severa
 ## Baseline Lifetime
 
 - Validate and prepare the baseline once per processing session on the selected CUDA device.
-- Keep its `[N, 384]` material content embeddings, undirected structural distance matrix `D1`, uniform weights `p` and reusable fixed-marginal structural constants read-only in device memory for all comparisons in that session.
+- Keep its `[N, 384]` node attribute embeddings, undirected structural distance matrix `D1`, uniform weights `p` and reusable fixed-marginal structural constants read-only in device memory for all comparisons in that session.
 - Share this immutable baseline across the session's execution workers on that device. Establish readiness with a CUDA event before worker streams read it. Do not upload or recompute it for each target or input batch.
 - Preserve the baseline's node order and source identifiers, restored quantities and decimal amounts for output mapping. These remain metadata rather than additional objective terms.
 - Release the baseline only after all accepted comparisons have finished and their device work has been drained. A new baseline requires a new preparation/session.

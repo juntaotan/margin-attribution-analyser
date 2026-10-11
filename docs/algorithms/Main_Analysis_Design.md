@@ -2,6 +2,23 @@
 
 This document proposes how to connect existing algorithms. It does not implement the workflow or establish runtime/device correctness. Repository inspection was performed on 11 October 2026. Material comparison is interpreted as the existing production-instance FGW comparison; decimal consumption/cost evidence remains a separate result.
 
+## Document hierarchy and reading scope
+
+This is the central design for the computational sequence, common invariants and execution policy. Read the relevant step implementation rather than every document. [FGW algorithm design](FGW_Algorithm_Design.md) remains the FGW centre for restoration/comparison boundaries and result interpretation.
+
+| Step | Implementation | Test document |
+| --- | --- | --- |
+| 1. Period CSR | [CSR](CSR_Implementation.md) | [CSR tests](CSR_Test_Case.md) — user-confirmed scope. |
+| 2. Abnormal branches | [Branch discovery](Abnormal_Branches_Implementation.md) | [Branch tests](Abnormal_Branches_Test_Case.md) — user-confirmed scope. |
+| 3. Production trees | [Tree restoration](FGW_Build_Production_Trees.md) | [Tree tests](FGW_Build_Production_Trees_Test_Case.md) — user-confirmed scope. |
+| 4. Context and embeddings | [Embedding preparation](Embedding_Implementation.md) | [Embedding tests](Embedding_Test_Case.md) — user-confirmed scope. |
+| 5. FGW comparison | [Five-step solver](FGW_Implementation_Five_Steps.md) | [Existing numerical regression](FGW_Test_Case.md) — preserved without rewriting. |
+| 6. Complete orchestration | [Workflow](Analysis_Workflow_Implementation.md) | [Workflow tests](Analysis_Workflow_Test_Case.md) — user-confirmed scope. |
+
+[Shared fixture](Analysis_Fixture.md) contains reusable source data. [Java API reference](<Production Tree Java API.md>) is consulted when existing callers/contracts are affected. Historical reports are evidence for specific questions, not default reading.
+
+All six step test documents now contain confirmed specifications or the existing FGW regression. Acceptance requirements are linked from their implementation documents; no empty placeholder waives validation and no documentation edit establishes a runtime pass.
+
 ## Existing entry points and modules
 
 Java paths below are relative to `backend/src/main/java/dev/margintrace/margin_attribution_backend/`.
@@ -16,6 +33,7 @@ Java paths below are relative to `backend/src/main/java/dev/margintrace/margin_a
 | Abnormal path reconstruction | `algorithm/BOMFrontier/BomFrontierReconciler.java` | Reconstructs material-to-selected-boundary paths using the original actual graph. |
 | Production selection/loading | `analysis/service/ProductionTreeService.java` | Accepts `abnormalPaths`, follows recorded material-to-product relationships and selects `order_no`; loads all available rows of selected IDs. |
 | Actual instance tree construction | `algorithm/ProductionTree/ProductionTreeBuilder.java`, `ProductionTree.java` | Builds separate occurrence trees for production IDs with issue/source evidence and declared scope. |
+| Occurrence-context embedding preparation | Proposed stage; no Java generation service identified | Current comparison requests supply vectors externally. The proposed stage encodes twelve fields after final instance-tree construction. |
 | Eligibility and solver adaptation | `algorithm/ProductionTree/ProductionTreeFgwAdapter.java` | Validates scope, completeness and occurrence embeddings, then invokes Java FGW. Currently imports analysis DTOs. |
 | Pairwise material/structure comparison | `algorithm/FGW/FgwEngine.java` | Serial Java FP64 balanced FGW, currently invoked by `/api/v1/analysis/production-trees/compare`. |
 | Optional statistical scoring | `algorithm/LOF/LofEngine.java` | Four-feature LOF calculation; no caller in current Java business code or frontend. Tests still exercise it. |
@@ -44,6 +62,8 @@ AnalysisController / another Java caller
      -> prepare thresholds and prune -> abnormal branch evidence
      -> select receiving products and production IDs in both periods
      -> load full instances by order_no -> build actual occurrence trees
+     -> collect twelve-field occurrence contexts -> resolve/cache/batch-generate 384-dimensional embeddings
+     -> map contextual vectors to final occurrence IDs and CSR indices
      -> enumerate all unique same-product production-ID pairs
      -> validate completeness and occurrence embeddings for each pair
      -> FGW -> join correspondence to source evidence
@@ -54,142 +74,13 @@ The product-facing description can remain “CSR -> abnormal branches -> materia
 
 Do not feed a period `CsrGraph` directly to FGW as an actual production instance. It has already merged inventory IDs across production records, and the synthetic COGS node is not a receiving production. Retain period graphs for discovery; rebuild occurrence trees from original records for accepted comparisons. Preserve branch/node/edge mappings throughout.
 
-### Package arrangement
+### Workflow and embedding implementation
 
-Keep existing package names and computational modules. Add small boundary modules instead of moving all current code:
+[Workflow implementation](Analysis_Workflow_Implementation.md) owns package/port boundaries, callable and external API contracts, candidate selection, all-pairs enumeration, consistent source snapshots, progress/results and resource lifetime. [Embedding implementation](Embedding_Implementation.md) owns the twelve-field context, canonicalisation, provenance, cache/batch preparation and independent inference execution. Existing public endpoints remain compatible.
 
-```text
-algorithm/
-  workflow/
-    AnalysisWorkflow                # Single reusable Java orchestration entry
-    AnalysisCommand                 # Domain request, without HTTP/JPA types
-    AnalysisOutcome                 # Domain evidence, stage statuses, comparisons
-    AnalysisProgressListener        # Optional progress callback
-    ProductionPairSelector          # All unique same-product order_no pairs
-  port/
-    PeriodGraphProvider             # Load/build each requested period graph
-    ProductionDataProvider          # Select IDs and load original issue records
-    EmbeddingProvider               # Resolve supplied/versioned content vectors
-  execution/
-    ExecutionPolicy                 # Caller-supplied useGpu/isNvidia and fallback policy
-    BackendRegistry                 # Registered engine adapters; no vendor discovery
-    BackendResolver                 # CPU/CUDA/OpenCL from caller-supplied flags
-    ExecutionReport                 # Requested/used backend and fallback evidence
-  TreeBuilder/                      # Existing period graph builders
-  BOMFrontier/
-    FrontierEngine                  # Small abstraction for existing run contract
-    BomUpwardEngine                 # Existing Java implementation
-    BomFrontierReconciler            # Inject engine; keep path reconstruction shared
-  ProductionTree/                   # Existing builder, semantic gate and mappings
-  FGW/
-    FgwComparator                   # Domain comparison/session boundary
-    FgwEngine                       # Existing Java solver
-  LOF/                              # Optional standalone scorer
-  model/                            # Existing shared graph/path contracts
+### FGW result interpretation
 
-analysis/
-  controller/                       # HTTP validation and JSON/NDJSON adaptation
-  dto/                              # Public API compatibility
-  service/                          # Spring wiring and read-only warehouse adapters
-
-infrastructure/acceleration/         # Proposed JNI wrappers and native resource lifetime
-```
-
-The workflow depends on domain contracts and ports. Spring services implement repository-facing ports; native wrappers implement engine boundaries. The workflow must not import controllers, HTTP DTOs, repositories or JNI details. Existing `AttributionWorkflow` accesses repositories and can be wrapped by a `PeriodGraphProvider` initially; no large TreeBuilder rewrite is needed.
-
-When extracting the boundary, replace `ProductionTreeFgwAdapter`'s imports of `analysis.dto.*` with domain inputs/results, with the old service translating its existing DTOs. Extract the current selection rules from `ProductionTreeService` behind a provider that retains selection references. Both old endpoints and the new workflow can reuse it without `algorithm -> analysis -> algorithm` coupling.
-
-Keep database orchestration and pair scheduling in Java. Native engines receive arrays, mappings and numerical configuration; they do not query the warehouse or decide business eligibility. For Java 21, a JNI boundary is a concrete implementation option; native packaging and ABI/error handling still require implementation and tests. No new dependency is required for this design task.
-
-### Proposed callable contracts
-
-Conceptual signatures, not implemented classes:
-
-```java
-AnalysisOutcome run(AnalysisCommand command);
-AnalysisOutcome run(AnalysisCommand command, AnalysisProgressListener progress);
-```
-
-Use immutable per-run state. Treat submitted arrays as immutable, retaining owned copies at external/native boundaries. Never share a serial Java FGW session across request threads. A synchronous first implementation should create/use/close comparison resources within the calling run; request cancellation and native cleanup must be explicit.
-
-## External API
-
-Add `POST /api/v1/analysis/run` and, when streaming is implemented, `/run/stream`. Keep existing reconcile/trace/tree endpoints compatible and make them reuse the extracted stages. Streaming is a presentation adapter around the same workflow, not a second pipeline.
-
-Preserve the current period fields:
-
-```json
-{
-  "actualStartDate": "2026-09-01",
-  "actualEndDate": "2026-09-30",
-  "comparableStartDate": "2026-08-01",
-  "comparableEndDate": "2026-08-31",
-  "leafThreshold": "100.000000",
-  "stopThreshold": "500.000000",
-  "execution": {
-    "useGpu": true,
-    "isNvidia": true,
-    "deviceId": null,
-    "allowCpuFallback": true
-  },
-  "comparison": {
-    "mode": "ALL_PAIRS",
-    "scope": "DIRECT_CONSUMPTION",
-    "evidence": {},
-    "embeddings": {},
-    "config": {"alpha": 0.8}
-  }
-}
-```
-
-This example illustrates the proposed field layout. Empty evidence/vectors produce explicit missing-input statuses, not an accepted FGW calculation. Evidence and embedding values retain the semantics documented in [Production Tree Java API](<Production Tree Java API.md>); FGW configuration retains existing defaults and definitions. Thresholds should be decimal strings in the new API to preserve exact client values; old numeric request fields remain accepted by compatibility endpoints.
-
-If product filtering is added, document and implement it explicitly for both graphs and candidate selection; do not expose an ignored `targets` field. Do not add `company` as a supposed organisation filter: the current warehouse has no organisation column. The evidence namespace labels a scoped dataset and is not row-level isolation.
-
-### Candidate and pair selection
-
-1. Preserve abnormal path references, graph role, selected boundary node and original graph positions. Exclude synthetic `__COGS__` from production identity selection while retaining it in discovery evidence.
-2. Follow actual recorded relationships to receiving products. Deduplicate candidates by namespace and production ID, retaining all branch references. A candidate is not a proven abnormal instance.
-3. Select candidate production IDs in the actual period. For the same receiving products, discover candidates independently in the comparable period; they do not need their own abnormal paths. Combine both sets and deduplicate scoped production IDs, retaining period membership and all selection evidence. These are the objects for all-pairs comparison, not a fixed-baseline or exclusively cross-period comparison.
-4. Load all available records of every selected production ID, including outside selection dates. Build direct/full-lineage trees according to supplied evidence. Never infer upstream production links, FIFO allocation or source shares.
-5. Group candidates by namespace and receiving product. Within each group, deterministically order production IDs and enumerate every pair `(i,j)` with `i < j`. Never compare an ID with itself or schedule both `(i,j)` and `(j,i)`. A group of `n` IDs has `n * (n - 1) / 2` planned comparisons: 100 eligible IDs of one product produce 4,950 FGW comparisons. Include actual-to-actual, comparable-to-comparable and cross-period pairs. Do not require caller-supplied pairs or choose a fixed baseline. A group with fewer than two IDs returns `INSUFFICIENT_PRODUCTION_INSTANCES`.
-6. Check each planned pair for same-product, different-production-ID, namespace, topology-scope and completeness eligibility before numerical execution. Return per-pair rejection evidence rather than silently dropping invalid pairs. Planned, executed, rejected and numerically failed counts must be reported separately; 4,950 planned pairs are not 4,950 successful solves when inputs are incomplete.
-7. Supply each occurrence's own finite 384-dimensional content vector with a compatible version, including roots. A configured provider may resolve vectors by material/version and map them to occurrences; missing vectors remain missing. Generation is a separate capability.
-
-If no paths are found, short-circuit instance selection/comparison and report `NO_ABNORMAL_BRANCHES`. In particular, do not call the current `ProductionTreeService.inspect` with only dates and an empty `abnormalPaths` list: that combination selects all instances in the period. Missing comparison data should retain discovery results with `COMPARISON_INPUT_REQUIRED`. Missing costs are explicit incomplete discovery evidence, not proof of normality.
-
-### Result and progress contracts
-
-The result should include `analysisId`, final status, both graph snapshots, abnormal paths, production selection/source references, inspected trees, deterministically ordered planned/executed/rejected pairs and their counts, per-pair FGW outputs and stage execution reports. FGW output retains correspondence, material/structure/FGW costs, convergence, numerical diagnostics and occurrence/source mappings. Decimal financial values remain strings in new result fields.
-
-Proposed streaming events are `graph`, `branches`, `production-trees`, `comparison`, `completed` and `error`, all sharing the run ID and increasing sequence number. Existing `/reconcile-periods/stream` retains its `graph`/`diff` protocol. Controllers translate progress events without rebuilding graphs or rerunning the solver. Source evidence must come from the same loaded run snapshots; clients join comparison occurrences to tree/issue evidence using IDs, not inventory IDs alone.
-
-Use an isolated, read-only consistent database snapshot for source loading, then retain immutable loaded inputs for computation. Do not keep a database transaction open while waiting for new caller evidence. A run with missing evidence returns its partial outcome; a subsequent submission reloads current data and identifies its new run. Persistent/resumable runs would need a separate snapshot/version contract.
-
-### What the current FGW implementation returns
-
-`FgwEngine.Result` describes one left/right production-tree comparison. Its central output is a node correspondence matrix and the objective costs under that correspondence, not a monetary variance or a ready-made anomaly diagnosis.
-
-| Field | Interpretation |
-| --- | --- |
-| `rows`, `columns` | Left and right tree node counts, including roots. |
-| `left`, `right` | Product/instance/root identity and ordered node source mappings. Each node includes occurrence, material, receiving production, issue IDs and decimal quantity/amount text. |
-| `p`, `q` | Fixed node weights: `1/rows` and `1/columns`, summing to one on each side. |
-| `starts`, `bestStart` | Results for each initial transport matrix and the selected lowest-cost non-numerical-failure start, when one exists. Check its status; selection does not imply convergence. |
-| `starts[k].correspondence` | Flattened row-major transport matrix `P`; entry `(i,j)` is at `i * columns + j`. |
-| `starts[k].costs.material` | Transport-weighted squared distance between the nodes' content embeddings. |
-| `starts[k].costs.structure` | Transport-weighted squared differences of within-tree shortest-path distances. |
-| `starts[k].costs.fgw` | `(1-alpha) * material + alpha * structure`; default `alpha=0.8`. |
-| `starts[k].iterations`, `finalGap`, `status`, `diagnostic` | Applied update count, final Frank–Wolfe gap and numerical/stopping evidence. |
-| `totalMilliseconds`, `execution` | Runtime and implementation identifier; the current Java result uses `JAVA_SERIAL_EXACT_SIMPLEX`. |
-
-`P[i,j]` is correspondence mass, not a consumed quantity or probability that a material caused an anomaly. Its row sums equal `p[i]`, column sums equal `q[j]`, and total mass equals one. A row can distribute its mass over several right nodes. For a row-level share, `P[i,j]/p[i]` gives the portion of that left node's weight assigned to right node `j`; it still is not an anomaly probability or a physical allocation. All tree nodes participate, including roots and intermediate occurrences. Use the source mappings to recover which materials and production occurrences correspond.
-
-Lower FGW cost means a closer match under the configured content/topology objective. It is not a calibrated percentage similarity, a currency amount or proof of normality. The nonconvex calculation and its stopping status do not guarantee a global optimum. Prices/quantities are retained as evidence and do not enter the present objective.
-
-Only `FW_GAP_REACHED` yields `converged=true`. `COST_STALLED`, `MAX_ITERATIONS` and `NUMERICAL_FAILURE` do not. With `captureTrace=true`, the result additionally contains material and structural distance matrices and per-iteration matrices, objective, marginals, line search and linear-OT diagnostics. Without tracing these optional arrays/lists remain empty; do not promise detailed OT certificates as default output.
-
-The HTTP `ProductionComparisonResponse` wraps this in `result`, together with `statuses`, `missingVectors`, `embeddingVersions`, inspected `trees` and nullable `converged`. Ineligible or incomplete inputs return evidence/statuses with `result=null`; an executed solver can still return a failure or nonconverged result.
+See [FGW comparison results](FGW_Algorithm_Design.md#comparison-result-interpretation) for correspondence, objective terms, convergence and source mapping. The workflow returns these results alongside exact decimal financial evidence; it does not turn them into monetary variance or causal diagnoses.
 
 ## CPU and GPU selection
 
@@ -209,18 +100,16 @@ Each execution report records stage, supplied `useGpu`/`isNvidia`, requested eng
 
 GPU selection changes execution, not algorithm definitions. Preserve frontier threshold semantics and exact signed-long micro-units, and FGW FP64 objective/tolerances. Validate nonnegative finite thresholds representable at six decimal places, signed-long bounds, unique inventory IDs, CSR shape and DAG topology before pruning. Report missing/noncomparable nodes and actual-only/comparable-only identities explicitly. Current discovery operates on the actual graph and cannot be described as symmetric added/removed-material analysis without a specified extension.
 
+### Independent embedding execution
+
+See [embedding execution](Embedding_Implementation.md#inference-execution-and-resource-lifetime). Its CPU/GPU/REMOTE policy is independent of frontier/FGW engine selection.
+
 ## LOF and interpretation
 
 LOF is not part of the proposed mandatory flow. Repository search found only its definition within Java main sources, with Java/native tests still present. Retain it as an optional standalone scoring module unless a separate removal task is authorised. Future production-instance statistical scoring would require defined four features, scaling, population, `k` and interpretation; the current engine does not specify these business rules.
 
-Threshold pruning identifies cost-difference paths. FGW compares material content and topology between actual production trees. It does not replace pruning, and quantity/price changes alone do not alter its current objective. Return recorded/per-output quantity and cost evidence separately where inputs permit. Do not add monetary penalties or new anomaly thresholds to standard FGW, and do not treat its score as causal proof.
+Threshold pruning identifies cost-difference paths. FGW compares node attributes and topology between actual production trees. It does not replace pruning. The proposed context vector includes unit cost, but textual encoding supplies no exact financial sensitivity or anomaly threshold; fixed-vector metadata-only quantity/price changes still do not alter the solver objective. Return recorded/per-output quantity and cost evidence separately where inputs permit. Do not add monetary penalties or new anomaly thresholds to standard FGW, and do not treat its score as causal proof.
 
-## Implementation order and required validation
+## Acceptance entry point
 
-1. Extract domain contracts/ports and inject Java frontier/FGW engines. Implement the independent CPU workflow and new endpoint without changing existing mathematical behaviour or public endpoints.
-2. Test end-to-end graph-to-path-to-instance-to-pair mappings with isolated warehouse fixtures, including no-path short-circuiting, candidate discovery in both periods, full-instance loading across dates, same-material distinct occurrences, all-pairs enumeration and missing evidence/vectors. Check zero/one-ID groups, exactly three pairs for three IDs, exactly 4,950 planned pairs for 100 IDs of one product, deduplication across periods/paths, no self/reverse duplicates, separation of products/namespaces and retained rejection statuses. The 100-ID count check tests enumeration and does not require 4,950 numerical solves in that fixture. Apply all production-tree grouping/evidence checks required by its specification when that behaviour is changed.
-3. Test direct Java calls and HTTP/stream adapters against the same workflow results. Test invalid thresholds/topology, cancellation, numerical/eligibility failures and truthful per-stage backend reporting. Validate any frontend changes using the prescribed build plus required behavioural checks.
-4. Add native frontier and FGW bridges as separate stages. Run the applicable native device tests, CPU parity fixtures/tolerances and FGW intermediate/independent CPU/POT validation before describing acceleration as available. Establish bridge packaging, supported runtime/device capabilities and lifecycle tests; report unavailable prerequisites explicitly.
-5. Only after correctness, add bounded all-pairs scheduling and resource reuse, and measure performance. A session may reuse one left tree while processing its remaining right partners, but this is an internal optimisation: every planned unique pair still executes, and no fixed-baseline selection replaces all-pairs semantics. Keep the independent workflow contract stable.
-
-Relevant specifications: [production workflow](<Restore Product Production Trees and Compare with FGW.md>), [production-ID tree rules](<Build Product Production Trees by Production ID>), [five-step FGW](<FGW Implementation - Implement Standard FGW in Five Steps.md>), [FGW numerical fixture](<FGW Implementation - Test Case.md>) and [existing Java API](<Production Tree Java API.md>). Some historical links inside those documents point to filenames absent from this checkout; the links listed here resolve to the present files. This design does not alter those specifications or their mathematical fixtures.
+Run the [workflow acceptance specification](Analysis_Workflow_Test_Case.md) against the [shared fixture](Analysis_Fixture.md). It owns the six computational-step checks, final financial/numerical/semantic assertions and supporting integration/execution requirements. Each step must run a concrete instance, followed by one complete invocation from original records through real embeddings and FGW. Existing individual-step tests remain mandatory for the affected scope. Numerical correctness, financial correctness and calibrated semantic quality are reported separately; unavailable prerequisites remain unverified.

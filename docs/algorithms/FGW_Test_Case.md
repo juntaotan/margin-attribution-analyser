@@ -1,16 +1,14 @@
-# FGW Implementation - Test Case
+# FGW numerical test case
 
-## Workflow Position
+## Workflow position
 
-Execute this as File 3 of [the production analysis agent workflow](<Production Anomaly Analysis — Agent Workflow.md>) to validate [the FGW implementation](<CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md>).
-
-Use the fixed synthetic inputs and expected values below. Do not replace this regression with production-ID data or alter its distance definitions. Validate [production-ID tree construction](<../Agent Prompt_ Restore Product Production Trees Using FIFO.md>) separately through its prescribed grouping, tree and evidence tests. The linked file retains its historical filename; its current specification uses `inventory_usage.order_no` as the confirmed production ID and requires no FIFO allocation.
+Child of [FGW algorithm design](FGW_Algorithm_Design.md), validating [the five-step solver](FGW_Implementation_Five_Steps.md). Keep the fixed synthetic inputs, distance definitions and expected values unchanged. Production-tree behaviour is validated separately by [tree acceptance tests](FGW_Build_Production_Trees_Test_Case.md#required-tests-with-passed-inputs-and-no-database-reads); production records do not replace this numerical regression.
 
 ## Objective
 
 Validate the CUDA implementation of standard balanced Fused Gromov-Wasserstein (FGW).
 
-The test must verify all five computation steps, including distance matrices, initialization, FGW cost, gradient, Frank–Wolfe optimization, and convergence.
+The test must verify all five computation steps, including distance matrices, initialisation, FGW cost, gradient, Frank–Wolfe optimisation, and convergence.
 
 **Do not modify the expected results. If the implementation produces different values, investigate the cause.**
 
@@ -80,18 +78,12 @@ Requirements:
 - Undirected shortest-path structural distances.
 - Uniform node weights.
 - Exact linear optimal transport subproblem.
-- Frank–Wolfe optimization with line search.
-- No additional distance normalization.
+- Frank–Wolfe optimisation with line search.
+- No additional distance normalisation.
 
 ---
 
 ## 2. Step 1 — Calculate Distance Matrices
-
-### Inputs
-
-- Graph 1 CSR
-- Graph 2 CSR
-- Node embeddings
 
 ### Expected Outputs
 
@@ -129,7 +121,7 @@ Verify every matrix element against the expected values.
 
 ---
 
-## 3. Step 2 — Initialize Node Weights
+## 3. Step 2 — Initialise Node Weights
 
 ### Inputs
 
@@ -167,19 +159,11 @@ Column sums = [1/3, 1/3, 1/3]
 Total sum   = 1.0
 ```
 
-The node weights `p`​ and `q` must remain unchanged throughout optimization.
+The node weights `p`​ and `q` must remain unchanged throughout optimisation.
 
 ---
 
 ## 4. Step 3 — Calculate Initial FGW Cost
-
-### Inputs
-
-- `M_attr`
-- `D1`
-- `D2`
-- `P0`
-- `alpha = 0.8`
 
 ### Expected Outputs
 
@@ -197,17 +181,9 @@ Do not validate only the final FGW cost.
 
 ---
 
-## 5. Step 4 — Frank–Wolfe Optimization
+## 5. Step 4 — Frank–Wolfe Optimisation
 
 ### 5.1 Calculate Gradient
-
-**Inputs:**
-
-- Current `P0`
-- `M_attr`
-- `D1`
-- `D2`
-- `alpha`
 
 **Expected output:**
 
@@ -227,11 +203,6 @@ Use the efficient matrix formulation, including the `D1 * P * transpose(D2)` ope
 Validate every gradient element.
 
 ### 5.2 Solve Linear Optimal Transport
-
-**Inputs:**
-
-- `G0`
-- Fixed weights `p`​ and `q`
 
 **Expected output:**
 
@@ -256,11 +227,6 @@ FW_Gap0 = 0.2666666667
 
 ### 5.3 Calculate Update Direction
 
-**Inputs:**
-
-- `P0`
-- `S0`
-
 **Expected output:**
 
 ```text
@@ -278,13 +244,6 @@ deltaP = S0 - P0
 
 ### 5.4 Perform Line Search
 
-**Inputs:**
-
-- `P0`
-- `deltaP`
-- FGW distance matrices
-- `alpha`
-
 **Expected output:**
 
 ```text
@@ -293,7 +252,7 @@ gamma = 1.0
 
 **Computation:**
 
-Find the step size that minimizes the true FGW objective along the update direction.
+Find the step size that minimises the true FGW objective along the update direction.
 
 Update the correspondence matrix:
 
@@ -311,14 +270,6 @@ P1 = [
 ```
 
 ### 5.5 Recalculate FGW Cost
-
-**Inputs:**
-
-- Updated `P1`
-- `M_attr`
-- `D1`
-- `D2`
-- `alpha`
 
 **Expected outputs:**
 
@@ -390,7 +341,7 @@ The reported iteration count may depend on whether the implementation counts the
 
 ## 7. Additional Test — Node Ordering Invariance
 
-Verify that changing the storage order of sibling nodes does not change the optimized FGW distance.
+Verify that changing the storage order of sibling nodes does not change the optimised FGW distance.
 
 Graph A:
 
@@ -420,7 +371,7 @@ Expected optimal FGW cost:
 FGW Cost = 0.0
 ```
 
-Because FGW is nonconvex, use a suitable initialization or multiple starts if necessary to verify the zero-cost solution.
+Because FGW is nonconvex, use a suitable initialisation or multiple starts if necessary to verify the zero-cost solution.
 
 ---
 
@@ -449,7 +400,7 @@ FP64 = 1e-8
 FP32 = 1e-5
 ```
 
-For FP32, also verify marginal constraints and allow for solver-specific rounding behavior.
+For FP32, also verify marginal constraints and allow for solver-specific rounding behaviour.
 
 ### Required Checks
 
@@ -476,7 +427,7 @@ For every step:
 4. Report PASS or FAIL.
 5. If a test fails, identify the failing computation before proceeding.
 
-**Do not begin GPU performance optimization until all numerical correctness tests pass.**
+**Do not begin GPU performance optimisation until all numerical correctness tests pass.**
 
 The final test report must contain:
 

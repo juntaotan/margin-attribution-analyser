@@ -22,7 +22,7 @@ OpenCL and CUDA provide acceleration for selected analysis algorithms. Their int
 
 The project-level goal is for all analysis functionality to be available on the CPU, with GPU acceleration optional for core analysis. This describes the intended product architecture, not the current implementation status or a requirement to implement or validate both execution paths in every task. Apply CPU and GPU requirements to the work in scope, as directed by the user and the applicable specifications; do not expand a staged task to complete unrelated execution paths.
 
-Production-instance tree restoration using FIFO and standard Fused Gromov-Wasserstein (FGW) comparison are specified in the production-analysis documents. Their presence in the specifications does not establish that they are already implemented or integrated. Check the code and validation results before describing a capability as complete.
+Production-ID tree construction using recorded issues and standard balanced Fused Gromov-Wasserstein (FGW) comparison are specified in the production-analysis documents. The current tree specification supersedes FIFO restoration. Their presence in the specifications does not establish that they are already implemented or integrated. Check the code and validation results before describing a capability as complete.
 
 ## Working Approach
 
@@ -44,6 +44,9 @@ Production-instance tree restoration using FIFO and standard Fused Gromov-Wasser
 
 ## Coding Conventions
 
+- Reuse existing modules, services and utilities wherever they meet the task's requirements. Extend the appropriate module instead of duplicating logic or creating a parallel implementation.
+- Keep implementation code minimal and focused on required behaviour. Avoid unnecessary abstractions, wrappers, configuration options and speculative features; do not sacrifice clarity or correctness merely to reduce line count.
+- Avoid excessive defensive programming. Validate external inputs and necessary domain, numerical and resource boundaries; rely on established internal contracts rather than repeating checks at every layer. Add error handling and fallback only where the requirements or a demonstrated failure justify them. Preserve required validation and explicit missing-input reporting.
 - Follow the existing naming conventions: Java classes and React components use PascalCase; Java methods and variables use camelCase.
 - Match new file and directory names to comparable existing modules. Do not perform bulk renaming solely to standardise naming or spelling.
 - Write detailed documentation comments for important classes and public methods. Explain their purpose, inputs, outputs, and, where applicable, assumptions, side effects, and error behaviour. Use the language's documentation convention and the English requirements above.
@@ -108,11 +111,12 @@ Backend resources and tests:
 
 ## Task Specifications
 
-- For FIFO production-tree restoration and FGW work, `docs/algorithms/Production Anomaly Analysis — Agent Workflow.md` and its three linked specifications below are the authoritative requirements and validation standards. Read the documents relevant to the requested stage and implement and test it as specified, subject to the user's explicit task instructions:
+- [Main analysis design](docs/algorithms/Main_Analysis_Design.md) is the central specification for workflow orchestration, embedding preparation and execution policy. [FGW algorithm design](docs/algorithms/FGW_Algorithm_Design.md) is the FGW entry point and defines the boundaries of its three authoritative child specifications:
 
-  - `docs/Agent Prompt_ Restore Product Production Trees Using FIFO.md`
-  - `docs/algorithms/CUDA Agent Prompt_ Implement Standard FGW in Five Steps.md`
-  - `docs/algorithms/FGW CUDA Implementation — Numerical Test Case.md`
+  - [Production-tree construction](docs/algorithms/FGW_Build_Production_Trees.md): production-ID grouping, two-pass scope traversal, actual issue/cost evidence and tree acceptance tests.
+  - [Five-step FGW implementation](docs/algorithms/FGW_Implementation_Five_Steps.md): mathematical definitions, numerical contracts and solver execution requirements.
+  - [FGW numerical test case](docs/algorithms/FGW_Test_Case.md): fixed fixtures, intermediate expectations and independent CPU/POT validation.
+- Read the relevant centre sections and child specifications for the requested stage; implement and run all applicable validation, subject to the user's explicit task instructions. Consult the [Java API reference](<docs/algorithms/Production Tree Java API.md>) when existing API contracts or callers are affected.
 - Distinguish specified behaviour from existing implementation and proposed improvements. Surface conflicts rather than silently changing requirements.
 - Treat implementation instructions in these documents as applying to their respective tasks; their presence alone is not an instruction to implement the entire workflow.
 
