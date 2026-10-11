@@ -31,15 +31,13 @@ public class AnalysisRunController {
             try {
                 service.run(command, event -> {
                     try {
-                        output.write(AnalysisRunResponse.bytes(event));
-                        output.write('\n'); output.flush();
+                        AnalysisRunResponse.writeEvent(output, event);
                     } catch (IOException error) { throw new UncheckedIOException(error); }
                 });
             } catch (UncheckedIOException error) { throw error.getCause(); }
             catch (RuntimeException error) {
-                output.write(AnalysisRunResponse.bytes(Map.of("type", "error", "message",
-                        error.getMessage() == null ? "Analysis failed" : error.getMessage())));
-                output.write('\n'); output.flush();
+                AnalysisRunResponse.writeEvent(output, Map.of("type", "error", "message",
+                        error.getMessage() == null ? "Analysis failed" : error.getMessage()));
             }
         };
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/x-ndjson")).body(body);

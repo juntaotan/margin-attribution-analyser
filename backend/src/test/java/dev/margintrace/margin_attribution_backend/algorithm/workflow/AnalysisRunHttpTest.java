@@ -14,6 +14,34 @@ import static dev.margintrace.margin_attribution_backend.algorithm.workflow.Anal
 
 /** HTTP adaptation uses the same outcome; no local server, warehouse or separate computation is involved. */
 class AnalysisRunHttpTest {
+    @Test void progressWritesIncrementallyAndLeavesResponseOpen() throws Exception {
+        class ResponseStream extends java.io.ByteArrayOutputStream {
+            boolean closed;
+            int largestWrite;
+            @Override public void write(byte[] bytes, int offset, int length) {
+                assertFalse(closed);
+                largestWrite = Math.max(largestWrite, length);
+                super.write(bytes, offset, length);
+            }
+            @Override public void close() { closed = true; }
+        }
+        var output = new ResponseStream();
+        var event = new AnalysisProgressListener.Event(java.util.UUID.randomUUID(), 1,
+                "production-trees", java.util.Map.of("reason", "evidence".repeat(100_000),
+                "amount", new java.math.BigDecimal("123.4500")));
+        AnalysisRunResponse.writeEvent(output, event);
+        AnalysisRunResponse.writeEvent(output, java.util.Map.of("type", "completed"));
+        assertFalse(output.closed);
+        assertTrue(output.largestWrite < 64 * 1024, "Events must be written in bounded chunks");
+        String[] lines = output.toString(java.nio.charset.StandardCharsets.UTF_8).split("\n");
+        assertEquals(2, lines.length);
+        var mapper = new ObjectMapper();
+        var first = mapper.readTree(lines[0]);
+        assertEquals("evidence".repeat(100_000), first.path("data").path("reason").asText());
+        assertEquals("123.4500", first.path("data").path("amount").asText());
+        assertEquals("completed", mapper.readTree(lines[1]).path("type").asText());
+    }
+
     @Test void newEndpointPreservesWorkflowIdentityAndDecimalText() throws Exception {
         var expected=AnalysisWorkflowTest.workflow(new RecordingProvider()).run(command());
         var service=new AnalysisRunService(null,"","","",60){
