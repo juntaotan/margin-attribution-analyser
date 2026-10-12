@@ -17,7 +17,7 @@ RUN cmake -S /src/native -B /build -DMARGIN_CUDA=OFF -DCMAKE_BUILD_TYPE=Release 
     && cmake --install /build --prefix /native
 
 FROM eclipse-temurin:21-jre-noble AS opencl
-RUN apt-get update && apt-get install -y --no-install-recommends ocl-icd-libopencl1 \
+RUN apt-get update && apt-get install -y --no-install-recommends ocl-icd-libopencl1 python3 python3-venv \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=java-build /workspace/target/*.jar app.jar
@@ -40,7 +40,7 @@ RUN cmake -S /src/native -B /build -DMARGIN_CUDA=ON -DCMAKE_BUILD_TYPE=Release \
     && cmake --install /build --prefix /native
 
 FROM ${CUDA_RUNTIME_IMAGE} AS cuda
-RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless ocl-icd-libopencl1 \
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jre-headless ocl-icd-libopencl1 python3 python3-venv \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=java-build /workspace/target/*.jar app.jar

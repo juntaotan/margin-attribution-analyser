@@ -64,6 +64,14 @@ export function accelerationPreference(): AccelerationPreference {
   } catch { return DEFAULT_ACCELERATION; }
 }
 
+/** Inference backend recorded by the embedding settings; null lets the backend use CPU inference. */
+export function embeddingPreference(): { backend: 'CPU' | 'GPU' } | null {
+  try {
+    const value = JSON.parse(localStorage.getItem('margintrace.embedding') || 'null') as { backend?: string } | null;
+    return value?.backend === 'GPU' || value?.backend === 'CPU' ? { backend: value.backend } : null;
+  } catch { return null; }
+}
+
 /** Preserve exact recorded decimal text in financial evidence. */
 export const recorded = (value: string | null | undefined) => value == null ? 'Unavailable' : value;
 

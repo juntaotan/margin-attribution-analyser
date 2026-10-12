@@ -5,7 +5,7 @@ import { DualBomTreeCanvas } from './DualBomTreeCanvas';
 import { AuditSidebar } from './AuditSidebar';
 import { ProductComparisonModal } from './ProductComparisonModal';
 import { AnalysisProgressBar } from './AnalysisProgressBar';
-import { accelerationPreference, readWorkflowStream, type AnalysisOutcome, type PeriodSnapshot, type WorkflowEvent } from '../../analysisRun';
+import { accelerationPreference, embeddingPreference, readWorkflowStream, type AnalysisOutcome, type PeriodSnapshot, type WorkflowEvent } from '../../analysisRun';
 import type { StreamNode } from '../../analysisGraph';
 import { currentStep, failProgress, initialProgress, reduceProgress, type AnalysisProgress } from '../../analysisProgress';
 
@@ -46,7 +46,7 @@ export const DualBomAnalysisPage: React.FC<{ active?: boolean; onStatusChange?: 
     try {
       const response = await fetch('/api/v1/analysis/run/stream', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' }, signal: controller.signal,
         body: JSON.stringify({ actualStartDate: periodFrom, actualEndDate: periodTo, comparableStartDate: comparablePeriodFrom, comparableEndDate: comparablePeriodTo,
-          leafThreshold: String(leafThreshold), stopThreshold: String(threshold), execution: accelerationPreference(),
+          leafThreshold: String(leafThreshold), stopThreshold: String(threshold), execution: accelerationPreference(), embedding: embeddingPreference(),
           comparison: { completeGraphCoverage: complete, warehouse: { namespace: 'warehouse', currency: currency.trim(), costScope: costScope.trim(),
             quantityInterpretation: repeated ? 'REPEATED_INSTANCE_TOTAL' : 'UNVERIFIED', costInterpretation: repeated ? 'REPEATED_INSTANCE_TOTAL' : 'UNVERIFIED' }, config: { alpha: 0.8 } } }) });
       if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.message || `Analysis failed (${response.status})`); }

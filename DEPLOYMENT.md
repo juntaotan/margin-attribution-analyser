@@ -34,6 +34,15 @@ PostgreSQL and MinIO use separate named Docker volumes, so their data survives c
 
 Flyway runs when the backend starts. Its `V3__sample_topology_data.sql` migration inserts sample data, so this configuration is intended for deployment practice. Address sample data and off-host backups before long-term use. Do not run `docker compose down -v` against data you want to keep: `-v` removes the named volumes.
 
+## Embedding model for production comparison
+
+Production-pair comparison needs a local embedding model. Without it, every planned pair is rejected with `MISSING_EMBEDDINGS`. Install it from the web app: **Settings → Embedding model**, choose the inference runtime, then **Download and install**. After confirmation, the backend container downloads:
+
+- CPU: PyTorch from `download.pytorch.org`, sentence-transformers from `pypi.org` and the model from `huggingface.co` (about 1.5 GB on disk).
+- NVIDIA CUDA: PyTorch with CUDA libraries and sentence-transformers from `pypi.org`, and the model from `huggingface.co` (about 6 GB on disk). This PyTorch build uses CUDA 13 libraries and needs a correspondingly recent NVIDIA driver; Settings shows whether the CUDA device was detected. Use it with the CUDA backend (`BACKEND_RUNTIME=cuda` or `cuda-desktop`); in the CPU backend no GPU is visible and inference stays on the CPU.
+
+The backend therefore needs outbound HTTPS access to those hosts; set the standard `HTTPS_PROXY` variable on the backend service if required. Files are stored in the `embedding_runtime` named volume and survive container recreation. The default model is `sentence-transformers/all-MiniLM-L6-v2` at a pinned revision; another 384-dimensional mean-pooling model can be selected with `EMBEDDING_MODEL` and `EMBEDDING_REVISION` on the backend service, followed by a reinstall. The virtual environment is tied to the backend image's Python version: reinstall from Settings after a base-image upgrade or after switching between the CPU and CUDA backends.
+
 ## Optional NVIDIA CUDA backend
 
 The deployment remembers the backend host mode in `.env.deploy`:

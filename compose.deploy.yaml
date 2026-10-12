@@ -74,6 +74,10 @@ services:
       ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set ONLYOFFICE_JWT_SECRET in .env.deploy}
       SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
       SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 50MB
+      EMBEDDING_RUNTIME_DIR: /var/lib/margintrace/embedding
+      HF_HOME: /var/lib/margintrace/embedding/huggingface
+    volumes:
+      - embedding_runtime:/var/lib/margintrace/embedding
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -93,6 +97,7 @@ services:
 
 volumes:
   postgres_data:
+  embedding_runtime:
   minio_data:
   onlyoffice_data:
   onlyoffice_logs:
