@@ -19,6 +19,8 @@ This is the central design for the computational sequence, common invariants and
 
 All six step test documents now contain confirmed specifications or the existing FGW regression. Acceptance requirements are linked from their implementation documents; no empty placeholder waives validation and no documentation edit establishes a runtime pass.
 
+[Dual BOM graph display design](../frontend/Dual_BOM_Graph_Display_Design.md) defines bounded frontend presentation: COGS-difference coverage, in-place folding and aligned period trees. It does not change the computational acceptance requirements.
+
 ## Existing entry points and modules
 
 Java paths below are relative to `backend/src/main/java/dev/margintrace/margin_attribution_backend/`.

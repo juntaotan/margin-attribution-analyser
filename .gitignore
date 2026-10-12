@@ -169,3 +169,8 @@ benchmark/results/
 !/docs/tasks/2026-10-12-120340-native-runtime-startup-evidence/
 !/docs/tasks/2026-10-12-120340-native-runtime-startup-evidence/**
 !/docs/tasks/2026-10-12-153135-persistent-backend-runtime.md
+
+# Bounded dual BOM display design and implementation record.
+!docs/frontend/**.md
+!/docs/tasks/2026-10-12-143449-bounded-dual-bom-display.md
+!/docs/tasks/2026-10-12-173405-cogs-coverage-column-tree.md

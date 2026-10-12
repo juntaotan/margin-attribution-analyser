@@ -92,3 +92,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Dual-BOM column headers are labels, not connectable graph nodes. */
+.react-flow__node.column-header .react-flow__handle { display: none; }
