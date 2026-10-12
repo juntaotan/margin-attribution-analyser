@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { accelerationPreference, type AccelerationPreference, type ExecutionReport } from '../../analysisRun';
+import { EmbeddingRuntimeSettings } from './EmbeddingRuntimeSettings';
 
 interface BackendDevice { id: string; name: string; frontier: boolean; fgw: boolean }
 interface Capabilities {
@@ -48,9 +49,10 @@ export const AccelerationSettings: React.FC = () => {
       {error ? <p className="text-[#A64242]" role="alert">{error}</p> : capability ? <p>Backend capability: {capability.requested} · {capability.status}{capability.fallbackReason ? ` · ${capability.fallbackReason}` : ''}</p> : <p>{capabilities ? 'Choose a vendor to inspect capability.' : 'Loading backend capabilities…'}</p>}
       {stages && <p>Frontier: {stages.frontier.status} · FGW: {stages.fgw.status}</p>}
       <p className="text-slate-600">Devices belong to the backend server. Automatic selection stays within the selected runtime.</p>
-      <p className="text-slate-600">Preferences apply to frontier and FGW. Model inference retains its separate configuration. Saving a preference does not establish device availability.</p>
+      <p className="text-slate-600">Preferences apply to frontier and FGW. Model inference has its own runtime below. Saving a preference does not establish device availability.</p>
       <button className="border rounded px-3 py-2" disabled={preferences.useGpu && preferences.isNvidia == null} onClick={save}>Save calculation preferences</button>
       {notice && <p role="status">{notice}</p>}
+      <EmbeddingRuntimeSettings />
     </div>
   </details>;
 };

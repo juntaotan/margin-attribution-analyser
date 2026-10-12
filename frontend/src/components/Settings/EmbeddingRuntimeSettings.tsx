@@ -46,8 +46,9 @@ export const EmbeddingRuntimeSettings: React.FC = () => {
   };
   const summary = !status ? 'Loading' : status.state === 'READY' ? `Ready · ${status.variant === 'cuda' ? `CUDA${status.cudaAvailable ? '' : ' (GPU unavailable, CPU inference)'}` : 'CPU'}`
     : status.state === 'INSTALLING' ? `Installing · ${status.stage}` : status.state === 'FAILED' ? 'Failed' : 'Not installed';
-  return <details className="border rounded-lg bg-white settings-section"><summary className="cursor-pointer p-5 text-sm font-semibold">Embedding model <span className="ml-2 text-xs font-normal text-slate-600">{summary}</span></summary>
-    <div className="p-5 pt-0 space-y-3 text-xs settings-content">
+  const gpuMissing = status?.state === 'READY' && status.variant === 'cuda' && !status.cudaAvailable;
+  return <section className="border-t pt-4 space-y-3">
+      <h3 className="font-semibold">Embedding model <span className="ml-2 font-normal text-slate-600">{summary}</span></h3>
       {status && <p>Model: {status.modelId} · revision {status.revision}</p>}
       {status?.state === 'FAILED' && <><p className="text-[#A64242]">Failed during: {status.stage}</p><pre className="whitespace-pre-wrap break-all bg-slate-50 p-2">{status.message}</pre></>}
       {status?.state === 'NOT_INSTALLED' && status.message && <p>{status.message}</p>}
@@ -56,7 +57,9 @@ export const EmbeddingRuntimeSettings: React.FC = () => {
       </select></label>
       <button className="border rounded px-3 py-2" disabled={!status || status.state === 'INSTALLING'} onClick={() => void install()}>{status?.state === 'READY' ? 'Reinstall' : 'Download and install'}</button>
       {error && <p className="text-[#A64242]" role="alert">{error}</p>}
-      <p className="text-slate-600">Files are installed on the backend server. Reinstalling replaces the existing runtime. Other 384-dimensional mean-pooling models are configured with EMBEDDING_MODEL and EMBEDDING_REVISION.</p>
-    </div>
-  </details>;
+      {(variant === 'cuda' || gpuMissing) && <p className={gpuMissing ? 'text-[#A64242]' : 'text-slate-600'} role={gpuMissing ? 'alert' : undefined}>
+        {gpuMissing ? 'No CUDA device was detected, so inference runs on the CPU. ' : ''}GPU inference uses CUDA 13 libraries and needs an NVIDIA driver that supports CUDA 13 (about version 580 or later) on the backend host; check the CUDA Version shown by nvidia-smi.
+        Ubuntu: sudo ubuntu-drivers install, then reboot. Windows/WSL2: update the Windows NVIDIA driver, not inside WSL, then restart Docker Desktop. Reinstall afterwards.</p>}
+      <p className="text-slate-500">Note: installed on the backend server; reinstalling replaces the current runtime.</p>
+    </section>;
 };

@@ -1,6 +1,5 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import { AccelerationSettings } from './AccelerationSettings';
-import { EmbeddingRuntimeSettings } from './EmbeddingRuntimeSettings';
 import {
   AlertCircle,
   CheckCircle2,
@@ -538,7 +537,6 @@ export const SettingsPage: React.FC = () => {
         </section>
 
         <AccelerationSettings />
-        <EmbeddingRuntimeSettings />
         <p className="px-1 text-[11px] leading-5 text-slate-400">
           In Docker, 127.0.0.1 points to the backend container itself.
           Use host.docker.internal or a network-reachable llama.cpp host.
