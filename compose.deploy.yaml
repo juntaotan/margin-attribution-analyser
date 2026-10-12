@@ -53,8 +53,9 @@ services:
       start_period: 60s
 
   backend:
-    build:
-      context: ./backend
+    extends:
+      file: compose.backend.yaml
+      service: ${BACKEND_RUNTIME:-cpu}
     restart: unless-stopped
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/margin_attribution

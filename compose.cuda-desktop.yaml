@@ -1,18 +1,6 @@
-# Optional Windows Docker Desktop/WSL2 backend overlay using NVIDIA GPU requests.
-# Use with compose.deploy.yaml, separately from the Linux CDI overlay.
+# Compatibility overlay; prefer BACKEND_RUNTIME=cuda-desktop in .env.deploy.
 services:
   backend:
-    image: margintrace-backend-cuda
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.acceleration
-      target: cuda
-      args:
-        CUDA_ARCHITECTURES: ${CUDA_ARCHITECTURES:-75}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    extends:
+      file: compose.backend.yaml
+      service: cuda-desktop

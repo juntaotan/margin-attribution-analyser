@@ -36,10 +36,18 @@ Flyway runs when the backend starts. Its `V3__sample_topology_data.sql` migratio
 
 ## Optional NVIDIA CUDA backend
 
-The base deployment packages the CPU backend. Selecting CUDA in Settings cannot
-install its native library or expose a host GPU. The `compose.cuda.yaml` overlay
-builds the optional accelerator image, which sets `MARGIN_NATIVE_LIBRARY_DIR` to
-its installed JNI libraries, and requests NVIDIA devices through CDI.
+The deployment remembers the backend host mode in `.env.deploy`:
+
+```dotenv
+BACKEND_RUNTIME=cpu
+```
+
+Choose `cpu` (the default), `cuda` for Linux NVIDIA CDI, or `cuda-desktop` for
+Windows Docker Desktop/WSL2. `compose.deploy.yaml` selects the corresponding
+packaging and device access from `compose.backend.yaml`, so ordinary builds and
+container recreation retain the choice. Selecting CUDA in Settings chooses an
+analysis preference; host mode supplies its native library and device access.
+The CUDA image sets `MARGIN_NATIVE_LIBRARY_DIR` to its installed JNI libraries.
 
 This route requires Linux, an existing compatible NVIDIA driver, Docker Engine
 28.3+ with CDI enabled, and NVIDIA CDI tools. Docker enables CDI by default from
@@ -70,19 +78,24 @@ curl --fail http://localhost:18080/api/v1/analysis/capabilities
 
 Use the configured `APP_PORT` for the capability request. The startup script first
 checks GPU access in a disposable container. If that fails, it leaves the deployed
-backend running. After a successful check, it builds the CUDA image and recreates
+backend running. After a successful check, it saves `BACKEND_RUNTIME=cuda` in
+`.env.deploy`, builds the CUDA image and recreates
 only the backend with `--no-deps`; database, object-storage, web and ONLYOFFICE
 containers and volumes are retained. Native loading failures are cached by the
 JVM, so replacing libraries requires a backend restart.
 
-Use both Compose files for subsequent backend updates:
+For subsequent backend updates, use the ordinary deployment command:
 
 ```sh
-docker compose --env-file .env.deploy -f compose.deploy.yaml -f compose.cuda.yaml up -d --no-deps --build backend
+docker compose --env-file .env.deploy -f compose.deploy.yaml up -d --no-deps --build backend
 ```
 
-Using only the base Compose file can replace it with the CPU image again. Verify
-CUDA devices and both stage reports in the capability response, then run an
+The remembered mode also applies to the full-stack command at the beginning of
+this guide. Change `BACKEND_RUNTIME` to `cpu` to explicitly return to CPU packaging.
+Keep `.env.deploy` during updates; recreating it from the example resets the choice.
+The old `compose.cuda.yaml` overlay remains compatible for existing commands but
+is no longer needed after saving the mode. Verify CUDA devices and both stage
+reports in the capability response, then run an
 analysis with CUDA selected. Inventory and `nvidia-smi` alone do not verify
 numerical execution. CUDA architecture defaults to 75 with portable PTX;
 `CUDA_ARCHITECTURES` can override it for a compatible toolkit/device. The image
@@ -116,13 +129,19 @@ From the project directory in PowerShell, first check container GPU access:
 docker run --rm --gpus all nvidia/cuda:12.8.1-runtime-ubuntu24.04 nvidia-smi
 ```
 
-After reviewing `.env.deploy` and pending migrations, use the separate Desktop
-overlay, which requests NVIDIA GPU access rather than Linux CDI names:
+After reviewing `.env.deploy` and pending migrations, set this value once:
 
-```powershell
-docker compose --env-file .env.deploy -f compose.deploy.yaml -f compose.cuda-desktop.yaml up -d --no-deps --build backend
+```dotenv
+BACKEND_RUNTIME=cuda-desktop
 ```
 
-Retain both of these Compose files for subsequent updates. Do not combine the two
-GPU overlays. This Desktop configuration has passed Compose configuration checks;
+Then use the ordinary deployment command. The selected mode requests NVIDIA GPU
+access rather than Linux CDI names:
+
+```powershell
+docker compose --env-file .env.deploy -f compose.deploy.yaml up -d --no-deps --build backend
+```
+
+The old Desktop overlay remains compatible for existing commands. Do not combine
+the two GPU overlays. This Desktop configuration has passed Compose configuration checks;
 Windows/WSL2 device and numerical execution have not been tested in this task.

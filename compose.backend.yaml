@@ -1,0 +1,27 @@
+# Backend packaging and device access selected by BACKEND_RUNTIME in .env.deploy.
+x-cuda-backend: &cuda-backend
+  image: margintrace-backend-cuda
+  build:
+    context: ./backend
+    dockerfile: Dockerfile.acceleration
+    target: cuda
+    args:
+      CUDA_ARCHITECTURES: ${CUDA_ARCHITECTURES:-75}
+
+services:
+  cpu:
+    build:
+      context: ./backend
+  cuda:
+    <<: *cuda-backend
+    devices:
+      - nvidia.com/gpu=all
+  cuda-desktop:
+    <<: *cuda-backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
