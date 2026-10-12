@@ -1,17 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { LoaderCircle, FileText, RefreshCw } from 'lucide-react';
+import { LoaderCircle, FileText, RefreshCw, Pin, PinOff, X } from 'lucide-react';
 import { recorded, type AnalysisOutcome } from '../../analysisRun';
 import { ManagementCommentaryModal } from './ManagementCommentaryModal';
 
 interface RootCauseReport { inventoryId: string; category: string; categoryLabel: string; certainty: string; evidence: string[]; summary: string | null; aiGenerated: boolean; aiMessage: string | null }
-/** Shows exact loaded evidence independently of the backend's optional AI explanation. */
-export const AuditSidebar: React.FC<{ outcome: AnalysisOutcome | null; inventoryId: string | null; active?: boolean }> = ({ outcome, inventoryId, active = true }) => {
+
+export interface AuditSidebarProps {
+  outcome: AnalysisOutcome | null;
+  inventoryId: string | null;
+  active?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+  isPinned?: boolean;
+  onTogglePin?: () => void;
+}
+
+/** Shows exact loaded evidence independently of the backend's optional AI explanation in a collapsible drawer. */
+export const AuditSidebar: React.FC<AuditSidebarProps> = ({
+  outcome,
+  inventoryId,
+  active = true,
+  isOpen = true,
+  onClose,
+  isPinned = true,
+  onTogglePin,
+}) => {
   const [report, setReport] = useState<RootCauseReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [retry, setRetry] = useState(0);
   const [commentary, setCommentary] = useState(false);
   const [opening, setOpening] = useState(false);
+
   useEffect(() => {
     setReport(null); setError(null);
     if (!outcome || !inventoryId) return;
@@ -34,8 +54,44 @@ export const AuditSidebar: React.FC<{ outcome: AnalysisOutcome | null; inventory
     } catch (err) { setError(err instanceof Error ? err.message : 'Report preparation failed'); }
     finally { setOpening(false); }
   };
-  return <aside className="w-full lg:w-80 shrink-0 bg-white border-t lg:border-l overflow-auto p-4 space-y-4 custom-scrollbar">
-    <h2 className="text-sm font-semibold">{inventoryId || 'Selected-node details'}</h2>
+
+  if (!isOpen) return null;
+
+  return <aside className={isPinned
+    ? "w-full lg:w-84 shrink-0 bg-white border-t lg:border-t-0 lg:border-l overflow-auto p-4 space-y-4 custom-scrollbar flex flex-col z-10 transition-all duration-200"
+    : "absolute right-0 top-0 bottom-0 z-30 w-full sm:w-88 bg-white border-l border-slate-200 shadow-2xl overflow-auto p-4 space-y-4 custom-scrollbar flex flex-col transition-all duration-200 animate-in slide-in-from-right"}>
+    <div className="flex items-center justify-between pb-2 border-b border-slate-200 shrink-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="w-2 h-2 rounded-full bg-period-actual shrink-0" />
+        <h2 className="text-sm font-bold text-slate-800 truncate" title={inventoryId || 'Selected-node details'}>
+          {inventoryId || 'Selected-node details'}
+        </h2>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        {onTogglePin && (
+          <button
+            type="button"
+            onClick={onTogglePin}
+            className={`p-1.5 rounded text-xs transition-colors ${
+              isPinned ? 'bg-period-actual-subtle text-period-actual font-medium' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+            }`}
+            title={isPinned ? 'Unpin drawer (switch to overlay)' : 'Pin drawer (dock side-by-side)'}
+          >
+            {isPinned ? <Pin className="w-3.5 h-3.5 fill-current" /> : <PinOff className="w-3.5 h-3.5" />}
+          </button>
+        )}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            title="Close drawer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
     {!inventoryId && <p className="text-xs text-slate-600">Select a material to inspect its evidence, or a product to open production comparisons.</p>}
     {inventoryId && outcome && <section className="text-xs space-y-3"><h3 className="font-medium">Recorded period evidence</h3>{[['Actual', outcome.actual], ['Comparable', outcome.comparable]].map(([label, value]) => {
       const isActual = label === 'Actual';
