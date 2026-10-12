@@ -16,5 +16,6 @@
   "backend/src/test/java/dev/margintrace/margin_attribution_backend/algorithm/workflow/AnalysisWorkflowTest.java": "46f4330d52cf4814bd40796a8b7b88dc99f306c4d73ba0744b11c63e6ffcc60f",
   "frontend/src/components/Settings/AccelerationSettings.tsx": "6655fb98c8bacadbe0f2bd4cb7ae61f5c0520716e6b586c1199688ed33228e82",
   "scripts/test_acceleration_settings.mjs": "8ed20df9c83c9f5994a7ca3c8ab5e8d7d5dac03cb5a754c290258e77391951dc",
-  ".gitignore": "7af660d6e72dfcd772a1eab64ba355b69c117d235235a529c01cda545a13c793"
+  ".gitignore": "7af660d6e72dfcd772a1eab64ba355b69c117d235235a529c01cda545a13c793",
+  "backend/.dockerignore": "537b2299000d47dd71b6c61977bd66444b5c1070a9c2147098efac6f2e82a02b"
 }

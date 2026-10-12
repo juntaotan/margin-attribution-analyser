@@ -165,3 +165,6 @@ benchmark/results/
 !/docs/tasks/2026-10-12-110849-native-accelerator-bindings.md
 !/docs/tasks/2026-10-12-110849-native-accelerator-bindings-evidence/
 !/docs/tasks/2026-10-12-110849-native-accelerator-bindings-evidence/**
+!/docs/tasks/2026-10-12-120340-native-runtime-startup.md
+!/docs/tasks/2026-10-12-120340-native-runtime-startup-evidence/
+!/docs/tasks/2026-10-12-120340-native-runtime-startup-evidence/**

@@ -33,3 +33,96 @@ The first build requires access to the container registries, GitHub, the Go modu
 PostgreSQL and MinIO use separate named Docker volumes, so their data survives container recreation and host restarts. The web service and ONLYOFFICE publish host ports. Nginx forwards `/api/` and `/imports` requests to the backend.
 
 Flyway runs when the backend starts. Its `V3__sample_topology_data.sql` migration inserts sample data, so this configuration is intended for deployment practice. Address sample data and off-host backups before long-term use. Do not run `docker compose down -v` against data you want to keep: `-v` removes the named volumes.
+
+## Optional NVIDIA CUDA backend
+
+The base deployment packages the CPU backend. Selecting CUDA in Settings cannot
+install its native library or expose a host GPU. The `compose.cuda.yaml` overlay
+builds the optional accelerator image, which sets `MARGIN_NATIVE_LIBRARY_DIR` to
+its installed JNI libraries, and requests NVIDIA devices through CDI.
+
+This route requires Linux, an existing compatible NVIDIA driver, Docker Engine
+28.3+ with CDI enabled, and NVIDIA CDI tools. Docker enables CDI by default from
+28.3; see [Docker's CDI configuration](https://docs.docker.com/reference/cli/dockerd/#configure-cdi-devices).
+The minimal `nvidia-container-toolkit-base` package supplies CDI tools without
+the legacy runtime hook; see [NVIDIA's CDI documentation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/cdi-support.html).
+
+On an apt-based host with systemd, install the tools once in a host terminal:
+
+```sh
+sudo bash scripts/install_nvidia_cdi.sh
+```
+
+The script uses NVIDIA's signed stable package repository and pins toolkit base
+1.20.1-1; `NVIDIA_CONTAINER_TOOLKIT_VERSION` can select another compatible version.
+It refreshes the CDI specification and does not restart Docker. For other hosts,
+follow [NVIDIA's installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+Existing installations can refresh their device specification with
+`sudo systemctl restart nvidia-cdi-refresh.service`.
+
+Review the existing `.env.deploy` connection settings and pending Flyway migrations
+before restarting the backend, then run:
+
+```sh
+bash scripts/start_cuda_backend.sh
+curl --fail http://localhost:18080/api/v1/analysis/capabilities
+```
+
+Use the configured `APP_PORT` for the capability request. The startup script first
+checks GPU access in a disposable container. If that fails, it leaves the deployed
+backend running. After a successful check, it builds the CUDA image and recreates
+only the backend with `--no-deps`; database, object-storage, web and ONLYOFFICE
+containers and volumes are retained. Native loading failures are cached by the
+JVM, so replacing libraries requires a backend restart.
+
+Use both Compose files for subsequent backend updates:
+
+```sh
+docker compose --env-file .env.deploy -f compose.deploy.yaml -f compose.cuda.yaml up -d --no-deps --build backend
+```
+
+Using only the base Compose file can replace it with the CPU image again. Verify
+CUDA devices and both stage reports in the capability response, then run an
+analysis with CUDA selected. Inventory and `nvidia-smi` alone do not verify
+numerical execution. CUDA architecture defaults to 75 with portable PTX;
+`CUDA_ARCHITECTURES` can override it for a compatible toolkit/device. The image
+also contains the OpenCL bridge, but its availability depends on the vendor ICD
+injected by the device runtime; verify that family separately before selecting it.
+
+### Who needs the host tools?
+
+GPU devices belong to the machine running the backend. People opening the web app
+in a browser do not install drivers or container tools. CPU-only deployments use
+the base Compose file and need no NVIDIA tooling. A Linux backend running inside
+Docker needs host device integration such as the CDI setup above. A backend run
+directly with Java needs its native libraries and GPU driver/runtime, but does
+not need NVIDIA's container tools. The Linux shared-library packaging described
+here does not establish support for running the backend directly on Windows.
+
+### Windows with Docker Desktop
+
+For NVIDIA CUDA, Docker Desktop supports GPU access to Linux containers using its
+WSL2 backend. Install a supported Windows NVIDIA driver, update WSL with
+`wsl --update`, and enable the WSL2 backend in Docker Desktop. See
+[Docker's Windows GPU prerequisites](https://docs.docker.com/desktop/features/gpu/).
+Do not run `install_nvidia_cdi.sh` for Docker Desktop: that script configures the
+host Linux Docker Engine. Microsoft distinguishes Docker Desktop from an Engine
+installed directly inside WSL, which needs its own container-toolkit setup; see
+[Microsoft's WSL GPU guide](https://learn.microsoft.com/en-us/windows/wsl/tutorials/gpu-compute).
+
+From the project directory in PowerShell, first check container GPU access:
+
+```powershell
+docker run --rm --gpus all nvidia/cuda:12.8.1-runtime-ubuntu24.04 nvidia-smi
+```
+
+After reviewing `.env.deploy` and pending migrations, use the separate Desktop
+overlay, which requests NVIDIA GPU access rather than Linux CDI names:
+
+```powershell
+docker compose --env-file .env.deploy -f compose.deploy.yaml -f compose.cuda-desktop.yaml up -d --no-deps --build backend
+```
+
+Retain both of these Compose files for subsequent updates. Do not combine the two
+GPU overlays. This Desktop configuration has passed Compose configuration checks;
+Windows/WSL2 device and numerical execution have not been tested in this task.

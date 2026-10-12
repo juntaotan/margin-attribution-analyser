@@ -1,0 +1,13 @@
+# Optional NVIDIA backend overlay for Linux Docker Engine with CDI enabled.
+# Use together with compose.deploy.yaml and the same deployment environment file.
+services:
+  backend:
+    image: margintrace-backend-cuda
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.acceleration
+      target: cuda
+      args:
+        CUDA_ARCHITECTURES: ${CUDA_ARCHITECTURES:-75}
+    devices:
+      - nvidia.com/gpu=all
