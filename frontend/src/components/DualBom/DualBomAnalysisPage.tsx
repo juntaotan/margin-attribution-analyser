@@ -74,7 +74,7 @@ export const DualBomAnalysisPage: React.FC<{ active?: boolean; onStatusChange?: 
     const url = URL.createObjectURL(new Blob([JSON.stringify(outcome, null, 2)], { type: 'application/json' }));
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = `analysis-${outcome.analysisId}.json`; anchor.click(); URL.revokeObjectURL(url);
   };
-  return <main className="flex-1 flex flex-col h-full min-h-0 bg-[#F6F8FA] text-slate-800 overflow-hidden">
+  return <main className="flex-1 flex flex-col h-full min-h-0 bg-surface-canvas text-slate-800 overflow-hidden">
     <AnalysisHeader onExport={exportAnalysis} status={outcome?.execution.map(report => `${report.stage}: ${report.actual || report.status}`).join(' · ') || 'Awaiting analysis'} />
     <ScopeControlsBar {...{ periodFrom, setPeriodFrom, periodTo, setPeriodTo, threshold, setThreshold, comparablePeriodFrom, setComparablePeriodFrom, comparablePeriodTo, setComparablePeriodTo, leafThreshold, setLeafThreshold, isAnalyzing }} onRunAnalysis={handleRunAnalysis} />
     <details className="bg-white border-b px-4 py-2 text-xs shrink-0"><summary className="cursor-pointer font-medium">Data interpretation {(!complete || !repeated) && '· confirmation required for complete comparisons'}</summary><div className="flex flex-wrap gap-4 py-3">
@@ -86,9 +86,9 @@ export const DualBomAnalysisPage: React.FC<{ active?: boolean; onStatusChange?: 
     <AnalysisProgressBar progress={progress} idle="Select periods and run analysis." summary={<>
       <span>{outcome?.status || (error ? 'Analysis failed' : 'Analysis stopped')}</span>
       {outcome && <span>{outcome.branches.length} paths · {outcome.planned} pairs planned · {outcome.executed} executed · {outcome.rejected} rejected · {outcome.failed} failed</span>}
-      {outcome && (scope !== resultScope || options !== submittedOptions) && <span className="text-[#866322]">Inputs changed. Displayed results retain the previous run scope; run again to update.</span>}
+      {outcome && (scope !== resultScope || options !== submittedOptions) && <span className="text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60 font-medium">Inputs changed. Displayed results retain the previous run scope; run again to update.</span>}
     </>} />
-    {error && <p className="px-4 py-2 text-xs text-[#A64242] bg-red-50" role="alert">{error}</p>}
+    {error && <p className="px-4 py-2 text-xs text-variance-unfavourable bg-variance-unfavourable-subtle border-b border-variance-unfavourable-border/50" role="alert">{error}</p>}
     {outcome && <details className="px-4 py-2 text-xs bg-white border-b shrink-0"><summary className="cursor-pointer">Diagnostics ({outcome.diagnostics.length}) · use graph boxes to browse abnormal paths</summary>
       <ul className="max-h-32 overflow-auto space-y-2 py-2">{outcome.diagnostics.slice(diagnosticPage * 10, (diagnosticPage + 1) * 10).map((diagnostic,i) => <li key={i}>{diagnostic}</li>)}</ul>
       <button disabled={diagnosticPage === 0} onClick={() => setDiagnosticPage(diagnosticPage - 1)}>Previous</button>

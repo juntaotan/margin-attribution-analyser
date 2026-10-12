@@ -4,10 +4,10 @@ import { currentStep, formatDuration, type AnalysisProgress, type ProgressStep }
 
 const ICONS = {
   pending: <CircleDashed size={14} className="text-slate-400" aria-hidden />,
-  running: <LoaderCircle size={14} className="animate-spin text-[#466987]" aria-hidden />,
-  done: <CircleCheck size={14} className="text-[#466987]" aria-hidden />,
+  running: <LoaderCircle size={14} className="animate-spin text-period-actual" aria-hidden />,
+  done: <CircleCheck size={14} className="text-emerald-700" aria-hidden />,
   skipped: <CircleMinus size={14} className="text-slate-400" aria-hidden />,
-  failed: <CircleX size={14} className="text-[#A64242]" aria-hidden />,
+  failed: <CircleX size={14} className="text-variance-unfavourable" aria-hidden />,
 };
 const STATE_TEXT = { pending: 'Pending', running: 'Running', done: 'Done', skipped: 'Skipped', failed: 'Failed' };
 
@@ -15,14 +15,14 @@ const Step: React.FC<{ step: ProgressStep; pairs: AnalysisProgress['pairs'] }> =
   const done = pairs.executed + pairs.rejected + pairs.failed;
   return <li className={`flex items-center gap-1.5 min-w-0 ${step.state === 'pending' || step.state === 'skipped' ? 'text-slate-400' : ''}`}>
     {ICONS[step.state]}<span className="sr-only">{STATE_TEXT[step.state]}:</span>
-    <span className={step.state === 'running' ? 'font-medium text-[#466987]' : step.state === 'failed' ? 'text-[#A64242]' : ''}>{step.label}</span>
-    {step.warning && <TriangleAlert size={12} className="text-[#866322]" aria-label="Incomplete evidence" />}
+    <span className={step.state === 'running' ? 'font-medium text-period-actual' : step.state === 'failed' ? 'text-variance-unfavourable' : ''}>{step.label}</span>
+    {step.warning && <TriangleAlert size={12} className="text-amber-700" aria-label="Incomplete evidence" />}
     {step.key === 'comparison' && step.state === 'running' && pairs.total != null && pairs.total > 0 &&
       <span role="progressbar" aria-label="Compared pairs" aria-valuemin={0} aria-valuemax={pairs.total} aria-valuenow={done} className="w-20 h-1.5 rounded bg-slate-200 overflow-hidden">
-        <span className="block h-full bg-[#466987] transition-[width]" style={{ width: `${(100 * done) / pairs.total}%` }} />
+        <span className="block h-full bg-period-actual transition-[width]" style={{ width: `${(100 * done) / pairs.total}%` }} />
       </span>}
     {step.summary && (step.state === 'running' || step.state === 'done') && <span className="text-slate-500">{step.summary}</span>}
-    {step.note && <span className={step.state === 'failed' ? 'text-[#A64242]' : 'text-slate-400'}>{step.note}</span>}
+    {step.note && <span className={step.state === 'failed' ? 'text-variance-unfavourable' : 'text-slate-400'}>{step.note}</span>}
     {step.finishedAt != null && step.startedAt != null && step.state !== 'skipped' && <span className="text-slate-400 tabular-nums" title="Measured in the browser, including transfer time">{formatDuration(step.finishedAt - step.startedAt)}</span>}
   </li>;
 };
@@ -63,10 +63,10 @@ export const AnalysisProgressBar: React.FC<{ progress: AnalysisProgress | null; 
         </span></summary>
         <StepList progress={progress} vertical />
       </details>
-      <div className="lg:hidden mt-1.5 h-1 rounded bg-slate-200 overflow-hidden"><div className="h-full bg-[#466987] transition-[width]" style={{ width: `${100 * overall}%` }} /></div>
+      <div className="lg:hidden mt-1.5 h-1 rounded bg-slate-200 overflow-hidden"><div className="h-full bg-period-actual transition-[width]" style={{ width: `${100 * overall}%` }} /></div>
     </> : <details>
       <summary className="cursor-pointer"><span className="inline-flex flex-wrap items-center gap-x-4 gap-y-1 align-middle">
-        {progress.status === 'FAILED' ? ICONS.failed : progress.steps.some(s => s.warning) ? <TriangleAlert size={14} className="text-[#866322]" aria-hidden /> : ICONS.done}
+        {progress.status === 'FAILED' ? ICONS.failed : progress.steps.some(s => s.warning) ? <TriangleAlert size={14} className="text-amber-700" aria-hidden /> : ICONS.done}
         {summary}
         <span className="text-slate-400 tabular-nums" title="Measured in the browser, including transfer time">{formatDuration(progress.finishedAt! - progress.startedAt)} total</span>
       </span></summary>

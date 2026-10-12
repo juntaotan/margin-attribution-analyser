@@ -38,17 +38,17 @@ const GraphPane: React.FC<{
         data: { label: fold ? <div className="text-xs font-semibold truncate" title={item.note}><span>{item.label}</span><div className="text-[10px] font-normal text-slate-600 truncate">{item.note}</div></div>
           : <div className="text-left font-sans text-xs leading-tight">
             <div className="flex gap-1 items-center"><span className="font-semibold truncate" title={item.label}>{item.label}</span>
-              {item.abnormal && <span className="text-rose-700 font-bold text-[10px]">Abnormal</span>}{item.shared && <span className="text-[10px] text-slate-500" title="Recorded receiving items in either period">×{item.shared}</span>}</div>
+              {item.abnormal && <span className="text-anomaly-boundary bg-anomaly-boundary-subtle border border-anomaly-boundary-border/40 font-bold text-[10px] px-1 rounded">Abnormal</span>}{item.shared && <span className="text-[10px] text-slate-500" title="Recorded receiving items in either period">×{item.shared}</span>}</div>
             {missing ? <div className="text-slate-500 mt-1">Not recorded in this period</div> : <>
               <div className="font-mono mt-1 truncate" title={value?.cost ?? 'Unavailable'}>{value?.cost ?? 'Cost unavailable'}{item.inventoryId !== '__COGS__' && <span className="text-slate-500"> · Qty {value?.quantity}</span>}</div>
               {!value?.linked && <div className="text-[10px] text-amber-700">Relationship to parent not recorded</div>}
             </>}
             <div className="font-mono text-[10px] mt-1 text-slate-600 truncate" title="Actual minus comparable">Δ {item.delta ?? 'unavailable'}{item.parentDelta !== undefined && ` · in parent ${item.parentDelta ?? 'unavailable'}`}</div>
-            {item.boundary && <div className="text-[10px] text-rose-700 truncate">Boundary difference {item.boundary.difference} · {item.boundary.count} paths</div>}
+            {item.boundary && <div className="text-[10px] text-anomaly-boundary font-medium truncate">Boundary difference {item.boundary.difference} · {item.boundary.count} paths</div>}
           </div> },
         style: { ...size(item), borderRadius: fold ? 22 : 6, padding: fold ? '4px 10px' : 8, cursor: fold && !item.expandKey ? 'default' : 'pointer',
-          border: `1.5px ${fold || missing ? 'dashed' : 'solid'} ${selectedKey === item.key ? '#0284c7' : item.abnormal ? '#e11d48' : '#94a3b8'}`,
-          background: missing ? '#f8fafc' : item.abnormal ? '#fff1f2' : fold ? '#f1f5f9' : '#fff', opacity: missing ? 0.7 : 1 } };
+          border: `1.5px ${fold || missing ? 'dashed' : 'solid'} ${selectedKey === item.key ? (period === 'actual' ? '#1d4ed8' : '#475569') : item.abnormal ? '#c2410c' : '#94a3b8'}`,
+          background: missing ? '#f8fafc' : item.abnormal ? '#fff7ed' : fold ? '#f1f5f9' : '#fff', opacity: missing ? 0.7 : 1 } };
     })], [result, period, selectedKey]);
   const edges: Edge[] = useMemo(() => result.edges.map(edge => {
     const recorded = edge[period];
@@ -57,7 +57,19 @@ const GraphPane: React.FC<{
   }), [result, period]);
   const activate = (id: string) => { const item = lookup.get(id); if (item) onActivate(item, period); };
   return <div className="min-w-0 min-h-[360px] flex-1 flex flex-col border-r last:border-r-0">
-    <div className="px-3 py-2 bg-slate-50 border-b text-xs font-bold">{label}</div>
+    <div className={`px-3 py-2 border-b text-xs font-bold flex items-center justify-between ${
+      period === 'actual'
+        ? 'bg-period-actual-subtle text-period-actual-dark border-period-actual-border/40'
+        : 'bg-period-comparable-subtle text-period-comparable-dark border-period-comparable-border/40'
+    }`}>
+      <div className="flex items-center gap-1.5">
+        <span className={`w-2 h-2 rounded-full ${period === 'actual' ? 'bg-period-actual' : 'bg-period-comparable'}`} />
+        <span>{label}</span>
+      </div>
+      <span className="text-[10px] font-mono uppercase tracking-wider opacity-75">
+        {period === 'actual' ? 'Actual Execution' : 'Comparable Baseline'}
+      </span>
+    </div>
     <div className="flex-1 min-h-0" aria-label={`${label} graph`}>
       <ReactFlow nodes={nodes} edges={edges} viewport={viewport} onViewportChange={onViewport} minZoom={0.1} maxZoom={1.5}
         nodesDraggable={false} nodesConnectable={false} onNodeClick={(_, node) => activate(node.id)}
@@ -127,18 +139,18 @@ export const DualBomTreeCanvas: React.FC<DualBomTreeCanvasProps> = ({ outcome, c
       quantity: Number(value.quantity), cost: value.cost == null ? null : Number(value.cost) });
   };
   const stats = result?.stats;
-  return <section data-analysis-id={outcome.analysisId} className="w-full h-full min-h-[400px] flex flex-col bg-[#f6f8fa] relative">
+  return <section data-analysis-id={outcome.analysisId} className="w-full h-full min-h-[400px] flex flex-col bg-surface-canvas relative">
     <div className="shrink-0 border-b bg-white px-3 py-2 flex flex-wrap gap-3 items-center text-xs">
       <label>Initial coverage of Σ|ΔCOGS| <select aria-label="Initial COGS difference coverage" className="border rounded px-1 py-0.5 ml-1" value={query.coverage} disabled={busy}
         onChange={event => { setHistory([]); setQuery({ coverage: Number(event.target.value), expanded: {} }); }}>
         {COVERAGE.map(value => <option key={value} value={value}>{value}%</option>)}</select></label>
       {stats && <span>{stats.selectedProducts} of {stats.products} products · cover {stats.coveredAbsolute} of {stats.totalAbsolute} {currency}
         {stats.coveredPerMille != null && ` (${(stats.coveredPerMille / 10).toFixed(1)}%)`} · ΔCOGS {stats.cogsDelta ?? 'unavailable'}</span>}
-      <button disabled={busy || !history.length} className="text-sky-700 disabled:opacity-40" onClick={() => { setQuery(history[history.length - 1]); setHistory(history.slice(0, -1)); }}>Undo expansion</button>
-      <button disabled={busy || !Object.keys(query.expanded).length} className="text-sky-700 disabled:opacity-40" onClick={() => { setHistory([]); setQuery({ ...query, expanded: {} }); }}>Collapse all</button>
-      {selected?.product && <button className="text-sky-700 disabled:opacity-40" disabled={!comparisonAvailable} onClick={() => onCompareProduct(selected.inventoryId!)}>Production evidence: {selected.inventoryId}</button>}
+      <button disabled={busy || !history.length} className="text-period-actual hover:underline disabled:opacity-40 font-medium" onClick={() => { setQuery(history[history.length - 1]); setHistory(history.slice(0, -1)); }}>Undo expansion</button>
+      <button disabled={busy || !Object.keys(query.expanded).length} className="text-period-actual hover:underline disabled:opacity-40 font-medium" onClick={() => { setHistory([]); setQuery({ ...query, expanded: {} }); }}>Collapse all</button>
+      {selected?.product && <button className="px-2 py-0.5 rounded bg-period-actual-subtle text-period-actual border border-period-actual-border/50 hover:bg-period-actual hover:text-white transition-colors disabled:opacity-40 font-medium" disabled={!comparisonAvailable} onClick={() => onCompareProduct(selected.inventoryId!)}>Production evidence: {selected.inventoryId}</button>}
     </div>
-    {error && <p className="px-3 py-2 text-xs text-red-700" role="alert">{error}</p>}
+    {error && <p className="px-3 py-2 text-xs text-variance-unfavourable bg-variance-unfavourable-subtle border-b border-variance-unfavourable-border/40" role="alert">{error}</p>}
     {busy && <p className="px-3 py-1 text-xs" role="status">Preparing bounded graph…</p>}
     {stats && <div className="px-3 py-1 text-[11px] text-slate-600 flex flex-wrap gap-x-3">
       <span>{stats.totalNodes} recorded nodes · {stats.businessNodes} shown · click … or +n to expand in place; Δ is actual minus comparable</span>

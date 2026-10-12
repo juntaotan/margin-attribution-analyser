@@ -110,7 +110,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
         <button
           type="button"
           onClick={onRunAnalysis}
-          className="h-6 px-3 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-colors border border-slate-800"
+          className="h-6 px-3 bg-period-actual hover:bg-period-actual-dark active:bg-blue-900 text-white rounded font-medium text-xs flex items-center gap-1 shadow-xs transition-colors border border-period-actual-dark"
         >
           <Play className={`w-3 h-3 fill-current ${isAnalyzing ? 'animate-spin' : ''}`} />
           <span>{isAnalyzing ? 'Run Again' : 'Run Analysis'}</span>

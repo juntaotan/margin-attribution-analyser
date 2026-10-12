@@ -38,13 +38,30 @@ export const AuditSidebar: React.FC<{ outcome: AnalysisOutcome | null; inventory
     <h2 className="text-sm font-semibold">{inventoryId || 'Selected-node details'}</h2>
     {!inventoryId && <p className="text-xs text-slate-600">Select a material to inspect its evidence, or a product to open production comparisons.</p>}
     {inventoryId && outcome && <section className="text-xs space-y-3"><h3 className="font-medium">Recorded period evidence</h3>{[['Actual', outcome.actual], ['Comparable', outcome.comparable]].map(([label, value]) => {
+      const isActual = label === 'Actual';
       const snapshot = value as AnalysisOutcome['actual']; const node = snapshot.graph.nodes.find(item => item.inventoryId === inventoryId);
-      return <div key={String(label)} className="border rounded p-3"><p className="font-medium">{String(label)} · {snapshot.start}–{snapshot.end}</p><p className="mt-1">Quantity: {recorded(node?.quantity)}</p><p>Recorded cost: {recorded(node?.cost)}</p></div>;
+      return <div key={String(label)} className={`border rounded p-3 ${isActual ? 'bg-period-actual-subtle/40 border-period-actual-border/50' : 'bg-period-comparable-subtle/40 border-period-comparable-border/50'}`}>
+        <div className="flex items-center gap-1.5 font-medium">
+          <span className={`w-1.5 h-1.5 rounded-full ${isActual ? 'bg-period-actual' : 'bg-period-comparable'}`} />
+          <span className={isActual ? 'text-period-actual-dark' : 'text-period-comparable-dark'}>{String(label)} · {snapshot.start}–{snapshot.end}</span>
+        </div>
+        <p className="mt-1">Quantity: {recorded(node?.quantity)}</p>
+        <p>Recorded cost: {recorded(node?.cost)}</p>
+      </div>;
     })}</section>}
     <section className="text-xs space-y-2 border-t pt-3"><div className="flex justify-between"><h3 className="font-medium">Backend explanation</h3>{inventoryId && <button aria-label="Retry explanation" onClick={() => setRetry(retry + 1)}><RefreshCw size={14} /></button>}</div>
-      {loading && <p className="flex gap-2 items-center"><LoaderCircle size={14} className="animate-spin" /> Preparing explanation…</p>}
-      {error && <p role="alert" className="text-[#A64242]">{error}</p>}
-      {report && <><p>{report.categoryLabel} · {report.certainty}</p><ul className="list-disc pl-4 space-y-1">{report.evidence.map((evidence, i) => <li key={i}>{evidence}</li>)}</ul><div className="border-t pt-2"><p className="font-medium">{report.aiGenerated ? 'AI-assisted commentary' : 'Recorded-evidence explanation'}</p><p>{report.summary || report.aiMessage || 'Commentary unavailable.'}</p></div></>}
+      {loading && <p className="flex gap-2 items-center"><LoaderCircle size={14} className="animate-spin text-period-actual" /> Preparing explanation…</p>}
+      {error && <p role="alert" className="text-variance-unfavourable bg-variance-unfavourable-subtle border border-variance-unfavourable-border/40 p-2 rounded">{error}</p>}
+      {report && <div className={report.aiGenerated ? 'bg-provenance-ai-subtle/30 border border-provenance-ai-border/60 rounded-md p-2.5 space-y-1.5' : 'space-y-1.5'}>
+        <p className="font-semibold text-slate-800">{report.categoryLabel} · <span className="font-normal text-slate-500">{report.certainty}</span></p>
+        <ul className="list-disc pl-4 space-y-1 text-slate-600">{report.evidence.map((evidence, i) => <li key={i}>{evidence}</li>)}</ul>
+        <div className="border-t border-slate-200/60 pt-2">
+          <p className={`font-medium ${report.aiGenerated ? 'text-provenance-ai' : 'text-slate-700'}`}>
+            {report.aiGenerated ? 'AI-assisted commentary' : 'Recorded-evidence explanation'}
+          </p>
+          <p className="text-slate-600 mt-0.5">{report.summary || report.aiMessage || 'Commentary unavailable.'}</p>
+        </div>
+      </div>}
     </section>
     <div className="flex flex-col gap-2 text-xs"><button disabled={!outcome || opening} className="border rounded p-2 flex items-center justify-center gap-2 disabled:opacity-50" onClick={openStudio}>{opening ? <LoaderCircle size={14} className="animate-spin" /> : <FileText size={14} />} Open Report Studio</button><button disabled={!outcome} className="border rounded p-2 disabled:opacity-50" onClick={() => setCommentary(true)}>Management commentary</button></div>
     {periods && <ManagementCommentaryModal isOpen={active && commentary} onClose={() => setCommentary(false)} {...periods} selectedNode={null} report={report} />}

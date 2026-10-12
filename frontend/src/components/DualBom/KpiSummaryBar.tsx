@@ -30,13 +30,13 @@ export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
         <div className="flex items-center gap-1.5">
           <AlertCircle
             className={`w-4 h-4 ${
-              isOverrun ? 'text-rose-700' : isFavorable ? 'text-emerald-700' : 'text-slate-500'
+              isOverrun ? 'text-variance-unfavourable' : isFavorable ? 'text-variance-favourable' : 'text-slate-500'
             }`}
           />
           <span className="font-semibold text-slate-700">Net Variance:</span>
           <span
             className={`font-mono text-sm font-bold ${
-              isOverrun ? 'text-rose-700' : isFavorable ? 'text-emerald-700' : 'text-slate-800'
+              isOverrun ? 'text-variance-unfavourable' : isFavorable ? 'text-variance-favourable' : 'text-slate-800'
             }`}
           >
             {formatCurrency(netVariance)}
@@ -60,16 +60,16 @@ export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
         <div className="flex items-center gap-1.5">
           <span
             className={`w-2 h-2 rounded-full ${
-              penetratedNodesCount > 0 ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'
+              penetratedNodesCount > 0 ? 'bg-variance-unfavourable animate-ping' : 'bg-emerald-500'
             }`}
           />
           <span
             className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
               riskTier.includes('High')
-                ? 'text-rose-700 bg-rose-50/80 border-rose-200/80'
+                ? 'text-variance-unfavourable bg-variance-unfavourable-subtle border-variance-unfavourable-border'
                 : riskTier.includes('Moderate')
-                ? 'text-amber-700 bg-amber-50/80 border-amber-200/80'
-                : 'text-emerald-700 bg-emerald-50/80 border-emerald-200/80'
+                ? 'text-amber-700 bg-amber-50 border-amber-200'
+                : 'text-variance-favourable bg-variance-favourable-subtle border-variance-favourable-border'
             }`}
           >
             {riskTier}
@@ -84,7 +84,7 @@ export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
           onClick={onOpenAiDossier}
           className="h-6 px-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-800 border border-slate-300/80 font-medium text-xs rounded flex items-center gap-1.5 transition-colors shadow-2xs"
         >
-          <Sparkles className="w-3 h-3 text-sky-600" />
+          <Sparkles className="w-3 h-3 text-provenance-ai" />
           <span>[Open AI Audit Dossier]</span>
         </button>
         {topOverrunNodeId && (

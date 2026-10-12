@@ -47,7 +47,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#f6f8fa] text-slate-800 font-sans overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-surface-canvas text-slate-800 font-sans overflow-hidden">
       {/* 1. Global Navigation Top Bar */}
       <header className="h-11 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -96,11 +96,11 @@ export const App: React.FC = () => {
                 onClick={() => navigate('/margin-topology')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
                   currentRoute === '/margin-topology'
-                    ? 'bg-slate-100/90 text-slate-900 border border-slate-200/90 font-semibold shadow-2xs'
+                    ? 'bg-period-actual-subtle/70 text-period-actual-dark border border-period-actual-border/40 font-semibold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium'
                 }`}
               >
-                <Network className="w-4 h-4 text-blue-600 shrink-0" />
+                <Network className="w-4 h-4 text-period-actual shrink-0" />
                 <span className="hidden sm:inline">Dual-BOM Analysis</span>
                 {analysisStatus && <span className="hidden sm:inline text-[10px] whitespace-nowrap" role="status">{analysisStatus}</span>}
               </button>
@@ -111,11 +111,11 @@ export const App: React.FC = () => {
                 onClick={() => navigate('/report-studio')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${
                   currentRoute === '/report-studio'
-                    ? 'bg-slate-100/90 text-slate-900 border border-slate-200/90 font-semibold shadow-2xs'
+                    ? 'bg-provenance-ai-subtle/70 text-indigo-900 border border-provenance-ai-border/40 font-semibold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60 font-medium'
                 }`}
               >
-                <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
+                <FileText className="w-4 h-4 text-provenance-ai shrink-0" />
                 <span className="hidden sm:inline">Report Studio</span>
               </button>
 
@@ -135,8 +135,8 @@ export const App: React.FC = () => {
 
               <button type="button" onClick={() => navigate('/data-browser')}
                 title="Data Browser"
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs ${currentRoute === '/data-browser' ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}>
-                <Database className="w-4 h-4 text-blue-600 shrink-0" />
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors ${currentRoute === '/data-browser' ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/90' : 'text-slate-600 hover:bg-slate-100'}`}>
+                <Database className="w-4 h-4 text-slate-500 shrink-0" />
                 <span className="hidden sm:inline">Data Browser</span>
               </button>
 

@@ -23,10 +23,59 @@ export default {
           100: '#f1f5f9',
           50: '#f8fafc',
         },
+        surface: {
+          canvas: '#f8fafc',
+          panel: '#ffffff',
+          subtle: '#f1f5f9',
+          hover: '#e2e8f0',
+        },
+        period: {
+          comparable: {
+            DEFAULT: '#475569',
+            subtle: '#f1f5f9',
+            border: '#94a3b8',
+            dark: '#334155',
+          },
+          actual: {
+            DEFAULT: '#1d4ed8',
+            subtle: '#eff6ff',
+            border: '#60a5fa',
+            dark: '#1e40af',
+          },
+        },
+        variance: {
+          unfavourable: {
+            DEFAULT: '#9f1239',
+            subtle: '#fff1f2',
+            border: '#fecdd3',
+          },
+          favourable: {
+            DEFAULT: '#065f46',
+            subtle: '#ecfdf5',
+            border: '#a7f3d0',
+          },
+          neutral: '#64748b',
+        },
+        anomaly: {
+          boundary: {
+            DEFAULT: '#c2410c',
+            subtle: '#fff7ed',
+            border: '#fdba74',
+          },
+          missing: '#94a3b8',
+        },
         cost: {
-          material: '#06b6d4', // Cyan
-          labor: '#f59e0b',    // Amber
-          overhead: '#a855f7', // Purple/Violet
+          material: '#0f766e',
+          labor: '#d97706',
+          overhead: '#7c3aed',
+        },
+        provenance: {
+          hard: '#0f172a',
+          ai: {
+            DEFAULT: '#6366f1',
+            subtle: '#eef2ff',
+            border: '#c7d2fe',
+          },
         }
       },
       fontFamily: {
