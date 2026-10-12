@@ -134,7 +134,8 @@ class ImportAnalysisIntegrationTest {
         stream.getAsyncResult(120000);
         var content=mvc.perform(asyncDispatch(stream)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         var events=content.lines().map(mapper::readTree).toList();
-        assertEquals(List.of("graph","branches","production-trees","embeddings","comparison","completed"),events.stream().map(e->e.get("type").asText()).toList());
+        assertEquals(List.of("stage","graph","stage","branches","stage","production-trees","stage","embeddings","stage","comparison","completed"),events.stream().map(e->e.get("type").asText()).toList());
+        assertEquals(1,events.get(8).get("data").get("total").asInt());
         for(int i=0;i<events.size();i++) { assertEquals(i+1,events.get(i).get("sequence").asInt());assertEquals(events.get(0).get("analysisId"),events.get(i).get("analysisId")); }
         assertEquals(1,events.getLast().get("data").get("executed").asInt());
         // Capture the immutable real numerical inputs for the independent CPU/POT oracle.

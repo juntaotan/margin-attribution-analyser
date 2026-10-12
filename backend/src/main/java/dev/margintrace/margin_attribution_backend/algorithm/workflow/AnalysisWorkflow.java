@@ -37,7 +37,11 @@ public final class AnalysisWorkflow {
         return run(command, progress, () -> Thread.currentThread().isInterrupted());
     }
 
-    /** Runs every stage once, publishing increasing event sequences from this same outcome. */
+    /**
+     * Runs every stage once, publishing increasing event sequences from this same outcome.
+     * A {@code stage} event ({@code stage}, plus {@code total} planned pairs for comparison)
+     * precedes each stage; the stage's own event follows when it completes.
+     */
     public AnalysisOutcome run(AnalysisCommand command, AnalysisProgressListener progress, BooleanSupplier cancelled) {
         if (command == null) throw new IllegalArgumentException("Missing analysis command");
         dates(command.actualStartDate(), command.actualEndDate()); dates(command.comparableStartDate(), command.comparableEndDate());
@@ -47,7 +51,9 @@ public final class AnalysisWorkflow {
         if (command.comparison() != null && command.comparison().config() != null) FgwEngine.validateConfig(command.comparison().config());
         UUID id = UUID.randomUUID(); long[] sequence = {0};
         BiConsumer<String, Object> emit = (type, data) -> progress.accept(new AnalysisProgressListener.Event(id, ++sequence[0], type, data));
+        Consumer<String> start = stage -> emit.accept("stage", Map.of("stage", stage));
         var reports = new ArrayList<ExecutionReport>(); var diagnostics = new ArrayList<String>();
+        start.accept("graph");
         var actual = graphs.load(command.actualStartDate(), command.actualEndDate());
         var comparable = graphs.load(command.comparableStartDate(), command.comparableEndDate());
         reports.add(new ExecutionReport("CSR", policy, "JAVA_CPU", "JAVA_CPU", null, null, "DECIMAL", "EXECUTED"));
@@ -72,6 +78,7 @@ public final class AnalysisWorkflow {
         if (cancelled.getAsBoolean()) status = "CANCELLED";
         else if (frontier.frontier() == null) status = "EXECUTION_UNAVAILABLE";
         else {
+            start.accept("branches");
             try {
                 paths = new BomFrontierReconciler(frontier.frontier()).reconcile(actual.graph(), comparable.graph(), command.leafThreshold(), command.stopThreshold());
             } catch (RuntimeException failure) {
@@ -84,11 +91,13 @@ public final class AnalysisWorkflow {
             else if (command.comparison() == null || command.comparison().evidence() == null) status = "COMPARISON_INPUT_REQUIRED";
             else if (cancelled.getAsBoolean()) status = "CANCELLED";
             else {
+                start.accept("production-trees");
                 selected = productions.load(actual, comparable, paths, command.comparison().evidence());
                 emit.accept("production-trees", selected);
                 var plannedPairs = new ProductionPairSelector().select(selected.trees()); planned = plannedPairs.size();
                 try (var fgw = backends.resolve("FGW", policy)) {
                     reports.add(fgw.report());
+                    start.accept("embeddings");
                     EmbeddingProvider provider = null;
                     try {
                         if (!cancelled.getAsBoolean()) {
@@ -107,6 +116,7 @@ public final class AnalysisWorkflow {
                                 : settings.mode() == EmbeddingSettings.Mode.SUPPLIED_ONLY ? "SUPPLIED_ONLY" : "NO_INFERENCE"));
                     }
                     emit.accept("embeddings", embedded);
+                    emit.accept("stage", Map.of("stage", "comparison", "total", planned));
                     var adapter = fgw.fgw() == null ? null : new ProductionTreeFgwAdapter(fgw.fgw());
                     try {
                     for (var pair : plannedPairs) {

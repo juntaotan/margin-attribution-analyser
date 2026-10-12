@@ -102,7 +102,7 @@ export const App: React.FC = () => {
               >
                 <Network className="w-4 h-4 text-blue-600 shrink-0" />
                 <span className="hidden sm:inline">Dual-BOM Analysis</span>
-                {analysisStatus && <span className="hidden sm:inline text-[10px]" role="status">{analysisStatus}</span>}
+                {analysisStatus && <span className="hidden sm:inline text-[10px] whitespace-nowrap" role="status">{analysisStatus}</span>}
               </button>
 
               {/* Report Studio -> /report-studio */}

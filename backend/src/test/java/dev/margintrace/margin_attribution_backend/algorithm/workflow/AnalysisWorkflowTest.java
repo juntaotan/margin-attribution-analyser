@@ -62,7 +62,10 @@ class AnalysisWorkflowTest {
         var events = new ArrayList<AnalysisProgressListener.Event>(); var outcome = workflow(provider).run(command, events::add);
         assertEquals("COMPLETED", outcome.status()); assertEquals(1, outcome.planned()); assertEquals(1, outcome.executed());
         assertEquals(0, outcome.rejected()); assertEquals(0, outcome.failed()); assertTrue(provider.closed);
-        assertEquals(List.of("graph", "branches", "production-trees", "embeddings", "comparison", "completed"), events.stream().map(AnalysisProgressListener.Event::type).toList());
+        assertEquals(List.of("stage", "graph", "stage", "branches", "stage", "production-trees", "stage", "embeddings", "stage", "comparison", "completed"),
+                events.stream().map(AnalysisProgressListener.Event::type).toList());
+        assertEquals(List.of(Map.of("stage", "graph"), Map.of("stage", "branches"), Map.of("stage", "production-trees"), Map.of("stage", "embeddings"),
+                Map.of("stage", "comparison", "total", 1)), events.stream().filter(e -> e.type().equals("stage")).map(AnalysisProgressListener.Event::data).toList());
         for (int i = 0; i < events.size(); i++) { assertEquals(i + 1, events.get(i).sequence()); assertEquals(outcome.analysisId(), events.get(i).analysisId()); }
     }
     static void assertTrees(List<ProductionTree> trees) {
