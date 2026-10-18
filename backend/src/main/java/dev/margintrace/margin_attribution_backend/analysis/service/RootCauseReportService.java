@@ -35,10 +35,7 @@ public class RootCauseReportService {
     private final AiErrorMapper aiErrorMapper;
 
     public RootCauseReportResponse report(RootCauseReportRequest request) {
-        validate(request);
-        CsrGraph actual = workflow.trace(request.actualStartDate(), request.actualEndDate());
-        CsrGraph comparable = workflow.trace(request.comparableStartDate(), request.comparableEndDate());
-        Diagnosis diagnosis = diagnose(actual, comparable, request);
+        Diagnosis diagnosis = diagnosis(request);
         String summary = null;
         boolean generated = false;
         String message = null;
@@ -53,6 +50,21 @@ public class RootCauseReportService {
         }
         return new RootCauseReportResponse(request.inventoryId(), diagnosis.category(), diagnosis.label(),
                 diagnosis.certainty(), diagnosis.evidence(), summary, generated, message);
+    }
+
+    /**
+     * Classifies the selected material's recorded differences without asking a model to describe them.
+     * Used by {@link #report} and by the optional anomaly investigation feature.
+     *
+     * @param request selected inventory node and both ordered periods
+     * @return classification, evidence lines, both period nodes (null when absent) and parent products
+     * @throws IllegalArgumentException if the request is invalid or the node is absent from both periods
+     */
+    public Diagnosis diagnosis(RootCauseReportRequest request) {
+        validate(request);
+        CsrGraph actual = workflow.trace(request.actualStartDate(), request.actualEndDate());
+        CsrGraph comparable = workflow.trace(request.comparableStartDate(), request.comparableEndDate());
+        return diagnose(actual, comparable, request);
     }
 
     private void validate(RootCauseReportRequest request) {
@@ -147,10 +159,10 @@ public class RootCauseReportService {
             evidence.add("This material feeds multiple products. Its graph quantity is aggregated, so per-product overuse cannot be determined.");
         }
 
-        if (possibleReplacement) return new Diagnosis("MATERIAL_REPLACEMENT", "Suspected material substitution", "Needs verification", evidence);
-        if (overuse) return new Diagnosis("OVERUSE", "Material usage exceeds BOM plan", "Confirmed by records", evidence);
-        if (topologyChanged) return new Diagnosis("STRUCTURE_CHANGE", "Actual material mix changed", "Confirmed by records", evidence);
-        if (increasedUse) return new Diagnosis("USAGE_INCREASE", "Material usage per unit increased", "Confirmed by records", evidence);
+        if (possibleReplacement) return new Diagnosis("MATERIAL_REPLACEMENT", "Suspected material substitution", "Needs verification", evidence, actualNode, comparableNode, allParents);
+        if (overuse) return new Diagnosis("OVERUSE", "Material usage exceeds BOM plan", "Confirmed by records", evidence, actualNode, comparableNode, allParents);
+        if (topologyChanged) return new Diagnosis("STRUCTURE_CHANGE", "Actual material mix changed", "Confirmed by records", evidence, actualNode, comparableNode, allParents);
+        if (increasedUse) return new Diagnosis("USAGE_INCREASE", "Material usage per unit increased", "Confirmed by records", evidence, actualNode, comparableNode, allParents);
         if (actualNode != null && comparableNode != null && actualNode.cost() != null
                 && comparableNode.cost() != null && actualNode.quantity().signum() > 0
                 && comparableNode.quantity().signum() > 0) {
@@ -159,10 +171,10 @@ public class RootCauseReportService {
             if (currentPrice.compareTo(previousPrice) != 0) {
                 evidence.add("Unit cost: current " + currentPrice.stripTrailingZeros().toPlainString()
                         + ", comparison " + previousPrice.stripTrailingZeros().toPlainString() + ".");
-                return new Diagnosis("UNIT_COST_CHANGE", "Unit cost change", "Confirmed by records", evidence);
+                return new Diagnosis("UNIT_COST_CHANGE", "Unit cost change", "Confirmed by records", evidence, actualNode, comparableNode, allParents);
             }
         }
-        return new Diagnosis("UNDETERMINED", "Insufficient data to identify a cause", "Needs verification", evidence);
+        return new Diagnosis("UNDETERMINED", "Insufficient data to identify a cause", "Needs verification", evidence, actualNode, comparableNode, allParents);
     }
 
     private Map<String, Integer> positions(CsrGraph graph) {
@@ -217,5 +229,7 @@ public class RootCauseReportService {
     }
 
     private record BomDefinition(Set<String> numbers, Map<String, BigDecimal> lines) { }
-    private record Diagnosis(String category, String label, String certainty, List<String> evidence) { }
+    /** Deterministic classification of one material's change between two periods. */
+    public record Diagnosis(String category, String label, String certainty, List<String> evidence,
+                            Node actualNode, Node comparableNode, Set<String> products) { }
 }

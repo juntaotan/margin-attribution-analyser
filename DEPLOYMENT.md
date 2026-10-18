@@ -43,6 +43,16 @@ Production-pair comparison needs a local embedding model. Without it, every plan
 
 The backend therefore needs outbound HTTPS access to those hosts; set the standard `HTTPS_PROXY` variable on the backend service if required. Files are stored in the `embedding_runtime` named volume and survive container recreation. The default model is `sentence-transformers/all-MiniLM-L6-v2` at a pinned revision; another 384-dimensional mean-pooling model can be selected with `EMBEDDING_MODEL` and `EMBEDDING_REVISION` on the backend service, followed by a reinstall. The virtual environment is tied to the backend image's Python version: reinstall from Settings after a base-image upgrade or after switching between the CPU and CUDA backends.
 
+## Optional anomaly investigation assistant (prototype)
+
+The hybrid RAG investigation assistant (`/api/v1/investigation`, see `docs/algorithms/Anomaly_Investigation_RAG_Design.md`) is disabled by default. To enable it, add `INVESTIGATION_ENABLED=true` to the backend service environment. It then needs:
+
+- The `pgvector` extension in PostgreSQL. The bundled `postgres` image installs `postgresql-17-pgvector`; rebuild it (`docker compose build postgres`) after upgrading. An external database must provide the extension, and the database user must be allowed to run `CREATE EXTENSION vector` or an administrator must create it beforehand.
+- The embedding model above, for uploading knowledge documents and for similarity search.
+- The configured AI connection, for generated context, hypotheses and the summary.
+
+On first start with the flag enabled, the backend creates the feature tables and records them in its own `investigation_schema_history` table. Leaving the flag off creates nothing.
+
 ## Optional NVIDIA CUDA backend
 
 The deployment remembers the backend host mode in `.env.deploy`:
