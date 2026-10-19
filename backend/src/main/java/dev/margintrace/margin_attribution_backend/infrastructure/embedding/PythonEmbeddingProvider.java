@@ -109,6 +109,9 @@ public final class PythonEmbeddingProvider implements EmbeddingProvider {
         }
     }
 
+    /**
+     * Stops the Python process and its reader thread.
+     */
     public void close() {
         process.destroyForcibly();
         reads.shutdownNow();

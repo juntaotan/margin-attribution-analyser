@@ -19,6 +19,10 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * Saved configuration for one content-control tag of a report document: alias, prompt, period, generated blueprint
+ * and SQL, output format, and a revision that increases each time the prompt is regenerated.
+ */
 @Entity
 @Table(
         name = "report_placeholder_config",
@@ -71,6 +75,9 @@ public class ReportPlaceholderConfigEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /**
+     * Creates revision 1 of a configuration. A blank document ID becomes {@code default}.
+     */
     public ReportPlaceholderConfigEntity(
             String documentId,
             String controlTag,
@@ -91,6 +98,9 @@ public class ReportPlaceholderConfigEntity {
         this.revision = 1L;
     }
 
+    /**
+     * Starts a new revision, which makes runs of earlier revisions outdated.
+     */
     public void incrementRevision() {
         this.revision = (this.revision == null ? 0L : this.revision) + 1L;
     }

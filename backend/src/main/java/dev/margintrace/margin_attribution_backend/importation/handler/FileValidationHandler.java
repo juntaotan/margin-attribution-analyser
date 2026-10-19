@@ -5,8 +5,16 @@ import dev.margintrace.margin_attribution_backend.importation.model.FileExtensio
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Checks that the upload has a file name with a supported spreadsheet extension ({@code xlsx} or {@code xls}).
+ */
 @Component
 public class FileValidationHandler extends AbstractImportHandler {
+    /**
+     * Records the file extension. This stage does not continue the chain.
+     *
+     * @throws IllegalArgumentException if the file name is missing or the extension is not supported
+     */
     @Override
     public void doImport(ImportContext context) {
         MultipartFile file = context.getFile();

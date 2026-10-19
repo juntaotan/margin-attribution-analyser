@@ -44,6 +44,11 @@ public record DataSetDefinition(
         }
     }
 
+    /**
+     * @param fieldKey the field's key
+     * @return the field definition
+     * @throws IllegalArgumentException if the data set has no such field
+     */
     public TargetFieldDefinition requireField(String fieldKey) {
         return fields.stream()
                 .filter(field -> field.fieldKey().equals(fieldKey))

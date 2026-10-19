@@ -16,12 +16,24 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * Holds the AI services for the current llama.cpp connection and replaces them when the connection settings change.
+ *
+ * <p>Each service uses llama.cpp's OpenAI-compatible API with a low temperature, a 90-second timeout and no client
+ * retries; requests sent while the model is still loading are retried by {@link LlamaLoadingRetryChatModel}. The
+ * period and blueprint assistants request structured JSON output. Initial settings come from
+ * {@code analysis.llama.base-url} and {@code analysis.llama.model}.
+ */
 @Component
 public class AiRuntimeManager {
     private final AtomicReference<AiRuntime> current;
     private final HttpClient healthClient =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
 
+    /**
+     * @param baseUrl the initial llama.cpp base URL
+     * @param model the initial model name
+     */
     public AiRuntimeManager(
             @Value("${analysis.llama.base-url:http://127.0.0.1:8081}") String baseUrl,
             @Value("${analysis.llama.model:local}") String model) {
@@ -30,15 +42,31 @@ public class AiRuntimeManager {
         this.current = new AtomicReference<>(build(new AiConnectionSettings(uri.getHost(), port, model, null)));
     }
 
+    /**
+     * @return the services for the current connection
+     */
     public AiRuntime current() {
         return current.get();
     }
 
+    /**
+     * Builds services for new settings and makes them current. Requests already in progress finish on the previous
+     * services.
+     *
+     * @param settings the validated connection settings
+     */
     public void reload(AiConnectionSettings settings) {
         AiRuntime replacement = build(settings);
         current.set(replacement);
     }
 
+    /**
+     * Calls the server's {@code /health} endpoint without changing the current connection.
+     *
+     * @param settings the connection to test
+     * @return whether the server was reachable and the model ready, the latency, and a message; failures are
+     *     reported in the result rather than thrown
+     */
     public ConnectionTest testConnection(AiConnectionSettings settings) {
         long started = System.nanoTime();
         URI healthEndpoint = URI.create(settings.baseUrl() + "/health");
@@ -105,11 +133,17 @@ public class AiRuntimeManager {
         return Duration.ofNanos(System.nanoTime() - started).toMillis();
     }
 
+    /**
+     * The AI services built for one connection.
+     */
     public record AiRuntime(
             AiConnectionSettings settings,
             RootCauseAssistant rootCauseAssistant,
             ReportPeriodAssistant reportPeriodAssistant,
             ReportBlueprintAssistant reportBlueprintAssistant) {}
 
+    /**
+     * Outcome of a llama.cpp health check.
+     */
     public record ConnectionTest(boolean reachable, boolean modelReady, long latencyMs, String message) {}
 }

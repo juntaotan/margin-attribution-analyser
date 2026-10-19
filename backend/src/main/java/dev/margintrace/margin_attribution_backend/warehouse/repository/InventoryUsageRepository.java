@@ -6,6 +6,9 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * Queries over inventory movements and material issues.
+ */
 public interface InventoryUsageRepository extends JpaRepository<InventoryUsage, InventoryUsageId> {
     List<InventoryUsage> findAllByMovementNo(String movementNo);
 

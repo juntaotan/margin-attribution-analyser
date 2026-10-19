@@ -1,3 +1,4 @@
+/** Status of an import job; mirrors the backend enum. */
 export type ImportStatus =
   | 'PENDING'
   | 'VALIDATING'
@@ -14,6 +15,7 @@ export type ImportStatus =
   | 'WRITE_FAILED'
   | 'CANCELLED';
 
+/** An import job as returned by the backend. */
 export type ImportJob = {
   jobId: number;
   filename: string;
@@ -46,6 +48,13 @@ const errorMessage = (status: number, body: string) => {
   }
 };
 
+/**
+ * Uploads a spreadsheet for import into a confirmed target table. XMLHttpRequest is used so that upload progress
+ * can be reported.
+ *
+ * @param onProgress called with the upload percentage
+ * @returns the created import job
+ */
 export function uploadImport(file: File, targetTable: string, onProgress: (progress: number) => void) {
   return new Promise<ImportJob>((resolve, reject) => {
     const request = new XMLHttpRequest();
@@ -81,8 +90,11 @@ async function getJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/** Loads one import job. */
 export const getImportJob = (jobId: number) => getJson<ImportJob>(`/imports/${jobId}`);
+/** Loads the most recent import jobs, newest first. */
 export const listImportJobs = (size = 20) => getJson<ImportJobPage>(`/imports?page=0&size=${size}`);
 
+/** Whether a job has finished, successfully or not. */
 export const isTerminalImportStatus = (status: ImportStatus) =>
   status.endsWith('_FAILED') || status === 'WRITE_SUCCESS' || status === 'WRITE_FAILED' || status === 'CANCELLED';

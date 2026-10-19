@@ -18,14 +18,23 @@ public final class SuppliedEmbeddingProvider implements EmbeddingProvider {
         return metadata;
     }
 
+    /**
+     * @throws IllegalStateException always, because this provider does no tokenisation
+     */
     public int tokenCount(String text) {
         throw new IllegalStateException("SUPPLIED_ONLY performs no tokenisation");
     }
 
+    /**
+     * @return 0, because this provider embeds nothing
+     */
     public int maximumTokens() {
         return 0;
     }
 
+    /**
+     * @throws IllegalStateException always, because vectors must be supplied by the caller
+     */
     public Map<String, double[]> encode(List<Input> inputs) {
         throw new IllegalStateException("SUPPLIED_ONLY performs no inference");
     }

@@ -19,6 +19,7 @@ export type ConnectionTest = {
   message: string;
 };
 
+/** Whether an expected placeholder was found in the master template. */
 export type PlaceholderItem = {
   key: string;
   label: string;
@@ -70,14 +71,18 @@ const jsonBody = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
+/** Loads the current llama.cpp connection. */
 export const fetchAiSettings = () => requestJson<AiSettings>(SETTINGS_ENDPOINT);
 
+/** Tests a connection without saving it. */
 export const testAiConnection = (settings: AiSettingsRequest) =>
   requestJson<ConnectionTest>(SETTINGS_ENDPOINT + '/test', jsonBody('POST', settings));
 
+/** Saves a connection and makes the AI services use it. */
 export const saveAiSettings = (settings: AiSettingsRequest) =>
   requestJson<AiSettings>(SETTINGS_ENDPOINT, jsonBody('PUT', settings));
 
+/** Loads the master template's metadata and placeholder readiness. */
 export const fetchTemplate = () => requestJson<TemplateMetadata>(TEMPLATE_ENDPOINT);
 
 /** Uploads a Word file as the new master template and returns its metadata. */

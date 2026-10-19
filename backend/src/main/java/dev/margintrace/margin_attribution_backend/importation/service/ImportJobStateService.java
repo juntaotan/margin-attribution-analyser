@@ -36,6 +36,12 @@ public class ImportJobStateService {
 
     private final ImportJobRepository importJobRepository;
 
+    /**
+     * Creates a {@code PENDING} job with a provisional object key.
+     *
+     * @return the saved job
+     * @throws IllegalArgumentException if the file name or table name is invalid, or the mapping is not confirmed
+     */
     @Transactional
     public ImportJob createPendingJob(String originalFilename, String mappingTableName, boolean mappingResult) {
         String storageObjectKey = IMPORT_OBJECT_PREFIX + UUID.randomUUID();
@@ -43,32 +49,50 @@ public class ImportJobStateService {
                 ImportJob.pending(originalFilename, storageObjectKey, mappingTableName, mappingResult));
     }
 
-    // Performs a pure state transition when no additional stage result needs to be persisted that is used when an
-    // import stage begins
+    /**
+     * Moves a job from the expected status to the next one, for example when a stage begins. The change is
+     * committed in its own transaction so that it is visible while the import continues.
+     *
+     * @throws IllegalArgumentException if the job does not exist
+     * @throws IllegalStateException if the job is not in the expected status or the transition is not allowed
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void transition(Long jobId, ImportStatus expected, ImportStatus next) {
         ImportJob job = getJobWithExpectedStatus(jobId, expected);
         job.transitionTo(next);
     }
 
+    /**
+     * Completes validation of a job in the {@code VALIDATING} status, in its own transaction.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void completeValidation(Long jobId, FileExtension fileExtension) {
         ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.VALIDATING);
         job.completeValidation(fileExtension);
     }
 
+    /**
+     * Completes raw storage of a job in the {@code STORING} status, in its own transaction.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void completeRawStorage(Long jobId, String storageObjectKey) {
         ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.STORING);
         job.completeRawStorage(storageObjectKey);
     }
 
+    /**
+     * Completes a job in the {@code WRITING_TO_DATALAKE} status with its row counts, in its own transaction.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void completeWrite(Long jobId, long importedRows, long rejectedRows) {
         ImportJob job = getJobWithExpectedStatus(jobId, ImportStatus.WRITING_TO_DATALAKE);
         job.completeWrite(importedRows, rejectedRows);
     }
 
+    /**
+     * @return the job
+     * @throws IllegalArgumentException if the job does not exist
+     */
     @Transactional(readOnly = true)
     public ImportJob getRequiredJob(Long jobId) {
         return importJobRepository
@@ -76,6 +100,11 @@ public class ImportJobStateService {
                 .orElseThrow(() -> new IllegalArgumentException("Import job not found: " + jobId));
     }
 
+    /**
+     * @param page the zero-based page number; negative values are treated as 0
+     * @param size the page size, limited to 1 to 100
+     * @return the jobs, newest first
+     */
     @Transactional(readOnly = true)
     public Page<ImportJob> listJobs(int page, int size) {
         int safePage = Math.max(page, 0);
@@ -83,6 +112,11 @@ public class ImportJobStateService {
         return importJobRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(safePage, safeSize));
     }
 
+    /**
+     * Moves a job from the expected status to a failure status and records the error, in its own transaction.
+     *
+     * @throws IllegalStateException if the job is not in the expected status or the transition is not allowed
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(
             Long jobId, ImportStatus expected, ImportStatus failureStatus, String errorCode, String errorMessage) {

@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Writes uploaded files to the bucket configured in {@code datalake.raw-bucket}, creating the bucket if needed.
+ */
 @Component
 @RequiredArgsConstructor
 public class MinioRawFileStorage implements RawFileStorage {

@@ -45,6 +45,15 @@ public class BillOfMaterial {
     @Column(name = "material_usage", nullable = false, precision = 18, scale = 6)
     private BigDecimal materialUsage;
 
+    /**
+     * @param bomNo the BOM number
+     * @param productNo the product the BOM belongs to
+     * @param materialNo the component material
+     * @param materialUsage the quantity of material per product; must be positive
+     * @return a new BOM line with trimmed business keys
+     * @throws IllegalArgumentException if a key is blank or longer than 100 characters, or the usage is not
+     *     positive
+     */
     public static BillOfMaterial of(String bomNo, String productNo, String materialNo, BigDecimal materialUsage) {
         BillOfMaterial line = new BillOfMaterial();
         line.bomNo = requireBusinessKey(bomNo, "BOM number");

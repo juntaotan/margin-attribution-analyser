@@ -48,6 +48,9 @@ public class KnowledgeRepository {
     public record ChunkView(
             UUID id, UUID documentId, SourceType sourceType, String title, LocalDate effectiveDate, String text) {}
 
+    /**
+     * @param document the document metadata to store
+     */
     public void insertDocument(KnowledgeDocument document) {
         jdbc.sql(
                         """
@@ -65,6 +68,15 @@ public class KnowledgeRepository {
                 .update();
     }
 
+    /**
+     * Stores a chunk of a document and the business codes it mentions.
+     *
+     * @param id the chunk ID, also used for its vector
+     * @param documentId the owning document
+     * @param ordinal the chunk's position in the document
+     * @param text the chunk text
+     * @param codes the material, product or production-order numbers found in the text
+     */
     public void insertChunk(UUID id, UUID documentId, int ordinal, String text, Set<String> codes) {
         jdbc.sql("INSERT INTO knowledge_chunk (id, document_id, ordinal, text) VALUES (:id, :doc, :ordinal, :text)")
                 .param("id", id)
@@ -80,12 +92,18 @@ public class KnowledgeRepository {
         }
     }
 
+    /**
+     * @return all documents, newest effective date first, then by title
+     */
     public List<KnowledgeDocument> findDocuments() {
         return jdbc.sql("SELECT * FROM knowledge_document ORDER BY effective_date DESC, title")
                 .query(this::document)
                 .list();
     }
 
+    /**
+     * @return the document, or empty if it does not exist
+     */
     public Optional<KnowledgeDocument> findDocument(UUID id) {
         return jdbc.sql("SELECT * FROM knowledge_document WHERE id = :id")
                 .param("id", id)
@@ -93,6 +111,9 @@ public class KnowledgeRepository {
                 .optional();
     }
 
+    /**
+     * @return the IDs of the document's chunks, which are also their vector IDs
+     */
     public List<String> findChunkIds(UUID documentId) {
         return jdbc.sql("SELECT id FROM knowledge_chunk WHERE document_id = :doc")
                 .param("doc", documentId)
@@ -107,6 +128,9 @@ public class KnowledgeRepository {
                 .update();
     }
 
+    /**
+     * @return the distinct embedding signatures of the stored documents
+     */
     public Set<String> embeddingSignatures() {
         return new HashSet<>(jdbc.sql("SELECT DISTINCT embedding_signature FROM knowledge_document")
                 .query(String.class)

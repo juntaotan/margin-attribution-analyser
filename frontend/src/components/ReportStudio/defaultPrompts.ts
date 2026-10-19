@@ -1,3 +1,4 @@
+/** A default AI prompt and output format for a standard report placeholder. */
 export interface PreconfiguredPromptDefinition {
   key: string;
   label: string;
@@ -6,6 +7,7 @@ export interface PreconfiguredPromptDefinition {
   description: string;
 }
 
+/** Default prompts for the standard management-report placeholders, keyed by alias. */
 export const PRECONFIGURED_PROMPTS: Record<string, PreconfiguredPromptDefinition> = {
   Revenue: {
     key: 'Revenue',

@@ -16,12 +16,18 @@ public record PeriodRecords(List<Sale> sales, List<Issue> issues, boolean comple
 
     public record Sale(String sourceId, LocalDate date, String productId, BigDecimal quantity, BigDecimal cost) {}
 
+    /**
+     * @return the sales dated within the inclusive range
+     */
     public List<Sale> salesBetween(LocalDate start, LocalDate end) {
         return sales.stream()
                 .filter(s -> !s.date().isBefore(start) && !s.date().isAfter(end))
                 .toList();
     }
 
+    /**
+     * @return the material issues dated within the inclusive range
+     */
     public List<Issue> issuesBetween(LocalDate start, LocalDate end) {
         return issues.stream()
                 .filter(s -> !s.date().isBefore(start) && !s.date().isAfter(end))

@@ -4,8 +4,15 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
+/**
+ * LangChain4j AI service that finds the reporting period stated for a marked content control in document sentences.
+ */
 public interface ReportPeriodAssistant {
 
+    /**
+     * @param documentText numbered sentences in which the target control is marked {@code [[TARGET ...]]}
+     * @return whether a period was found and the period as written
+     */
     @SystemMessage(
             """
             You extract reporting periods from document text.

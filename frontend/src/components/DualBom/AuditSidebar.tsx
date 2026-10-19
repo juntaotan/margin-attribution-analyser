@@ -14,6 +14,9 @@ interface RootCauseReport {
   aiMessage: string | null;
 }
 
+/**
+ * Props of {@link AuditSidebar}. The drawer docks beside the graph when pinned and overlays it otherwise.
+ */
 export interface AuditSidebarProps {
   outcome: AnalysisOutcome | null;
   inventoryId: string | null;

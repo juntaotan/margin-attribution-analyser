@@ -54,6 +54,15 @@ public class PurchaseOrderLine {
     @Column(name = "product_total_price", nullable = false, precision = 18, scale = 6)
     private BigDecimal lineTotalCost;
 
+    /**
+     * @param purchaseOrderNo the purchase order number
+     * @param date the order date
+     * @param materialNo the purchased material
+     * @param materialQuantity the quantity purchased; must be positive
+     * @param lineTotalCost the line's total cost; must not be negative
+     * @return a new purchase line with trimmed business keys
+     * @throws IllegalArgumentException if a value is missing or invalid
+     */
     public static PurchaseOrderLine of(
             String purchaseOrderNo,
             LocalDate date,

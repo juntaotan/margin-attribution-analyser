@@ -107,6 +107,14 @@ public class ImportWorkflow {
         return true;
     }
 
+    /**
+     * Detects the table, infers column types and maps the columns, then writes the raw and warehouse tables. A
+     * failure in either phase is recorded on the job as {@code TRANSFORMING_FAILED} or {@code WRITE_FAILED} and
+     * ends processing.
+     *
+     * @param jobId the job, which must be in the {@code STORED} status
+     * @param context the import state, with the target table and raw object key set
+     */
     public void processStoredFile(Long jobId, ImportContext context) {
 
         stateService.transition(jobId, STORED, TRANSFORMING);

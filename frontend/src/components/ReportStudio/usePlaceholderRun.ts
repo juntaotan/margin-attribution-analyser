@@ -19,6 +19,7 @@ import {
   SemanticQueryResult,
 } from './types';
 
+/** Shown when the prompt no longer matches the run that produced the displayed result. */
 export const PROMPT_CHANGED_MESSAGE =
   'Prompt has changed since this result was generated. Generate again before applying.';
 const SAVED_MESSAGE = 'Saved to the source document';

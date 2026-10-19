@@ -12,11 +12,24 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Maps the detected source columns to the fields of the confirmed target table, using the aliases in the schema
+ * mapping presets. Column names are compared ignoring case, spaces, underscores and hyphens; columns without a
+ * matching alias are ignored.
+ */
 @Component
 @RequiredArgsConstructor
 public class SchemaMappingHandler extends AbstractImportHandler {
     private final SchemaMappingPresetCatalog presetCatalog;
 
+    /**
+     * Records the target data set and the column mappings, then continues the chain.
+     *
+     * @throws IllegalArgumentException if the table structure or columns are missing, the mapping was not
+     *     confirmed, a source column matches several fields, several columns map to one field, or a required field is
+     *     unmapped. Inventory movements that include a material number also require the material quantity and total
+     *     cost.
+     */
     @Override
     public void doImport(ImportContext context) {
         if (context == null || context.getTableStructure() == null) {

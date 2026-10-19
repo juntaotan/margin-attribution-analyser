@@ -198,6 +198,9 @@ public final class FgwEngine {
         return new Session(input.left, config).compare(input.right, input.initialMatrices);
     }
 
+    /**
+     * Compares a single pair with the default configuration.
+     */
     public Result compare(Comparison input) {
         return compare(input, new Config());
     }
@@ -213,6 +216,11 @@ public final class FgwEngine {
         if (!condition) throw new IllegalArgumentException(message);
     }
 
+    /**
+     * @param c the configuration to check
+     * @throws IllegalArgumentException if a tolerance or alpha is negative or non-finite, alpha exceeds 1, a floor
+     *     or tolerance that must be positive is zero, or the iteration limit is negative
+     */
     public static void validateConfig(Config c) {
         for (double x : new double[] {
             c.alpha,
@@ -282,6 +290,13 @@ public final class FgwEngine {
         return out;
     }
 
+    /**
+     * All-pairs shortest-path distances of the graph with edges treated as undirected and unweighted
+     * (docs/algorithms/FGW_Implementation_Five_Steps.md, Step 1: {@code D1} or {@code D2}), as a row-major matrix
+     * computed by breadth-first search from every node.
+     *
+     * @throws IllegalArgumentException if the graph is not connected
+     */
     private static double[] distances(Graph g) {
         int[][] edges = adjacency(g);
         int n = edges.length;
@@ -305,12 +320,20 @@ public final class FgwEngine {
         return d;
     }
 
+    /**
+     * Row terms of the fixed structural cost: {@code elementwise_square(D) * p} with uniform weights {@code 1/n}
+     * (docs/algorithms/FGW_Implementation_Five_Steps.md, Step 3, matrix {@code C}).
+     */
     private static double[] norm(double[] d, int n) {
         double[] a = new double[n];
         for (int i = 0; i < n; ++i) for (int k = 0; k < n; ++k) a[i] += d[i * n + k] * d[i * n + k] / n;
         return a;
     }
 
+    /**
+     * Row-major {@code D1 * P * transpose(D2)}, used for {@code H(P)} in Step 3 and the line-search coefficient
+     * {@code a} in Step 4 of docs/algorithms/FGW_Implementation_Five_Steps.md.
+     */
     private static double[] product(double[] d1, double[] p, double[] d2, int n, int m) {
         double[] temp = new double[p.length], out = new double[p.length];
         for (int i = 0; i < n; ++i)
@@ -327,12 +350,23 @@ public final class FgwEngine {
         return out;
     }
 
+    /**
+     * Elementwise inner product {@code <A, B>}.
+     */
     private static double dot(double[] a, double[] b) {
         double v = 0;
         for (int i = 0; i < a.length; ++i) v += a[i] * b[i];
         return v;
     }
 
+    /**
+     * Measures how far a correspondence matrix is from the uniform marginals {@code p = 1/n} and {@code q = 1/m}
+     * (docs/algorithms/FGW_Implementation_Five_Steps.md, Step 5 (1)).
+     *
+     * @param p the row-major {@code n x m} matrix
+     * @return the largest row and column marginal errors, the total-mass error, the smallest entry and whether all
+     *     entries are finite; all zero and not finite if the dimensions do not match
+     */
     public static MarginalErrors marginalErrors(double[] p, int n, int m) {
         if (n < 1 || m < 1 || p.length != (long) n * m) return new MarginalErrors(0, 0, 0, 0, false);
         double row = 0, column = 0, total = 0, min = Double.POSITIVE_INFINITY;
@@ -357,7 +391,16 @@ public final class FgwEngine {
     private static boolean feasible(MarginalErrors e, double tol) {
         return e.finite && e.minimum >= -tol && Math.max(e.row, Math.max(e.column, e.total)) <= tol;
     }
-    /** Exact quadratic minimum on [0,1], preserving near-zero handling. */
+    /**
+     * Exact quadratic minimum on [0,1], preserving near-zero handling: the line search of Step 4 (4) in
+     * docs/algorithms/FGW_Implementation_Five_Steps.md, with {@code a = -2 * alpha * directionProduct}.
+     *
+     * @param directionProduct {@code <D1 * deltaP * transpose(D2), deltaP>}
+     * @param b {@code <G, deltaP>}
+     * @param c the configuration supplying alpha and the numerical tolerance
+     * @return the coefficients and the selected step {@code gamma}
+     * @throws ArithmeticException if a coefficient is not finite
+     */
     public static LineSearch quadraticLineSearch(double directionProduct, double b, Config c) {
         double a = -2 * c.alpha * directionProduct;
         if (!Double.isFinite(a) || !Double.isFinite(b))
@@ -377,6 +420,7 @@ public final class FgwEngine {
      * Decide stopping from a freshly evaluated gap and original marginals.
      * A gap success precedes the update limit, which precedes cost stalling;
      * nonfinite costs or a significantly negative gap are numerical failures.
+     * Implements Step 5 of docs/algorithms/FGW_Implementation_Five_Steps.md.
      */
     public static Status stoppingStatus(
             double gap, Costs f, MarginalErrors e, int updates, double previous, boolean hasPrevious, Config c) {
@@ -402,6 +446,17 @@ public final class FgwEngine {
         return new SourceMapping(g.productId, g.instanceId, g.rootIndex, g.sources);
     }
 
+    /**
+     * Runs the Frank-Wolfe optimisation of docs/algorithms/FGW_Implementation_Five_Steps.md for each start: uniform
+     * weights and a uniform or supplied initial matrix (Step 2), the cost and its gradient (Steps 3 and 4 (1)), the
+     * exact linear transport problem (Step 4 (2)), the stopping decision on the fresh gap (Step 5) and the exact
+     * line search and update (Step 4 (3)-(5)). The best start is the one with the lowest finite cost that did not
+     * fail numerically.
+     *
+     * @param d1 the baseline's structural distances
+     * @param leftNorm the baseline's row terms from {@link #norm(double[], int)}
+     * @throws IllegalArgumentException if the graphs belong to different products or a supplied start is infeasible
+     */
     private static Result solve(
             Graph left, Graph right, List<double[]> initials, Config c, double[] d1, double[] leftNorm) {
         long begin = System.nanoTime();
@@ -412,6 +467,7 @@ public final class FgwEngine {
             MarginalErrors e = marginalErrors(p, n, m);
             require(feasible(e, c.feasibilityTolerance) && e.minimum >= 0, "Invalid initial correspondence.");
         }
+        // Step 1: material = M_attr (squared embedding distances); fixed = C, the constant structural term of Step 3.
         double[] material = new double[count], fixed = new double[count], rightNorm = norm(d2, m);
         for (int i = 0; i < n; ++i)
             for (int j = 0; j < m; ++j) {
@@ -451,6 +507,7 @@ public final class FgwEngine {
                     throw new java.util.concurrent.CancellationException("FGW cancelled");
                 Iteration t = new Iteration();
                 t.updates = out.iterations;
+                // Steps 3 and 4 (1): h = H(P) = C - 2 * D1 * P * transpose(D2); gradient = G.
                 double[] prod = product(d1, p, d2, n, m), h = new double[count], gradient = new double[count];
                 for (int z = 0; z < count; ++z) {
                     h[z] = fixed[z] - 2 * prod[z];
@@ -463,6 +520,7 @@ public final class FgwEngine {
                 try {
                     t.ot = exactLinearOt(gradient, n, m, c, workspace);
                     for (int z = 0; z < count; ++z) delta[z] = t.ot.correspondence[z] - p[z];
+                    // Step 4 (2)-(3): delta = deltaP = S - P; FW_Gap = <G, P - S> = -b.
                     double b = dot(gradient, delta);
                     t.gap = -b;
                     out.status = stoppingStatus(t.gap, t.costs, t.marginals, out.iterations, previous, hasPrevious, c);
@@ -589,6 +647,7 @@ public final class FgwEngine {
      * certificate. Changed-cost warm starts reuse only feasible bases. Degenerate
      * repeated bases activate Bland's rule. Throws ArithmeticException on
      * numerical, disconnected-basis or 100,000-pivot safety failures.
+     * Solves Step 4 (2) of docs/algorithms/FGW_Implementation_Five_Steps.md.
      */
     public static LinearOtResult exactLinearOt(double[] cost, int n, int m, Config c, OtWorkspace workspace) {
         validateConfig(c);

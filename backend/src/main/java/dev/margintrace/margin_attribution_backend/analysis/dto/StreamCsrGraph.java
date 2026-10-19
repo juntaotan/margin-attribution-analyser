@@ -12,9 +12,18 @@ import java.util.UUID;
 
 /** A CSR snapshot with IDs scoped to one analysis, graph, and array position. */
 public record StreamCsrGraph(List<StreamNode> nodes, int[] offset, int[] successors, List<UUID> edgeIds) {
+    /**
+     * A graph node with its stable ID and array position.
+     */
     public record StreamNode(
             UUID id, int position, String inventoryId, java.math.BigDecimal quantity, java.math.BigDecimal cost) {}
 
+    /**
+     * @param graph the CSR graph to copy
+     * @param analysisId the analysis the IDs are scoped to
+     * @param role {@code actual} or {@code comparable}
+     * @return a copy of the graph with stable IDs for every node and edge
+     */
     public static StreamCsrGraph from(CsrGraph graph, UUID analysisId, String role) {
         List<StreamNode> nodes = new ArrayList<>(graph.nodes().length);
         for (int position = 0; position < graph.nodes().length; position++) {
@@ -30,10 +39,16 @@ public record StreamCsrGraph(List<StreamNode> nodes, int[] offset, int[] success
                 List.copyOf(nodes), graph.offset().clone(), graph.successors().clone(), List.copyOf(edgeIds));
     }
 
+    /**
+     * @return a name-based (version 5) UUID for the node at a position, stable for the same analysis and role
+     */
     public static UUID nodeId(UUID analysisId, String role, int position) {
         return uuidV5(analysisId, role + ":node:" + position);
     }
 
+    /**
+     * @return a name-based (version 5) UUID for the edge at an index, stable for the same analysis and role
+     */
     public static UUID edgeId(UUID analysisId, String role, int edgeIndex) {
         return uuidV5(analysisId, role + ":edge:" + edgeIndex);
     }

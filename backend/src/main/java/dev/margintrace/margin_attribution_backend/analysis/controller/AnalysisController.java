@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * REST endpoints for period tracing, BOM tracing, graph reconciliation and the root-cause report of a selected
+ * inventory item. Validation failures are returned as HTTP 400 with a {@code message}.
+ */
 @RestController
 @RequestMapping("/api/v1/analysis")
 @RequiredArgsConstructor
@@ -31,6 +35,12 @@ public class AnalysisController {
     private final ObjectMapper objectMapper;
     private final RootCauseReportService rootCauseReportService;
 
+    /**
+     * Classifies the recorded difference of one inventory item between two periods and adds an optional AI summary.
+     *
+     * @param request the periods and the inventory item
+     * @return the classification, evidence and, if the AI service answered, its summary
+     */
     @PostMapping("/root-cause-report")
     public RootCauseReportResponse rootCauseReport(@RequestBody RootCauseReportRequest request) {
         return rootCauseReportService.report(request);

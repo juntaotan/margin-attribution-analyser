@@ -4,6 +4,10 @@ import dev.margintrace.margin_attribution_backend.importation.model.ImportJob;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportStatus;
 import java.time.Instant;
 
+/**
+ * An import job as shown to clients, with a coarse {@code stage} and an approximate {@code progress} percentage
+ * derived from its status.
+ */
 public record ImportJobResponse(
         Long jobId,
         String filename,
@@ -17,6 +21,9 @@ public record ImportJobResponse(
         String errorMessage,
         Instant createdAt,
         Instant completedAt) {
+    /**
+     * @return the job converted to a response
+     */
     public static ImportJobResponse from(ImportJob job) {
         return new ImportJobResponse(
                 job.getId(),

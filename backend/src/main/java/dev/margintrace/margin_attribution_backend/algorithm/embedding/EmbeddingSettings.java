@@ -24,6 +24,9 @@ public record EmbeddingSettings(
         GENERATE_MISSING
     }
 
+    /**
+     * @return settings that generate missing L2-normalised embeddings on the CPU
+     */
     public static EmbeddingSettings cpu() {
         return new EmbeddingSettings(Mode.GENERATE_MISSING, null, null, "L2", "CPU", null, false);
     }

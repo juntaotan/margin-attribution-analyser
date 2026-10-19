@@ -33,6 +33,13 @@ public class RootCauseReportService {
     private final RootCauseAssistant rootCauseAssistant;
     private final AiErrorMapper aiErrorMapper;
 
+    /**
+     * Classifies an item's recorded difference between two periods, then asks the AI service for a short summary of
+     * that classification. AI failures do not affect the classification; they are reported in {@code aiMessage}.
+     *
+     * @param request the periods and the inventory item
+     * @return the classification, certainty, evidence and optional summary
+     */
     public RootCauseReportResponse report(RootCauseReportRequest request) {
         Diagnosis diagnosis = diagnosis(request);
         String summary = null;

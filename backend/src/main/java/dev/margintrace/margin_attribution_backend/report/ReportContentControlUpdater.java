@@ -24,11 +24,25 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Replaces the content of Word content controls in a DOCX document, matching controls by alias or tag.
+ */
 @Component
 public class ReportContentControlUpdater {
 
     private static final String WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    /**
+     * Writes one value into every control whose alias or tag matches.
+     *
+     * @param documentBytes the DOCX content
+     * @param requestedAlias the alias to match
+     * @param replacementValue the text to write, at most 10,000 characters
+     * @return the updated document and the number of controls replaced
+     * @throws IllegalArgumentException if the alias is blank, the value is missing or too long, or no control
+     *     matches
+     * @throws IOException if the document cannot be read or written
+     */
     public UpdateResult replaceContentByAlias(byte[] documentBytes, String requestedAlias, String replacementValue)
             throws IOException {
         String alias = requestedAlias == null ? "" : requestedAlias.trim();
@@ -46,6 +60,18 @@ public class ReportContentControlUpdater {
         return result;
     }
 
+    /**
+     * Writes several values in one pass. A control matches a key by exact alias, then exact tag, then by alias or
+     * tag ignoring case, spaces, underscores and hyphens. The control's content is replaced by a single text run,
+     * inside a paragraph for block-level controls. Text tokens written as {@code {{key}}} outside controls are also
+     * replaced.
+     *
+     * @param documentBytes the DOCX content
+     * @param replacements values keyed by alias or tag; entries with a null key or value are ignored
+     * @return the updated document and the number of controls and tokens replaced; the original bytes if nothing
+     *     matched
+     * @throws IOException if the document cannot be read or written
+     */
     public UpdateResult replaceContents(byte[] documentBytes, Map<String, String> replacements) throws IOException {
         if (replacements == null || replacements.isEmpty()) {
             return new UpdateResult(documentBytes, 0);
@@ -235,6 +261,9 @@ public class ReportContentControlUpdater {
         return entryName.matches("word/(header|footer)\\d+\\.xml");
     }
 
+    /**
+     * The updated DOCX content and how many replacements were made.
+     */
     public record UpdateResult(byte[] documentBytes, int updatedControls) {}
 
     private record PartUpdate(byte[] content, int updatedControls) {}

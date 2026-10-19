@@ -9,6 +9,10 @@ import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import java.util.Set;
 
+/**
+ * Chat model wrapper that waits for llama.cpp to finish loading its model. Requests that fail with HTTP 503
+ * "Loading model" are retried every two seconds, up to 15 attempts; other failures are passed on immediately.
+ */
 final class LlamaLoadingRetryChatModel implements ChatModel {
     private final ChatModel delegate;
 
@@ -16,6 +20,14 @@ final class LlamaLoadingRetryChatModel implements ChatModel {
         this.delegate = delegate;
     }
 
+    /**
+     * Sends the request, retrying while the model is loading.
+     *
+     * @param request the chat request
+     * @return the model's response
+     * @throws RuntimeException the last failure, if it is not a loading response or the attempts are exhausted
+     * @throws IllegalStateException if the thread is interrupted while waiting
+     */
     @Override
     public ChatResponse doChat(ChatRequest request) {
         for (int attempt = 0; attempt < 15; attempt++) {

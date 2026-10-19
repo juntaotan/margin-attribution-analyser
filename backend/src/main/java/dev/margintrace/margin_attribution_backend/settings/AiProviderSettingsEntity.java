@@ -7,6 +7,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 
+/**
+ * The saved llama.cpp connection. The table holds a single row with ID {@link #SINGLETON_ID}.
+ */
 @Entity
 @Table(name = "ai_provider_settings")
 public class AiProviderSettingsEntity {
@@ -29,6 +32,9 @@ public class AiProviderSettingsEntity {
 
     protected AiProviderSettingsEntity() {}
 
+    /**
+     * @param settings the settings to save in the singleton row
+     */
     public AiProviderSettingsEntity(AiConnectionSettings settings) {
         this.id = SINGLETON_ID;
         this.host = settings.host();
@@ -37,6 +43,9 @@ public class AiProviderSettingsEntity {
         this.updatedAt = settings.updatedAt();
     }
 
+    /**
+     * @return the saved settings
+     */
     public AiConnectionSettings toSettings() {
         return new AiConnectionSettings(host, port, modelName, updatedAt);
     }

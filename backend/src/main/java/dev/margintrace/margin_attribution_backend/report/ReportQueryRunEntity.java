@@ -21,6 +21,10 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * One execution of a placeholder configuration's query, with snapshots of the prompt, blueprint, SQL and result it
+ * was produced from.
+ */
 @Entity
 @Table(name = "report_query_run")
 @Getter
@@ -66,6 +70,9 @@ public class ReportQueryRunEntity {
     @Column(name = "applied_at")
     private Instant appliedAt;
 
+    /**
+     * Creates a run in the {@code RUNNING} state, timestamped now.
+     */
     public ReportQueryRunEntity(
             ReportPlaceholderConfigEntity placeholderConfig,
             Long configRevision,
@@ -81,17 +88,26 @@ public class ReportQueryRunEntity {
         this.executedAt = Instant.now();
     }
 
+    /**
+     * Records the result and clears any earlier error.
+     */
     public void markSucceeded(ReportQueryService.QueryResult result) {
         this.status = ReportQueryRunStatus.SUCCEEDED;
         this.resultSnapshot = result;
         this.errorMessage = null;
     }
 
+    /**
+     * Records the failure message.
+     */
     public void markFailed(String message) {
         this.status = ReportQueryRunStatus.FAILED;
         this.errorMessage = message;
     }
 
+    /**
+     * Records that the result was written into the document, timestamped now.
+     */
     public void markApplied() {
         this.status = ReportQueryRunStatus.APPLIED;
         this.appliedAt = Instant.now();

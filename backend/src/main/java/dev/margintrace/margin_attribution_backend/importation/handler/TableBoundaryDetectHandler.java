@@ -9,12 +9,24 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
 
+/**
+ * Finds the data table in each worksheet of the stored workbook and keeps the most consistent one.
+ *
+ * <p>For each sheet, the most common first and last non-empty row of every column, and first and last non-empty column
+ * of every row, are taken as the table's edges. The confidence is the smallest share of columns or rows that agree
+ * with an edge.
+ */
 @Component
 @RequiredArgsConstructor
 public class TableBoundaryDetectHandler extends AbstractImportHandler {
 
     private final RawFileReader rawFileReader;
 
+    /**
+     * Records the table with the highest confidence, then continues the chain.
+     *
+     * @throws RuntimeException if the workbook cannot be read
+     */
     @Override
     public void doImport(ImportContext context) {
 

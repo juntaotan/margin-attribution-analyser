@@ -1,5 +1,6 @@
 import type { AnalysisOutcome, PeriodSnapshot } from './analysisRun';
 
+/** Inventory ID of the Cost of Goods Sold root. */
 export const COGS_ID = '__COGS__';
 /** Maximum products selected by the coverage rule before the remainder boxes take over. */
 export const PRODUCT_LIMIT = 15;
@@ -11,12 +12,15 @@ export const PAGE_SIZE = 20;
 export const BUSINESS_LIMIT = 150;
 
 type Branch = AnalysisOutcome['branches'][number];
+/** The parts of a period snapshot the display index needs. */
 export type DisplaySnapshot = Pick<PeriodSnapshot, 'graph' | 'records'>;
+/** Both period snapshots and the abnormal branches found in the actual period. */
 export interface DisplayInput {
   actual: DisplaySnapshot;
   comparable: DisplaySnapshot;
   branches: Branch[];
 }
+/** Which period a pane shows. */
 export type Period = 'actual' | 'comparable';
 /** Recorded values of one display node in one period; `linked` is false when the drawn parent relationship is not recorded there. */
 export interface PeriodValue {
@@ -25,6 +29,10 @@ export interface PeriodValue {
   cost: string | null;
   linked: boolean;
 }
+/**
+ * A box in the display tree: a recorded node or a fold (bridge, remainder, product group or missing root), with its
+ * column and row in the shared layout.
+ */
 export interface DisplayItem {
   key: string;
   kind: 'node' | 'bridge' | 'rest' | 'group' | 'missing';
@@ -46,6 +54,7 @@ export interface DisplayItem {
   row: number;
   expandKey?: string;
 }
+/** A display edge, and whether it is recorded in each period. */
 export interface DisplayEdge {
   id: string;
   source: string;
@@ -59,6 +68,7 @@ export interface DisplayQuery {
   coverage: number;
   expanded: Record<string, number>;
 }
+/** Coverage, size and warnings of one projection; decimal amounts are exact text. */
 export interface DisplayStats {
   coverage: number;
   selectedProducts: number;
@@ -74,6 +84,7 @@ export interface DisplayStats {
   budgetReached: boolean;
   diagnostics: string[];
 }
+/** A laid-out projection of the display tree. */
 export interface DisplayResult {
   items: DisplayItem[];
   edges: DisplayEdge[];
@@ -82,6 +93,7 @@ export interface DisplayResult {
   terminalColumn: boolean;
   stats: DisplayStats;
 }
+/** Initial projection: 50% coverage of the COGS difference, nothing expanded. */
 export const INITIAL_QUERY: DisplayQuery = { coverage: 50, expanded: {} };
 
 /**

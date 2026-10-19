@@ -16,6 +16,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+/**
+ * An import job and its status. Status changes are only allowed along the transitions defined by
+ * {@link ImportStatus#canTransitionTo(ImportStatus)}; reaching a terminal status records the completion time.
+ * Optimistic locking prevents concurrent updates from overwriting each other.
+ */
 @Entity
 @Table(name = "import_job")
 @Getter
@@ -72,7 +77,16 @@ public class ImportJob {
     @Column(name = "version", nullable = false)
     private long version;
 
-    // Create the first transaction PENDING using Static Factory Method
+    /**
+     * Creates a job in the {@code PENDING} status.
+     *
+     * @param originalFilename the uploaded file name
+     * @param storageObjectKey the provisional object key
+     * @param mappingTableName the confirmed target table, at most 100 characters
+     * @param mappingResult whether the user confirmed the mapping; must be true
+     * @return the new job
+     * @throws IllegalArgumentException if any value is missing or invalid, or the mapping is not confirmed
+     */
     public static ImportJob pending(
             String originalFilename, String storageObjectKey, String mappingTableName, boolean mappingResult) {
         if (mappingTableName == null || mappingTableName.isBlank() || mappingTableName.length() > 100) {
@@ -99,16 +113,30 @@ public class ImportJob {
         return job;
     }
 
-    // Allow to modify status
+    /**
+     * Moves the job to the next status and clears any error.
+     *
+     * @throws IllegalStateException if the transition is not allowed
+     */
     public void transitionTo(ImportStatus next) {
         transitionTo(next, null, null);
     }
 
-    // Transition fail
+    /**
+     * Moves the job to a failure status and records the error, with the message truncated to 1,000 characters.
+     *
+     * @throws IllegalStateException if the transition is not allowed
+     */
     public void transitionToFailure(ImportStatus failureStatus, String errorCode, String errorMessage) {
         transitionTo(failureStatus, errorCode, errorMessage);
     }
 
+    /**
+     * Marks validation as successful and records the file type.
+     *
+     * @throws IllegalArgumentException if the file type is missing
+     * @throws IllegalStateException if the job is not being validated
+     */
     public void completeValidation(FileExtension fileExtension) {
         if (fileExtension == null) {
             throw new IllegalArgumentException("File extension must not be null");
@@ -118,6 +146,12 @@ public class ImportJob {
         this.fileExtension = fileExtension;
     }
 
+    /**
+     * Marks the raw file as stored and records its object key.
+     *
+     * @throws IllegalArgumentException if the key is blank or longer than 500 characters
+     * @throws IllegalStateException if the file is not being stored
+     */
     public void completeRawStorage(String storageObjectKey) {
         if (storageObjectKey == null || storageObjectKey.isBlank()) {
             throw new IllegalArgumentException("Storage object key must not be blank");
@@ -130,6 +164,12 @@ public class ImportJob {
         this.storageObjectKey = storageObjectKey;
     }
 
+    /**
+     * Marks the import as successful and records the row counts.
+     *
+     * @throws IllegalArgumentException if a count is negative
+     * @throws IllegalStateException if the job is not being written
+     */
     public void completeWrite(long importedRows, long rejectedRows) {
         if (importedRows < 0 || rejectedRows < 0) {
             throw new IllegalArgumentException("Imported and rejected row counts must not be negative");

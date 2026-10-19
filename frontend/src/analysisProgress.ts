@@ -1,7 +1,10 @@
 import type { AnalysisOutcome, PairResult, PeriodSnapshot, WorkflowEvent } from './analysisRun';
 
+/** Workflow stages shown in the progress bar, in execution order. */
 export type StepKey = 'loading' | 'graph' | 'branches' | 'production-trees' | 'embeddings' | 'comparison';
+/** Display state of one workflow stage. */
 export type StepState = 'pending' | 'running' | 'done' | 'skipped' | 'failed';
+/** Progress of one workflow stage, with timestamps from `performance.now()`. */
 export interface ProgressStep {
   key: StepKey;
   label: string;
@@ -16,6 +19,7 @@ export interface ProgressStep {
   /** Completed with incomplete evidence, such as unresolved embeddings or rejected pairs. */
   warning: boolean;
 }
+/** Progress of a whole analysis run, built from the backend's workflow events. */
 export interface AnalysisProgress {
   steps: ProgressStep[];
   startedAt: number;

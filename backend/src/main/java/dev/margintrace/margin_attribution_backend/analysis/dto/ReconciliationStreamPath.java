@@ -14,6 +14,11 @@ public record ReconciliationStreamPath(
         List<UUID> edgeIds,
         PropagationPath.EndReason endReason,
         BigDecimal endingCostDifference) {
+    /**
+     * @param path a path in the actual-period graph
+     * @param analysisId the analysis whose stable node and edge IDs to use
+     * @return the path with positions, edge indexes and the matching stable IDs
+     */
     public static ReconciliationStreamPath from(PropagationPath path, UUID analysisId) {
         return new ReconciliationStreamPath(
                 path.positions(),

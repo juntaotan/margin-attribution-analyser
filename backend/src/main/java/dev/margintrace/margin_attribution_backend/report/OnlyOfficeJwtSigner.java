@@ -10,6 +10,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Signs ONLYOFFICE editor configurations and creates the access tokens that protect the document endpoints.
+ *
+ * <p>Both use HMAC-SHA256 with the secret configured in {@code onlyoffice.jwt-secret}, which must match the Document
+ * Server's JWT secret.
+ */
 @Component
 public class OnlyOfficeJwtSigner {
 
@@ -18,6 +24,11 @@ public class OnlyOfficeJwtSigner {
     private final ObjectMapper objectMapper;
     private final byte[] secret;
 
+    /**
+     * @param objectMapper serialiser for the JWT header and payload
+     * @param secret the shared JWT secret
+     * @throws IllegalArgumentException if the secret is blank
+     */
     public OnlyOfficeJwtSigner(ObjectMapper objectMapper, @Value("${onlyoffice.jwt-secret}") String secret) {
         if (secret == null || secret.isBlank()) {
             throw new IllegalArgumentException("ONLYOFFICE JWT secret must not be blank");
@@ -26,6 +37,13 @@ public class OnlyOfficeJwtSigner {
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Creates a compact HS256 JSON Web Token for the payload.
+     *
+     * @param payload the editor configuration to sign
+     * @return the token as {@code header.payload.signature}
+     * @throws IllegalStateException if HMAC-SHA256 is unavailable
+     */
     public String sign(Map<String, Object> payload) {
         try {
             String header = encode(objectMapper.writeValueAsBytes(Map.of("alg", "HS256", "typ", "JWT")));
@@ -41,6 +59,14 @@ public class OnlyOfficeJwtSigner {
         }
     }
 
+    /**
+     * Derives a stable access token for a purpose. The same purpose always gives the same token until the secret
+     * changes, so the token can be embedded in URLs and checked later without being stored.
+     *
+     * @param purpose a fixed label for what the token grants access to
+     * @return the URL-safe Base64 HMAC of the purpose
+     * @throws IllegalStateException if HMAC-SHA256 is unavailable
+     */
     public String accessToken(String purpose) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");

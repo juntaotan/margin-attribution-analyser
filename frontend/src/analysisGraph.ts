@@ -1,3 +1,4 @@
+/** Inventory ID of the synthetic Cost of Goods Sold root node. */
 export const COST_OF_GOODS_SOLD_NODE_ID = '__COGS__';
 
 /** The backend's recorded node values; null cost means unavailable, not zero. */
@@ -7,16 +8,19 @@ export interface AnalysisNode {
   cost: number | null;
 }
 
+/** A traced node and the nodes it feeds directly. */
 export interface AnalysisAdjacencyEntry {
   upstream: AnalysisNode;
   downstream: AnalysisNode[];
 }
 
+/** Response of the period and BOM trace endpoints. */
 export interface AnalysisResponse {
   analysisId: string;
   results: AnalysisAdjacencyEntry[];
 }
 
+/** A threshold-triggered cost-difference path with its recorded node values. */
 export interface ReconciliationPath {
   nodes: AnalysisNode[];
   edges: { fromPosition: number; toPosition: number; edgeIndex: number }[];
@@ -24,16 +28,22 @@ export interface ReconciliationPath {
   endingCostDifference: number;
 }
 
+/** Response of the graph reconciliation endpoints. */
 export interface ReconciliationResponse {
   analysisId: string;
   paths: ReconciliationPath[];
 }
 
+/** A graph node with its stable ID and array position from a streamed CSR snapshot. */
 export interface StreamNode extends AnalysisNode {
   id: string;
   position: number;
 }
 
+/**
+ * Streamed CSR graph: the successors of node `i` are `successors[offset[i]]` up to, but excluding,
+ * `successors[offset[i + 1]]`.
+ */
 export interface StreamCsrGraph {
   nodes: StreamNode[];
   offset: number[];
@@ -41,6 +51,7 @@ export interface StreamCsrGraph {
   edgeIds: string[];
 }
 
+/** A threshold path whose positions and IDs refer to the streamed actual-period graph. */
 export interface StreamPath {
   positions: number[];
   edgeIndexes: number[];
@@ -50,6 +61,7 @@ export interface StreamPath {
   endingCostDifference: number;
 }
 
+/** One line of the streamed reconciliation response. */
 export type AnalysisStreamEvent =
   | { type: 'graph'; analysisId: string; actualGraph: StreamCsrGraph; comparableGraph: StreamCsrGraph }
   | { type: 'diff'; analysisId: string; paths: StreamPath[] }
@@ -91,6 +103,7 @@ export function csrToAdjacency(graph: StreamCsrGraph): AnalysisAdjacencyEntry[] 
   }));
 }
 
+/** A display edge between two node IDs. */
 export interface AnalysisEdge {
   id: string;
   source: string;

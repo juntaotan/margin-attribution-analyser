@@ -4,8 +4,17 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
+/**
+ * LangChain4j AI service that turns a placeholder prompt into a {@link ReportBlueprint}. The system message lists
+ * the warehouse tables and columns the blueprint may use; the result is validated by
+ * {@code ReportBlueprintService}.
+ */
 public interface ReportBlueprintAssistant {
 
+    /**
+     * @param prompt the placeholder prompt, including its {@code Duration:} line
+     * @return the blueprint as returned by the model, before validation
+     */
     @SystemMessage(
             """
             You convert a report placeholder prompt into a query execution blueprint.

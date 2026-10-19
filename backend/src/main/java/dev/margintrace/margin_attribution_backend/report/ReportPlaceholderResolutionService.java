@@ -12,6 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+/**
+ * Calculates the standard management-commentary values (periods, revenue, revenue change and gross margin) from
+ * {@code sales_details}, for instantiating the master template.
+ *
+ * <p>Totals are summed as {@link java.math.BigDecimal}. If the totals for a period cannot be queried, for example
+ * because a date is invalid, the failure is logged and that period's totals are treated as zero. The display
+ * strings are formatted from {@code double} values.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -19,6 +27,14 @@ public class ReportPlaceholderResolutionService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * @param actualStartDate first day of the current period, as an ISO date
+     * @param actualEndDate last day of the current period, inclusive
+     * @param comparableStartDate first day of the comparison period
+     * @param comparableEndDate last day of the comparison period, inclusive
+     * @return the display values, their raw numbers, and replacements keyed by every supported placeholder name.
+     *     Percentages are rounded half-up to one decimal place and are zero when the denominator is zero.
+     */
     public PlaceholderValues resolve(
             String actualStartDate, String actualEndDate, String comparableStartDate, String comparableEndDate) {
         String currentPeriod = formatPeriod(actualStartDate, actualEndDate);
@@ -108,6 +124,9 @@ public class ReportPlaceholderResolutionService {
         return String.format(Locale.US, "$%,.2f", amount.doubleValue());
     }
 
+    /**
+     * Formatted placeholder values, their raw numbers, and the replacements to write into the template.
+     */
     public record PlaceholderValues(
             String currentPeriod,
             String comparisonPeriod,

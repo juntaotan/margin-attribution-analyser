@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * Queries over purchase order lines.
+ */
 public interface PurchaseOrderLineRepository extends JpaRepository<PurchaseOrderLine, Long> {
     Optional<PurchaseOrderLine> findByPurchaseOrderNoAndMaterialNo(String purchaseOrderNo, String materialNo);
 

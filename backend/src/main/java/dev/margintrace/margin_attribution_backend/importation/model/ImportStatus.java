@@ -1,5 +1,9 @@
 package dev.margintrace.margin_attribution_backend.importation.model;
 
+/**
+ * Status of an import job. A job moves through validation, raw storage, transformation and writing; each stage can
+ * fail, and a job can be cancelled before it completes. A failed write may be retried.
+ */
 public enum ImportStatus {
     PENDING,
     VALIDATING,
@@ -36,6 +40,10 @@ public enum ImportStatus {
         };
     }
 
+    /**
+     * @return whether the job has finished, successfully or not; {@code WRITE_FAILED} counts as finished although
+     *     it may still be retried
+     */
     public boolean isTerminal() {
         return this == VALIDATING_FAILED
                 || this == TRANSFORMING_FAILED

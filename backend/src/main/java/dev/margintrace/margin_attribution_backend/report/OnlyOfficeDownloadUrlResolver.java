@@ -5,10 +5,24 @@ import java.net.URISyntaxException;
 import java.util.Locale;
 import java.util.Objects;
 
+/**
+ * Rewrites document download URLs from ONLYOFFICE save callbacks so that the backend downloads through the Document
+ * Server's internal address, and rejects URLs from any other origin.
+ */
 final class OnlyOfficeDownloadUrlResolver {
 
     private OnlyOfficeDownloadUrlResolver() {}
 
+    /**
+     * Resolves a callback download URL to the internal Document Server address.
+     *
+     * @param publicUrl the Document Server URL used by browsers
+     * @param internalUrl the Document Server URL reachable from the backend
+     * @param documentUri the download URL from the callback
+     * @return the download URL on the internal origin, keeping the original path and query
+     * @throws IllegalArgumentException if the URL is not HTTP(S) or its origin is neither the public nor the
+     *     internal Document Server origin
+     */
     static URI resolve(String publicUrl, String internalUrl, URI documentUri) {
         URI publicUri = URI.create(publicUrl);
         URI internalUri = URI.create(internalUrl);

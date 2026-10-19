@@ -1,11 +1,13 @@
 import { JSONParser } from '@streamparser/json';
 import type { StreamCsrGraph } from './analysisGraph';
 
+/** A graph node with its quantity and cost as recorded decimal text; null cost means unavailable. */
 export interface RecordedNode {
   inventoryId: string;
   quantity: string;
   cost: string | null;
 }
+/** One period's CSR graph and the original sales and issue records it was built from. */
 export interface PeriodSnapshot {
   graph: { nodes: RecordedNode[]; offset: number[]; successors: number[] };
   start: string;
@@ -16,6 +18,7 @@ export interface PeriodSnapshot {
     sales: { sourceId: string; date: string; productId: string; quantity: string; cost: string }[];
   };
 }
+/** An original material issue line; decimal values are kept as recorded text. */
 export interface IssueRecord {
   lineId: string;
   date: string;
@@ -28,6 +31,7 @@ export interface IssueRecord {
   outputQuantity: string | null;
   outputCost: string | null;
 }
+/** A node of a production tree: one material occurrence with its recorded evidence. */
 export interface Occurrence {
   index: number;
   occurrenceId: string;
@@ -43,6 +47,7 @@ export interface Occurrence {
   issueLineIds: string[];
   statuses: string[];
 }
+/** A production-ID evidence tree with its CSR structure, source issues and completeness flags. */
 export interface ProductionTree {
   namespace: string;
   productionId: string;
@@ -71,6 +76,7 @@ export interface ProductionTree {
   laborCost: string | null;
   overheadCost: string | null;
 }
+/** Result of one FGW optimisation start. */
 export interface FgwStart {
   correspondence: number[];
   costs: { material: number; structure: number; fgw: number };
@@ -81,6 +87,10 @@ export interface FgwStart {
   marginals: { row: number; column: number; minimum: number; finite: boolean };
   trace: { updates: number; gap: number; costs: { fgw: number } }[];
 }
+/**
+ * FGW comparison of two production trees: the row-major correspondence of every start, the uniform weights `p` and
+ * `q`, and the node order of both trees.
+ */
 export interface FgwResult {
   rows: number;
   columns: number;
@@ -93,6 +103,7 @@ export interface FgwResult {
   left: { nodes: { occurrenceId: string; materialId: string }[] };
   right: { nodes: { occurrenceId: string; materialId: string }[] };
 }
+/** A planned production-tree pair and its comparison, or why it was not compared. */
 export interface PairResult {
   namespace: string;
   productId: string;
@@ -107,6 +118,7 @@ export interface PairResult {
     result: FgwResult | null;
   } | null;
 }
+/** Requested and actual execution backend of one workflow stage, with any fallback reason. */
 export interface ExecutionReport {
   stage: string;
   requested: string;
@@ -115,6 +127,7 @@ export interface ExecutionReport {
   fallbackReason: string | null;
   status: string;
 }
+/** Complete result of an analysis run. */
 export interface AnalysisOutcome {
   analysisId: string;
   status: string;
@@ -140,6 +153,7 @@ export interface AnalysisOutcome {
   execution: ExecutionReport[];
   diagnostics: string[];
 }
+/** One event of the streamed analysis workflow. */
 export interface WorkflowEvent {
   type: string;
   analysisId?: string;
@@ -147,18 +161,21 @@ export interface WorkflowEvent {
   data?: unknown;
   message?: string;
 }
+/** Execution backend preference saved in this browser. */
 export interface AccelerationPreference {
   useGpu: boolean;
   isNvidia: boolean | null;
   deviceId: string | null;
   allowCpuFallback: boolean;
 }
+/** CPU execution, used when no valid preference is saved. */
 export const DEFAULT_ACCELERATION: AccelerationPreference = {
   useGpu: false,
   isNvidia: null,
   deviceId: null,
   allowCpuFallback: false,
 };
+/** Reads the saved execution preference, falling back to CPU when it is missing or invalid. */
 export function accelerationPreference(): AccelerationPreference {
   try {
     const value = JSON.parse(

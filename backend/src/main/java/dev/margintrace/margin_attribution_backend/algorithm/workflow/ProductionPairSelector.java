@@ -9,6 +9,11 @@ public final class ProductionPairSelector {
 
     private record Group(String namespace, String product) {}
 
+    /**
+     * @param trees the production trees to compare
+     * @return every pair of distinct production IDs with the same namespace and product, ordered by production ID;
+     *     the first tree supplied for an ID is used
+     */
     public List<Pair> select(List<ProductionTree> trees) {
         var groups = new TreeMap<Group, TreeMap<String, ProductionTree>>(
                 Comparator.comparing(Group::namespace).thenComparing(Group::product));

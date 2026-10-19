@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request for period tracing or BOM tracing: an inclusive date range and, for BOM tracing, the target products.
+ */
 @Data
 @Builder
 @NoArgsConstructor

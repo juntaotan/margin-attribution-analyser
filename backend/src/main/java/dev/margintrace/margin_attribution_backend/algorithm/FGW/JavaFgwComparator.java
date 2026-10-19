@@ -9,6 +9,9 @@ public final class JavaFgwComparator implements FgwComparator {
     private String baseline;
     private FgwEngine.Session session;
 
+    /**
+     * Compares a pair, reusing the prepared baseline while consecutive comparisons share the same left instance.
+     */
     public FgwEngine.Result compare(FgwEngine.Comparison input, FgwEngine.Config config) {
         if (!input.left().instanceId().equals(baseline)) {
             session = new FgwEngine.Session(input.left(), config);
@@ -17,6 +20,9 @@ public final class JavaFgwComparator implements FgwComparator {
         return session.compare(input.right(), input.initialMatrices());
     }
 
+    /**
+     * Releases the prepared baseline.
+     */
     public void close() {
         session = null;
         baseline = null;

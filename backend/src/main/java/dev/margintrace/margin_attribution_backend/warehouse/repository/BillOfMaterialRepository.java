@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * Queries over bill-of-material lines.
+ */
 public interface BillOfMaterialRepository extends JpaRepository<BillOfMaterial, Long> {
     Optional<BillOfMaterial> findByBomNoAndProductNoAndMaterialNo(String bomNo, String productNo, String materialNo);
 

@@ -7,6 +7,10 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * Detects the reporting period that applies to a content control, by asking the AI period assistant to read the
+ * sentences around the control.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReportDurationService {
@@ -16,6 +20,17 @@ public class ReportDurationService {
     private final ReportPeriodAssistant periodAssistant;
     private final AiErrorMapper aiErrorMapper;
 
+    /**
+     * @param tag the control's tag, or blank
+     * @param wordId the control's Word ID, or blank
+     * @param alias the control's alias, or blank
+     * @return the period found ({@code duration}), whether one was found and whether the AI answered validly, and
+     *     the sentences analysed. If the AI service fails or answers invalidly, {@code analyzed} is false and
+     *     {@code message} explains why.
+     * @throws IllegalArgumentException if all selectors are blank, any is longer than 200 characters, or no control
+     *     matches
+     * @throws Exception if the document cannot be loaded or parsed
+     */
     public DurationAnalysis analyze(String tag, String wordId, String alias) throws Exception {
         if (!validSelector(tag) || !validSelector(wordId) || !validSelector(alias) || allBlank(tag, wordId, alias)) {
             throw new IllegalArgumentException("Select a content control with a valid Tag, Word ID, or Alias");
@@ -78,6 +93,10 @@ public class ReportDurationService {
                 .orElse("");
     }
 
+    /**
+     * Result of period detection. {@code duration} is the detected period, {@code "Not specified"} when the text
+     * states none, or {@code "Unavailable"} when detection failed.
+     */
     public record DurationAnalysis(
             String tag, List<String> sentences, String duration, boolean detected, boolean analyzed, String message) {}
 }

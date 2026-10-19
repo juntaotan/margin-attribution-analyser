@@ -13,6 +13,14 @@ public class AttributionWorkflow {
     // Read sold targets -> build edges -> build the CSR graph.
     private final ReadDataHandler readDataHandler;
 
+    /**
+     * Builds the CSR graph of products sold in the period and the materials issued to them.
+     *
+     * @param startDate first day of the period
+     * @param endDate last day of the period, inclusive
+     * @return the period's CSR graph
+     * @throws IllegalArgumentException if a date is missing or the dates are not in order
+     */
     public CsrGraph trace(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("startDate and endDate must not be null");

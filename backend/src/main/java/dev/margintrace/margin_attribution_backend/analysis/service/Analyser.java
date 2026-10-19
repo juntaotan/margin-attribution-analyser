@@ -32,6 +32,10 @@ import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * Period analysis built on the attribution workflow: traces sold products through each period's CSR graph, traces
+ * BOM hierarchies, and reconciles two period graphs into threshold-triggered cost-difference paths.
+ */
 @Service
 @RequiredArgsConstructor
 public class Analyser {

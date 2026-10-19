@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * Reads raw files from the bucket configured in {@code datalake.raw-bucket}.
+ */
 @Component
 @RequiredArgsConstructor
 public class MinioRawFileReader implements RawFileReader {

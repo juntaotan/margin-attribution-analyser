@@ -1,6 +1,11 @@
 import { ReportDocument } from './types';
 import { parseSemanticPrompt, executeSemanticQuery } from './semanticParser';
 
+/**
+ * Builds the sample report document held in Report Studio's memory. Its tokens contain illustrative values from
+ * `executeSemanticQuery`, which returns fixed figures rather than querying data. Report Studio shows a token's
+ * value for a content control with a matching ID or alias until a real run result exists.
+ */
 export const createDefaultDocument = (): ReportDocument => {
   const context = {
     materialId: 'MTR-1029 (Stator Punching Lamination)',

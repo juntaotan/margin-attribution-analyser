@@ -6,6 +6,11 @@ import java.util.*;
 
 /** Compatibility translation for the existing supplied-vector HTTP contract. */
 public final class ProductionComparisonAdapter {
+    /**
+     * @param trees the inspected production trees
+     * @param request the production IDs to compare, the supplied embedding vectors and the FGW configuration
+     * @return the comparison statuses, missing vectors, embedding versions and FGW result
+     */
     public ProductionComparisonResponse compare(ProductionTreeResponse trees, ProductionComparisonRequest request) {
         var vectors = new HashMap<String, ProductionTreeFgwAdapter.Embedding>();
         if (request.embeddings() != null)

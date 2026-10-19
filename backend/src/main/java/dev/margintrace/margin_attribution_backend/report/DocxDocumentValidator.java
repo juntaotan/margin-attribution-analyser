@@ -5,9 +5,18 @@ import java.util.Locale;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.stereotype.Component;
 
+/**
+ * Checks that uploaded report documents and templates are Word DOCX files that Apache POI can open.
+ */
 @Component
 public class DocxDocumentValidator {
 
+    /**
+     * @param fileName the uploaded file name, which must end in {@code .docx}
+     * @param content the file content
+     * @throws IllegalArgumentException if the extension is wrong, the content is empty, or it is not a valid DOCX
+     *     package
+     */
     public void validate(String fileName, byte[] content) {
         if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".docx")) {
             throw new IllegalArgumentException("Only .docx files are supported");

@@ -25,6 +25,7 @@ interface RootCauseReport {
   aiMessage: string | null;
 }
 
+/** Periods and optional selected node and root-cause report to preview. */
 export interface ManagementCommentaryModalProps {
   isOpen: boolean;
   onClose: () => void;

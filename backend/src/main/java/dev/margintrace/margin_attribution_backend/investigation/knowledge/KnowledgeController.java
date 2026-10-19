@@ -38,17 +38,31 @@ public class KnowledgeController {
         return ingestion.ingest(file, sourceType, title, effectiveDate);
     }
 
+    /**
+     * @return the stored documents, newest effective date first
+     */
     @GetMapping
     public List<KnowledgeRepository.KnowledgeDocument> list() {
         return repository.findDocuments();
     }
 
+    /**
+     * Deletes a document with its chunks, vectors and stored file.
+     *
+     * @param id the document
+     * @return HTTP 204
+     * @throws IllegalArgumentException if the document does not exist
+     * @throws Exception if the stored file cannot be removed
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) throws Exception {
         ingestion.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Reports an invalid request as HTTP 400 with a {@code message}.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> invalid(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));

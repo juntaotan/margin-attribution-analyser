@@ -18,6 +18,7 @@ interface ScopeControlsBarProps {
   onRunAnalysis: () => void;
 }
 
+/** Period, comparison-period and threshold inputs, with the button that runs the analysis. */
 export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
   periodFrom,
   setPeriodFrom,

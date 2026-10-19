@@ -11,6 +11,7 @@ interface KpiSummaryBarProps {
   onInspectTopNode: () => void;
 }
 
+/** Summary bar of net variance, penetrated nodes and risk tier from a dual-BOM reconciliation. */
 export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
   netVariance,
   penetratedNodesCount,

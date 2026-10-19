@@ -5,6 +5,9 @@ import java.util.UUID;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * Traced adjacency entries with the ID of the analysis that produced them.
+ */
 @Data
 @Builder
 public class AnalysisResults {

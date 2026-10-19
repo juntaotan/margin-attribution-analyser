@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Validates, saves and applies the llama.cpp connection. Saved settings replace the configured defaults at
+ * start-up.
+ */
 @Service
 @RequiredArgsConstructor
 public class AiSettingsService {
@@ -23,10 +27,22 @@ public class AiSettingsService {
                 .ifPresent(runtimeManager::reload);
     }
 
+    /**
+     * @return the connection currently used by the AI services
+     */
     public AiConnectionSettings current() {
         return runtimeManager.current().settings();
     }
 
+    /**
+     * Saves the connection and switches the AI services to it.
+     *
+     * @param host an IP address or host name, without scheme or path; IPv6 addresses may be in brackets
+     * @param port a port from 1 to 65535
+     * @param model the model alias served by llama.cpp, at most 255 characters
+     * @return the saved settings
+     * @throws IllegalArgumentException if any value is invalid
+     */
     @Transactional
     public AiConnectionSettings update(String host, Integer port, String model) {
         AiConnectionSettings normalized = normalize(host, port, model, Instant.now());
@@ -36,6 +52,15 @@ public class AiSettingsService {
         return settings;
     }
 
+    /**
+     * Tests a connection without saving it or changing the current one.
+     *
+     * @param host an IP address or host name
+     * @param port a port from 1 to 65535
+     * @param model the model alias
+     * @return the health-check outcome
+     * @throws IllegalArgumentException if any value is invalid
+     */
     public AiRuntimeManager.ConnectionTest test(String host, Integer port, String model) {
         return runtimeManager.testConnection(normalize(host, port, model, null));
     }

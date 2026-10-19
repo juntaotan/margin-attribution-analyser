@@ -46,10 +46,16 @@ public final class AnalysisWorkflow {
         this.backends = backends;
     }
 
+    /**
+     * Runs the analysis without progress events.
+     */
     public AnalysisOutcome run(AnalysisCommand command) {
         return run(command, event -> {});
     }
 
+    /**
+     * Runs the analysis, stopping when the current thread is interrupted.
+     */
     public AnalysisOutcome run(AnalysisCommand command, AnalysisProgressListener progress) {
         return run(command, progress, () -> Thread.currentThread().isInterrupted());
     }

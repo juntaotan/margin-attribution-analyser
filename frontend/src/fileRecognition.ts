@@ -1,3 +1,4 @@
+/** Display names of the business modules that imports belong to. */
 export const MODULE_LABELS = {
   production: 'Production Module',
   sales: 'Sales Module',
@@ -5,9 +6,11 @@ export const MODULE_LABELS = {
   finance: 'Finance Module',
 } as const;
 
+/** A business module key. */
 export type BusinessModule = keyof typeof MODULE_LABELS;
 
 // Canonical tables, enum names and aliases from SchemaMappingPresetCatalog.
+/** Importable tables with their module and accepted file-name aliases. */
 export const TABLE_PRESETS = [
   {
     table: 'material_master',
@@ -37,7 +40,9 @@ export const TABLE_PRESETS = [
   { table: 'purchases', module: 'procurement', aliases: ['purchase', '采购', '采购明细', '采购订单'] },
 ] as const satisfies readonly { table: string; module: BusinessModule; aliases: readonly string[] }[];
 
+/** An importable table name. */
 export type TableName = (typeof TABLE_PRESETS)[number]['table'];
+/** The table and module recognised from a file name. */
 export type FileRecognition = { table: TableName; module: BusinessModule };
 
 // Mirrors the catalog's lowercase + letter/digit-only normalization.
@@ -58,6 +63,13 @@ const cleanStem = (raw: string): string => {
     .trim();
 };
 
+/**
+ * Recognises the target table from a spreadsheet's file name. The name is matched exactly against table names and
+ * aliases, ignoring case and punctuation, and then again without common suffixes such as dates, copy numbers and
+ * "test" or "backup".
+ *
+ * @returns the recognised table, or null for a non-spreadsheet file or an unknown or ambiguous name
+ */
 export function recognizeFileName(fileName: string): FileRecognition | null {
   if (!/\.(xlsx|xls)$/i.test(fileName)) return null;
   const rawStem = fileName.replace(/\.[^.]+$/, '').trim();

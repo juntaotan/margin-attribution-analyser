@@ -1,7 +1,10 @@
+/** Kinds of report placeholder. */
 export type TokenType = 'metric' | 'formula' | 'text' | 'table';
 
+/** How a placeholder's value is formatted. */
 export type OutputFormat = 'percentage' | 'currency' | 'number' | 'text';
 
+/** Query blueprint generated for a placeholder prompt; mirrors the backend's `ReportBlueprint`. */
 export interface SemanticExecutionPlan {
   sourceTable: string;
   sourceTableLabel: string;
@@ -17,6 +20,7 @@ export interface SemanticExecutionPlan {
   explanation: string;
 }
 
+/** Executed SQL and its result rows. */
 export interface SemanticQueryResult {
   sql: string;
   columns: string[];
@@ -24,6 +28,7 @@ export interface SemanticQueryResult {
   rowCount: number;
 }
 
+/** In-memory state of a report placeholder. */
 export interface PlaceholderToken {
   id: string;
   label: string;
@@ -35,6 +40,7 @@ export interface PlaceholderToken {
   updatedAt?: string;
 }
 
+/** A content control found in the saved Word document. */
 export interface DocumentContentControl {
   id: string;
   tag: string;
@@ -45,8 +51,10 @@ export interface DocumentContentControl {
   tagged: boolean;
 }
 
+/** Kinds of block in the sample report document. */
 export type BlockType = 'h1' | 'h2' | 'paragraph' | 'divider' | 'callout';
 
+/** A block of the sample report document. */
 export interface ReportBlock {
   id: string;
   type: BlockType;
@@ -55,6 +63,7 @@ export interface ReportBlock {
   bold?: boolean; // Bold text for whole block or rich formatting
 }
 
+/** The sample report document and its placeholder tokens, keyed by token ID. */
 export interface ReportDocument {
   id: string;
   title: string;
@@ -65,6 +74,7 @@ export interface ReportDocument {
   tokens: Record<string, PlaceholderToken>;
 }
 
+/** A saved query run with the snapshots it was produced from. */
 export interface PlaceholderRun {
   id: string;
   configRevision: number;
@@ -78,6 +88,7 @@ export interface PlaceholderRun {
   appliedAt?: string;
 }
 
+/** A saved placeholder configuration with its latest run. */
 export interface PlaceholderConfig {
   id: string;
   documentId: string;
@@ -94,6 +105,7 @@ export interface PlaceholderConfig {
   lastRun?: PlaceholderRun;
 }
 
+/** Result of generating and running a blueprint; `error` is set when the query failed. */
 export interface GeneratePlaceholderResponse {
   configId: string;
   runId: string;
@@ -103,6 +115,7 @@ export interface GeneratePlaceholderResponse {
   error?: string;
 }
 
+/** Result of writing a run's value into the document. */
 export interface ApplyPlaceholderResponse {
   documentVersion: number;
   updatedControls: number;

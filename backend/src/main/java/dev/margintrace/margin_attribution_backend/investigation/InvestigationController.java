@@ -24,6 +24,9 @@ public class InvestigationController {
         return service.investigate(request);
     }
 
+    /**
+     * Reports an invalid investigation request as HTTP 400 with a {@code message}.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> invalid(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));

@@ -32,10 +32,18 @@ public class SchemaMappingPresetCatalog {
         definitions = Map.copyOf(presets);
     }
 
+    /**
+     * @return every target data set definition
+     */
     public Collection<DataSetDefinition> getAll() {
         return definitions.values();
     }
 
+    /**
+     * @param type the data set type
+     * @return its definition
+     * @throws IllegalArgumentException if no preset exists for the type
+     */
     public DataSetDefinition getRequired(DataSetType type) {
         DataSetDefinition definition = definitions.get(type);
         if (definition == null) {
@@ -44,6 +52,11 @@ public class SchemaMappingPresetCatalog {
         return definition;
     }
 
+    /**
+     * @param tableName a table name or alias, compared ignoring case and separators
+     * @return the matching definition
+     * @throws IllegalArgumentException if the name is blank or matches no definition
+     */
     public DataSetDefinition getRequiredByTableName(String tableName) {
         if (tableName == null || tableName.isBlank()) {
             throw new IllegalArgumentException("Table name must not be blank");

@@ -5,6 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * Persistence for import jobs, listed newest first.
+ */
 public interface ImportJobRepository extends JpaRepository<ImportJob, Long> {
     Page<ImportJob> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

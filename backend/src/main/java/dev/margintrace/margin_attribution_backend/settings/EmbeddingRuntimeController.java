@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class EmbeddingRuntimeController {
     private final EmbeddingRuntimeService service;
 
+    /**
+     * @return the installation state of the embedding runtime
+     */
     @GetMapping
     public EmbeddingRuntimeService.Status status() {
         return service.status();
@@ -29,15 +32,24 @@ public class EmbeddingRuntimeController {
         return service.install(request == null ? null : request.variant());
     }
 
+    /**
+     * Reports an invalid request as HTTP 400.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> invalid(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
     }
 
+    /**
+     * Reports an installation that is already running, or cannot be prepared, as HTTP 409.
+     */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> conflict(IllegalStateException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", exception.getMessage()));
     }
 
+    /**
+     * The variant to install: {@code cpu} or {@code cuda}.
+     */
     public record InstallRequest(String variant) {}
 }

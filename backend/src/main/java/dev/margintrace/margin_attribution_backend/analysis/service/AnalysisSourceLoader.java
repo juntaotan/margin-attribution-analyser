@@ -36,12 +36,21 @@ public class AnalysisSourceLoader {
             String sourceKind,
             BigDecimal unitCost) {}
 
+    /**
+     * Period records and material attributes read in one transaction.
+     */
     public record Snapshot(PeriodRecords records, Map<String, Material> materials) {
         public Snapshot {
             materials = Map.copyOf(materials);
         }
     }
 
+    /**
+     * Reads all sales and issue records in one read-only, repeatable-read transaction.
+     *
+     * @param completeCoverage whether the caller declares that the imported records cover the selected periods
+     * @return the records, ordered by date and ID
+     */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PeriodRecords load(boolean completeCoverage) {
         return readRecords(completeCoverage);

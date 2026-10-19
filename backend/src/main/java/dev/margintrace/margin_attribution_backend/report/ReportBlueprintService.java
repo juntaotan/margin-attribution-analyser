@@ -11,6 +11,13 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * Turns a natural-language placeholder prompt into a validated query blueprint using the AI blueprint assistant.
+ *
+ * <p>The AI output is not trusted: the source table must be one of the warehouse tables, the format one of
+ * {@code percentage}, {@code currency}, {@code number} or {@code text}, and every required field present. SQL fragments
+ * are checked separately by {@link ReportQueryService} before execution.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReportBlueprintService {
@@ -22,6 +29,12 @@ public class ReportBlueprintService {
     private final ReportBlueprintAssistant blueprintAssistant;
     private final AiErrorMapper aiErrorMapper;
 
+    /**
+     * @param prompt the placeholder prompt, at most 10,000 characters
+     * @return the blueprint with trimmed fields and blank filters removed
+     * @throws IllegalArgumentException if the prompt is blank or too long
+     * @throws AiUnavailableException if the AI service fails or returns an invalid blueprint
+     */
     public ReportBlueprint generate(String prompt) {
         if (prompt == null || prompt.isBlank() || prompt.length() > 10_000) {
             throw new IllegalArgumentException("Enter a valid prompt before generating a Blueprint");

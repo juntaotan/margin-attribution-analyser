@@ -10,6 +10,7 @@ interface AnalysisHeaderProps {
   onToggleCollapse?: () => void;
 }
 
+/** Collapsible title bar of the analysis page, with export, print and share actions. */
 export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
   onExport,
   status,

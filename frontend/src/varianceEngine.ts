@@ -1,5 +1,6 @@
 import { AnalysisAdjacencyEntry, AnalysisNode, COST_OF_GOODS_SOLD_NODE_ID } from './analysisGraph';
 
+/** Severity grade of a node's variance. */
 export type SeverityLevel = 'sync' | 'minor' | 'moderate' | 'major' | 'favorable';
 
 /**
@@ -15,6 +16,10 @@ export interface CostBreakdown {
   overheadRatio?: number; // 0~100 (Default 0)
 }
 
+/**
+ * A reconciled planned-versus-actual node. The work order, lot, station and ECN fields are illustrative labels
+ * derived from the identifier, not recorded data.
+ */
 export interface DualBomNode {
   id: string; // inventoryId
   name: string;
@@ -100,6 +105,7 @@ export function getCostBreakdown(node?: DualBomNode | null): {
   };
 }
 
+/** A material ledger row derived from a reconciled node. */
 export interface MaterialLedgerItem {
   id: string;
   workOrder: string;
@@ -117,6 +123,7 @@ export interface MaterialLedgerItem {
   node: DualBomNode;
 }
 
+/** A root-cause line of an audit dossier. */
 export interface RootCauseItem {
   id: string;
   title: string;
@@ -125,6 +132,9 @@ export interface RootCauseItem {
   severity: 'error' | 'warning' | 'info';
 }
 
+/**
+ * Audit dossier for a selected node; see {@link buildAuditDossier}.
+ */
 export interface AuditDossier {
   selectedNode: DualBomNode;
   rootCauses: RootCauseItem[];
@@ -136,6 +146,9 @@ export interface AuditDossier {
   deviationConcession: { code: string; note: string } | null;
 }
 
+/**
+ * Result of {@link reconcileDualBom}.
+ */
 export interface DualBomReconciliationResult {
   nodes: DualBomNode[];
   nodesById: Map<string, DualBomNode>;
@@ -157,6 +170,7 @@ const MATERIAL_NAMES: Record<string, string> = {
   'BRG-22': 'Ceramic Hybrid Angular Contact Bearing',
 };
 
+/** Display name for an inventory ID, from a fixed sample dictionary or a title-cased fallback. */
 export const resolveMaterialName = (inventoryId: string): string => {
   if (inventoryId === COST_OF_GOODS_SOLD_NODE_ID) {
     return 'Cost of Goods Sold';
@@ -176,6 +190,7 @@ export const resolveMaterialName = (inventoryId: string): string => {
   );
 };
 
+/** Illustrative work-station label derived from the tree level and identifier; not recorded data. */
 export const resolveStation = (level: number, inventoryId: string): string => {
   if (level === 0) return 'ST-00 (Final Integration)';
   if (inventoryId.includes('ROT') || inventoryId.includes('BRG')) return 'ST-18 (Rotary Machining)';
@@ -185,11 +200,13 @@ export const resolveStation = (level: number, inventoryId: string): string => {
   return `ST-${10 + level * 2}`;
 };
 
+/** Illustrative work-order label derived from a hash of the identifier; not recorded data. */
 export const resolveWorkOrder = (inventoryId: string, index: number): string => {
   const hash = Math.abs(inventoryId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + index * 3);
   return `WO-2024-${9980 + (hash % 20)}`;
 };
 
+/** Illustrative lot label derived from a hash of the identifier; not recorded data. */
 export const resolveLotNo = (inventoryId: string): string => {
   const clean = inventoryId.replace(/^EBOM-|^PBOM-/, '').replace(/-(ACT|M|BLK|LOT)$/, '');
   const hash = Math.abs(clean.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0));
@@ -447,6 +464,10 @@ export const reconcileDualBom = (
   };
 };
 
+/**
+ * Builds an illustrative audit dossier for a node. The root causes, their 85%/15% split, the actions, lead-time
+ * slippage and 96.4% confidence are fixed templates chosen by severity, not derived from recorded evidence.
+ */
 export const buildAuditDossier = (node: DualBomNode, allNodes: DualBomNode[]): AuditDossier => {
   const rootCauses: RootCauseItem[] = [];
   const delta = node.costDelta ?? node.quantityDelta * (node.unitCost ?? 100);
@@ -510,12 +531,14 @@ export const buildAuditDossier = (node: DualBomNode, allNodes: DualBomNode[]): A
   };
 };
 
+/** Formats a signed dollar amount with two decimal places; `—` when unavailable. */
 export const formatCurrency = (val: number | null | undefined): string => {
   if (val === null || val === undefined) return '—';
   const prefix = val < 0 ? '-$' : val > 0 ? '+$' : '$';
   return `${prefix}${Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+/** Formats a quantity with two decimal places and the unit `EA`; `—` when unavailable. */
 export const formatQty = (val: number | null | undefined): string => {
   if (val === null || val === undefined) return '—';
   return `${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EA`;

@@ -24,6 +24,12 @@ public class AnalysisRunController {
         this.service = service;
     }
 
+    /**
+     * Runs the complete analysis workflow and returns the outcome when it finishes.
+     *
+     * @param command the periods, thresholds, execution preferences and data interpretation
+     * @return the outcome, with decimal values written as strings
+     */
     @PostMapping("/run")
     public tools.jackson.databind.JsonNode run(@RequestBody AnalysisCommand command) {
         return dev.margintrace.margin_attribution_backend.analysis.dto.AnalysisRunResponse.json(
@@ -107,6 +113,9 @@ public class AnalysisRunController {
                 available ? "AVAILABLE" : "UNAVAILABLE");
     }
 
+    /**
+     * Reports invalid analysis input as HTTP 400 with a {@code message}.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> invalid(IllegalArgumentException error) {
         return ResponseEntity.badRequest()

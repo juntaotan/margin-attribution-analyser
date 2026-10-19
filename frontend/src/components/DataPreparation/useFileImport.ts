@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { MODULE_LABELS, recognizeFileName, type FileRecognition } from '../../fileRecognition';
 import { getImportJob, isTerminalImportStatus, listImportJobs, uploadImport, type ImportJob } from '../../importApi';
 
+/** One line of the import activity log, with a local time stamp. */
 export type ImportLogEntry = { time: string; message: string };
 
 const logEntry = (message: string): ImportLogEntry => ({ time: new Date().toLocaleTimeString(), message });

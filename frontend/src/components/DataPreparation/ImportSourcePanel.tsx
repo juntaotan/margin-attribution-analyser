@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { isTerminalImportStatus, type ImportJob } from '../../importApi';
 
+/** Database source; only the internal database is currently supported. */
 export type DbMode = 'internal' | 'external';
 
 interface ImportSourcePanelProps {

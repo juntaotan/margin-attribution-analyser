@@ -51,6 +51,16 @@ public class SalesDetail {
     @Column(name = "total_revenue", nullable = false, precision = 18, scale = 6)
     private BigDecimal totalRevenue;
 
+    /**
+     * @param date the sale date
+     * @param movementNo the movement number
+     * @param productNo the product sold
+     * @param productQuantity the quantity sold; must be positive
+     * @param totalRevenue the revenue; must not be negative
+     * @param totalCost the cost of the goods sold; must not be negative
+     * @return a new sales line with trimmed business keys
+     * @throws IllegalArgumentException if a value is missing or invalid
+     */
     public static SalesDetail of(
             LocalDate date,
             String movementNo,

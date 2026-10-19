@@ -54,6 +54,16 @@ public class InventoryUsage {
     @Column(name = "material_total_cost", precision = 18, scale = 6)
     private BigDecimal materialTotalCost;
 
+    /**
+     * @param date the movement date
+     * @param movementNo the movement number
+     * @param productNo the product received or issued
+     * @param productNum the product quantity, which may be absent
+     * @param productTotalCost the product's total cost, which may be absent
+     * @param orderNo the source order number
+     * @return a new movement with trimmed business keys
+     * @throws IllegalArgumentException if the date is missing, or a key is blank or longer than 100 characters
+     */
     public static InventoryUsage of(
             LocalDate date,
             String movementNo,

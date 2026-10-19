@@ -9,10 +9,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Queries over sales lines.
+ */
 public interface SalesDetailRepository extends JpaRepository<SalesDetail, SalesDetailId> {
 
     List<SalesDetail> findAllByDateBetweenOrderByDateAscIdAsc(LocalDate startDate, LocalDate endDate);
 
+    /**
+     * @return the total cost of goods sold in the inclusive date range, or null if there are no sales
+     */
     @Query(
             """
             select sum(detail.totalCost)

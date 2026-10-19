@@ -5,6 +5,10 @@ import dev.margintrace.margin_attribution_backend.report.ai.ReportPeriodAssistan
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Exposes the AI assistants as Spring beans that always delegate to the services of the current connection, so that
+ * callers keep working after the connection settings change.
+ */
 @Configuration
 public class AiServiceConfiguration {
 

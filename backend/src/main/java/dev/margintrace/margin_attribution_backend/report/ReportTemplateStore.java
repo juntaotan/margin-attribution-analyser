@@ -22,6 +22,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Stores the management-report master template and its metadata in the MinIO report bucket, and checks which of the
+ * expected placeholders it contains.
+ *
+ * <p>A built-in template is created on first use and on reset. The template version is an in-memory counter,
+ * incremented on each write and reset when the application restarts.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReportTemplateStore {
@@ -30,6 +37,10 @@ public class ReportTemplateStore {
     public static final String MASTER_TEMPLATE_META_KEY = "report-studio/templates/master-template.meta.json";
     public static final String DEFAULT_TEMPLATE_FILENAME = "master-management-commentary-template.docx";
 
+    /**
+     * Placeholders a complete template should contain, matched against content-control tags and aliases ignoring
+     * case, spaces, underscores and hyphens.
+     */
     public static final List<ExpectedPlaceholder> EXPECTED_PLACEHOLDERS = List.of(
             new ExpectedPlaceholder("Current Period", "Current reporting duration"),
             new ExpectedPlaceholder("Comparison Period", "Comparable baseline duration"),
@@ -47,6 +58,12 @@ public class ReportTemplateStore {
     @Value("${onlyoffice.report-bucket}")
     private String bucket;
 
+    /**
+     * Loads the master template, storing the built-in template first if none can be read.
+     *
+     * @return the DOCX content
+     * @throws Exception if the bucket cannot be accessed or the built-in template cannot be stored
+     */
     public synchronized byte[] loadOrCreateMasterTemplate() throws Exception {
         ensureBucketExists();
         try (InputStream input = minioClient.getObject(GetObjectArgs.builder()
@@ -61,6 +78,12 @@ public class ReportTemplateStore {
         }
     }
 
+    /**
+     * Describes the master template, including which expected placeholders it contains.
+     *
+     * @return the file name, size, update time, whether it is a custom upload, and placeholder readiness
+     * @throws Exception if the template cannot be loaded or parsed
+     */
     public synchronized TemplateMetadata getMetadata() throws Exception {
         byte[] docxBytes = loadOrCreateMasterTemplate();
         TemplateMetaRecord meta = readMetaRecord();
@@ -102,6 +125,15 @@ public class ReportTemplateStore {
                 templateVersion.get());
     }
 
+    /**
+     * Replaces the master template with an uploaded custom template.
+     *
+     * @param originalFilename the uploaded file name, kept as the template's file name
+     * @param content the DOCX content
+     * @return the metadata of the new template
+     * @throws IllegalArgumentException if the file is not a valid DOCX document
+     * @throws Exception if the template cannot be stored
+     */
     public synchronized TemplateMetadata uploadMasterTemplate(String originalFilename, byte[] content)
             throws Exception {
         docxDocumentValidator.validate(originalFilename, content);
@@ -109,12 +141,21 @@ public class ReportTemplateStore {
         return getMetadata();
     }
 
+    /**
+     * Replaces the master template with the built-in template.
+     *
+     * @return the metadata of the built-in template
+     * @throws Exception if the template cannot be stored
+     */
     public synchronized TemplateMetadata resetToDefault() throws Exception {
         byte[] defaultDoc = createDefaultMasterTemplate();
         saveMasterTemplate(defaultDoc, DEFAULT_TEMPLATE_FILENAME, false);
         return getMetadata();
     }
 
+    /**
+     * @return the in-memory template version
+     */
     public long currentVersion() {
         return templateVersion.get();
     }
@@ -167,6 +208,13 @@ public class ReportTemplateStore {
         return value.replaceAll("[\\s_\\-]", "").toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * Builds the built-in master template: a minimal DOCX package with content controls for the expected
+     * placeholders and other management-report figures.
+     *
+     * @return the DOCX content
+     * @throws Exception if the package cannot be written
+     */
     public static byte[] createDefaultMasterTemplate() throws Exception {
         String documentXml =
                 """
@@ -389,10 +437,19 @@ public class ReportTemplateStore {
         }
     }
 
+    /**
+     * A placeholder key and its description.
+     */
     public record ExpectedPlaceholder(String key, String label) {}
 
+    /**
+     * Whether an expected placeholder was found in the template, with the text of the first matching control.
+     */
     public record PlaceholderItem(String key, String label, boolean detected, String samplePreview) {}
 
+    /**
+     * Template file details and placeholder readiness.
+     */
     public record TemplateMetadata(
             String filename,
             long sizeBytes,

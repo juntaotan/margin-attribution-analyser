@@ -6,9 +6,17 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
+/**
+ * Generates object keys for uploaded raw files.
+ */
 @Component
 public class RawObjectKeyFactory {
 
+    /**
+     * @param jobId the import job the file belongs to
+     * @param extension the file type
+     * @return {@code raw/source=manual-upload/ingest_date=<UTC date>/<jobId>/<random UUID>.<extension>}
+     */
     public String create(Long jobId, FileExtension extension) {
 
         LocalDate today = LocalDate.now(ZoneOffset.UTC);

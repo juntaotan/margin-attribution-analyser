@@ -21,12 +21,24 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Reads Word content controls ({@code w:sdt} elements) from the body, headers, footers, footnotes and endnotes of a
+ * DOCX document. XML is parsed with external entities and DOCTYPE declarations disabled.
+ */
 @Component
 public class ReportContentControlScanner {
 
     private static final String WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     private static final int PREVIEW_LIMIT = 120;
 
+    /**
+     * Lists the document's content controls in document order. Controls with the same tag, or without a tag but
+     * with the same Word ID, are reported once with an occurrence count.
+     *
+     * @param documentBytes the DOCX content
+     * @return one descriptor per distinct control
+     * @throws IOException if the document cannot be read or contains invalid XML
+     */
     public List<ContentControlDescriptor> scan(byte[] documentBytes) throws IOException {
         Map<String, MutableContentControl> controls = new LinkedHashMap<>();
         int unnamedControlIndex = 0;
@@ -47,10 +59,27 @@ public class ReportContentControlScanner {
                 .toList();
     }
 
+    /**
+     * Equivalent to {@link #contextsForControl(byte[], String, String, String)} with only a tag.
+     */
     public List<String> contextsForTag(byte[] documentBytes, String requestedTag) throws IOException {
         return contextsForControl(documentBytes, requestedTag, null, null);
     }
 
+    /**
+     * Returns the sentence around each occurrence of a control, for period detection. In each sentence the selected
+     * control is marked {@code [[TARGET ...]]} and any other control {@code [[CONTROL ...]]}.
+     *
+     * <p>The control is selected by tag if given, otherwise by Word ID, otherwise by alias.
+     *
+     * @param documentBytes the DOCX content
+     * @param requestedTag the control tag, or blank
+     * @param requestedWordId the Word ID, or blank
+     * @param requestedAlias the alias, or blank
+     * @return the distinct non-blank sentences in document order; empty if all selectors are blank or nothing
+     *     matches
+     * @throws IOException if the document cannot be read or contains invalid XML
+     */
     public List<String> contextsForControl(
             byte[] documentBytes, String requestedTag, String requestedWordId, String requestedAlias)
             throws IOException {
@@ -329,6 +358,10 @@ public class ReportContentControlScanner {
         return index + 1 == text.length() || Character.isWhitespace(text.charAt(index + 1));
     }
 
+    /**
+     * A distinct content control: its key ({@code id}), tag, Word ID, display name ({@code alias}), a text preview
+     * of at most 120 characters, how often it occurs, and whether it has a tag.
+     */
     public record ContentControlDescriptor(
             String id, String tag, String wordId, String alias, String preview, int occurrences, boolean tagged) {}
 

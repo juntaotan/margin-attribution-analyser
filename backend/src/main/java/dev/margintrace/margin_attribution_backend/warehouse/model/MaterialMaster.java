@@ -49,6 +49,11 @@ public class MaterialMaster {
     @Column(name = "unit_cost", precision = 18, scale = 6)
     private BigDecimal unitCost;
 
+    /**
+     * @param materialNo the material number
+     * @return a new material with only its trimmed number set
+     * @throws IllegalArgumentException if the number is blank or longer than 100 characters
+     */
     public static MaterialMaster of(String materialNo) {
         if (materialNo == null || materialNo.isBlank()) {
             throw new IllegalArgumentException("Material number must not be blank");

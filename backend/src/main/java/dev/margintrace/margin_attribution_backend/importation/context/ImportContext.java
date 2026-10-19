@@ -10,6 +10,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Mutable state passed along the import handler chain: the upload and its confirmed target table, and the results
+ * of each stage (file type, raw object key, detected table, column types, raw table, column mappings and the number
+ * of warehouse rows written). {@code error} holds the exception that stopped the chain, if any.
+ */
 @Getter
 @Setter
 public class ImportContext {

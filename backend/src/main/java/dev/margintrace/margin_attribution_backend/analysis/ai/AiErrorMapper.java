@@ -7,14 +7,26 @@ import java.net.http.HttpTimeoutException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * Turns exceptions from llama.cpp requests into short messages that can be shown to users, without exposing stack
+ * traces or response bodies.
+ */
 @Component
 public class AiErrorMapper {
     private final URI endpoint;
 
+    /**
+     * @param baseUrl the configured llama.cpp base URL, used to name the endpoint in connection errors
+     */
     public AiErrorMapper(@Value("${analysis.llama.base-url:http://127.0.0.1:8081}") String baseUrl) {
         this.endpoint = URI.create(baseUrl.replaceAll("/+$", ""));
     }
 
+    /**
+     * @param exception the failure, examined through its cause chain
+     * @return a message for interruption, connection failure, timeout or HTTP error status, or a generic message
+     *     naming the exception type
+     */
     public String message(Throwable exception) {
         if (findCause(exception, InterruptedException.class) != null) {
             return "llama.cpp request was interrupted";

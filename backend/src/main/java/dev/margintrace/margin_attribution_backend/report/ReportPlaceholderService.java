@@ -14,6 +14,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Manages saved placeholder configurations for Report Studio: the prompt, generated blueprint and SQL for each
+ * content-control tag, and the history of query runs.
+ *
+ * <p>Each configuration has a revision that increases when its prompt is regenerated. A run records the revision it
+ * was produced from, and only a successful run of the current revision can be written into the document.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReportPlaceholderService {
@@ -27,6 +34,11 @@ public class ReportPlaceholderService {
     private final ReportDocumentStore documentStore;
     private final ReportContentControlUpdater contentControlUpdater;
 
+    /**
+     * @param documentId the document, or blank for {@code default}
+     * @param tags the tags to return, or empty for all
+     * @return the matching configurations, each with its latest run
+     */
     @Transactional(readOnly = true)
     public List<PlaceholderConfigDto> findConfigurations(String documentId, Collection<String> tags) {
         String docId = normalizeDocumentId(documentId);
@@ -40,8 +52,14 @@ public class ReportPlaceholderService {
         return entities.stream().map(this::toDto).toList();
     }
 
+    /**
+     * A default prompt and output format for a known placeholder.
+     */
     public record PreconfiguredPrompt(String prompt, String format) {}
 
+    /**
+     * Default prompts for the standard management-report placeholders, keyed by tag.
+     */
     public static final Map<String, PreconfiguredPrompt> DEFAULT_PROMPTS = Map.ofEntries(
             Map.entry(
                     "Revenue",
@@ -91,6 +109,10 @@ public class ReportPlaceholderService {
                     "ECN Impact",
                     new PreconfiguredPrompt("Compare bill_of_material usage across revisions", "currency")));
 
+    /**
+     * @param tag a placeholder tag, matched exactly or ignoring case and non-alphanumeric characters
+     * @return the default prompt, or null if the tag is unknown or blank
+     */
     public PreconfiguredPrompt getPreconfiguredPrompt(String tag) {
         if (tag == null || tag.isBlank()) {
             return null;
@@ -109,6 +131,15 @@ public class ReportPlaceholderService {
         return null;
     }
 
+    /**
+     * Registers the tagged controls found in a document. Known configurations get the control's current alias; new
+     * tags with a default prompt are saved with that prompt and the default period 2026-01-01 to 2026-01-31. Other
+     * new tags are not saved.
+     *
+     * @param documentId the document, or blank for {@code default}
+     * @param items the controls' tags and aliases; items without a tag are ignored
+     * @return all configurations of the document
+     */
     @Transactional
     public List<PlaceholderConfigDto> syncPlaceholders(String documentId, List<PlaceholderSyncItem> items) {
         String docId = normalizeDocumentId(documentId);
@@ -150,6 +181,13 @@ public class ReportPlaceholderService {
         return findConfigurations(docId, null);
     }
 
+    /**
+     * Creates or updates a configuration for every default prompt with the given period. Existing prompts are
+     * replaced only when they are blank or were generated from a default ({@code Duration:} prefix).
+     *
+     * @param documentId the document, or blank for {@code default}
+     * @param duration the reporting period, or blank for 2026-01-01 to 2026-01-31
+     */
     @Transactional
     public void seedOrUpdateConfigurations(String documentId, String duration) {
         String docId = normalizeDocumentId(documentId);
@@ -178,6 +216,17 @@ public class ReportPlaceholderService {
         }
     }
 
+    /**
+     * Generates a blueprint and SQL for a prompt, saves them as a new revision of the tag's configuration, and runs
+     * the query as a new query run. A query failure is recorded on the run and returned in {@code error}; it does
+     * not undo the saved configuration.
+     *
+     * @param request the document, tag, alias and prompt; the period is read from a leading {@code Duration:} line
+     * @return the configuration and run IDs, the revision, the blueprint, and the result or error
+     * @throws IllegalArgumentException if the tag or prompt is blank, or the blueprint is unsafe
+     * @throws dev.margintrace.margin_attribution_backend.analysis.ai.AiUnavailableException if the AI service fails or
+     *     returns an invalid blueprint
+     */
     @Transactional
     public GenerateResult generate(GenerateRequest request) {
         if (request == null) {
@@ -241,6 +290,13 @@ public class ReportPlaceholderService {
                 config.getId(), run.getId(), config.getRevision(), blueprint, queryResult, executionError);
     }
 
+    /**
+     * Runs a saved query run's blueprint again and records the outcome on the run.
+     *
+     * @param runId the run to execute
+     * @return the new result
+     * @throws IllegalArgumentException if the run does not exist, has no blueprint, or the query fails
+     */
     @Transactional
     public ReportQueryService.QueryResult executeRun(UUID runId) {
         if (runId == null) {
@@ -266,6 +322,17 @@ public class ReportPlaceholderService {
         }
     }
 
+    /**
+     * Writes a run's formatted result into the matching content controls of the report document and marks the run
+     * as applied.
+     *
+     * @param runId a successful or already applied run of the configuration's current revision
+     * @param requestedAlias the alias to write to, or blank for the configuration's alias
+     * @return the new document version, the number of controls updated, the run ID and the value written
+     * @throws IllegalArgumentException if the run is missing, unsuccessful or outdated, has no result, or no
+     *     control matches the alias
+     * @throws Exception if the document cannot be loaded or stored
+     */
     @Transactional
     public ApplyResult applyRun(UUID runId, String requestedAlias) throws Exception {
         if (runId == null) {
@@ -307,6 +374,17 @@ public class ReportPlaceholderService {
                 documentStore.currentVersion(), updateResult.updatedControls(), run.getId(), formattedValue);
     }
 
+    /**
+     * Formats the first column of the first result row for the document. Currency values are rounded half-up to two
+     * decimal places and shown as {@code $1,234.50}; percentages are rounded half-up to one decimal place and given
+     * a {@code %} sign. Both use {@link java.math.BigDecimal}. Values that are not numbers only get the symbol
+     * added.
+     *
+     * @param queryResult the query result
+     * @param format {@code currency}, {@code percentage} or any other format, which leaves the value unchanged
+     * @return the formatted value
+     * @throws IllegalArgumentException if there is no first value
+     */
     public String formatValue(ReportQueryService.QueryResult queryResult, String format) {
         if (queryResult == null
                 || queryResult.rows() == null
@@ -395,8 +473,14 @@ public class ReportPlaceholderService {
         return (documentId == null || documentId.isBlank()) ? "default" : documentId.trim();
     }
 
+    /**
+     * A prompt to generate for a placeholder tag.
+     */
     public record GenerateRequest(String documentId, String tag, String alias, String prompt) {}
 
+    /**
+     * Outcome of generation. {@code result} is null and {@code error} set when the query failed.
+     */
     public record GenerateResult(
             UUID configId,
             UUID runId,
@@ -405,10 +489,19 @@ public class ReportPlaceholderService {
             ReportQueryService.QueryResult result,
             String error) {}
 
+    /**
+     * A tagged control found in the document.
+     */
     public record PlaceholderSyncItem(String tag, String alias) {}
 
+    /**
+     * Outcome of writing a run result into the document.
+     */
     public record ApplyResult(long documentVersion, int updatedControls, UUID runId, String appliedValue) {}
 
+    /**
+     * A saved placeholder configuration with its latest run.
+     */
     public record PlaceholderConfigDto(
             UUID id,
             String documentId,
@@ -424,6 +517,9 @@ public class ReportPlaceholderService {
             Instant updatedAt,
             PlaceholderRunDto lastRun) {}
 
+    /**
+     * A query run with the snapshots it was produced from.
+     */
     public record PlaceholderRunDto(
             UUID id,
             Long configRevision,

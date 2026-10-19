@@ -24,6 +24,10 @@ public final class AnalysisRunResponse {
 
     private AnalysisRunResponse() {}
 
+    /**
+     * @param outcome the workflow outcome
+     * @return the outcome as a JSON tree, with {@link java.math.BigDecimal} values as plain decimal strings
+     */
     public static JsonNode json(AnalysisOutcome outcome) {
         return MAPPER.valueToTree(outcome);
     }

@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * REST endpoints for viewing, downloading, uploading and resetting the management-report master template.
+ */
 @RestController
 @RequestMapping("/api/v1/settings/template")
 @RequiredArgsConstructor
@@ -20,17 +23,31 @@ public class ReportTemplateController {
 
     private final ReportTemplateStore templateStore;
 
+    /**
+     * @return the template's file details and placeholder readiness
+     * @throws Exception if the template cannot be loaded
+     */
     @GetMapping
     public ReportTemplateStore.TemplateMetadata getMetadata() throws Exception {
         return templateStore.getMetadata();
     }
 
+    /**
+     * @param file the new master template
+     * @return the metadata of the uploaded template
+     * @throws IllegalArgumentException if the file is not a valid DOCX document
+     * @throws Exception if the template cannot be stored
+     */
     @PostMapping("/upload")
     public ReportTemplateStore.TemplateMetadata uploadTemplate(@RequestParam("file") MultipartFile file)
             throws Exception {
         return templateStore.uploadMasterTemplate(file.getOriginalFilename(), file.getBytes());
     }
 
+    /**
+     * @return the master template as a DOCX attachment
+     * @throws Exception if the template cannot be loaded
+     */
     @GetMapping("/download")
     public ResponseEntity<byte[]> downloadTemplate() throws Exception {
         ReportTemplateStore.TemplateMetadata meta = templateStore.getMetadata();
@@ -43,6 +60,10 @@ public class ReportTemplateController {
                 .body(content);
     }
 
+    /**
+     * @return the metadata of the restored built-in template
+     * @throws Exception if the template cannot be stored
+     */
     @PostMapping("/reset")
     public ReportTemplateStore.TemplateMetadata resetTemplate() throws Exception {
         return templateStore.resetToDefault();

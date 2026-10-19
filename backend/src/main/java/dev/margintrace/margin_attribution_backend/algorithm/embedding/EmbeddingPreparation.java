@@ -281,6 +281,11 @@ public final class EmbeddingPreparation {
         return errors;
     }
 
+    /**
+     * @param vector an embedding
+     * @return no statuses for a finite 384-dimensional vector with a positive norm; otherwise the reason it is
+     *     invalid
+     */
     public static List<String> validateVector(double[] vector) {
         if (vector == null) return List.of("MISSING_EMBEDDINGS");
         if (vector.length != 384) return List.of("INVALID_EMBEDDING_DIMENSION");
@@ -296,6 +301,9 @@ public final class EmbeddingPreparation {
         return text == null || text.isBlank();
     }
 
+    /**
+     * @return the lower-case hexadecimal SHA-256 hash of the UTF-8 text
+     */
     public static String hash(String text) {
         try {
             return HexFormat.of()

@@ -6,6 +6,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * Persistence for placeholder configurations, unique by document and tag.
+ */
 public interface ReportPlaceholderConfigRepository extends JpaRepository<ReportPlaceholderConfigEntity, UUID> {
 
     Optional<ReportPlaceholderConfigEntity> findByDocumentIdAndControlTag(String documentId, String controlTag);
