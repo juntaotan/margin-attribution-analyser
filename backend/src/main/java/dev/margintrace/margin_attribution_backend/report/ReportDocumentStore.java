@@ -5,6 +5,11 @@ import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -12,12 +17,6 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -64,10 +63,7 @@ public class ReportDocumentStore {
                 DEFAULT_DOCUMENT_KEY,
                 content,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-        putObject(
-                DEFAULT_DOCUMENT_TITLE_KEY,
-                title.getBytes(StandardCharsets.UTF_8),
-                MediaType.TEXT_PLAIN_VALUE);
+        putObject(DEFAULT_DOCUMENT_TITLE_KEY, title.getBytes(StandardCharsets.UTF_8), MediaType.TEXT_PLAIN_VALUE);
         version.set(System.currentTimeMillis());
     }
 
@@ -94,7 +90,8 @@ public class ReportDocumentStore {
     }
 
     private void ensureBucketExists() throws Exception {
-        boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+        boolean exists = minioClient.bucketExists(
+                BucketExistsArgs.builder().bucket(bucket).build());
         if (!exists) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
         }
@@ -102,26 +99,26 @@ public class ReportDocumentStore {
 
     private void putObject(String objectKey, byte[] content, String contentType) throws Exception {
         try (ByteArrayInputStream input = new ByteArrayInputStream(content)) {
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(objectKey)
-                    .stream(input, (long) content.length, -1L)
-                    .contentType(contentType)
-                    .build());
+            minioClient.putObject(
+                    PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(input, (long) content.length, -1L)
+                            .contentType(contentType)
+                            .build());
         }
     }
 
     private byte[] createInitialDocument() throws Exception {
         try (XWPFDocument document = new XWPFDocument();
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             XWPFParagraph title = document.createParagraph();
             title.setStyle("Title");
             XWPFRun titleRun = title.createRun();
             titleRun.setText("Management Commentary");
 
             XWPFParagraph introduction = document.createParagraph();
-            introduction.createRun().setText(
-                    "Edit this report in ONLYOFFICE. MarginTrace placeholders will be connected in the next step.");
+            introduction
+                    .createRun()
+                    .setText(
+                            "Edit this report in ONLYOFFICE. MarginTrace placeholders will be connected in the next step.");
 
             document.write(output);
             return output.toByteArray();

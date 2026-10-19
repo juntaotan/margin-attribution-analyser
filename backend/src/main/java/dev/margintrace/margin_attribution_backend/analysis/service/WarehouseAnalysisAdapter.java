@@ -25,23 +25,52 @@ public final class WarehouseAnalysisAdapter {
         for (var row : snapshot.records().issues()) {
             var material = snapshot.materials().get(row.materialId());
             var product = snapshot.materials().get(row.productId());
-            var kind = material == null ? ProductionTree.MaterialKind.UNKNOWN
-                    : "PURCHASED".equals(material.sourceKind()) ? ProductionTree.MaterialKind.RAW
-                    : "INTERNAL".equals(material.sourceKind()) ? ProductionTree.MaterialKind.INTERMEDIATE
-                    : ProductionTree.MaterialKind.UNKNOWN;
-            issues.put(row.lineId(), new ProductionTree.IssueEvidence(material == null ? null : material.unit(),
-                    kind, null, null, null, null));
-            if (row.productionId() != null) outputs.put(row.productionId(), new ProductionTree.OutputEvidence(
-                    options.quantityInterpretation(), options.costInterpretation(), List.of(),
-                    product == null ? null : product.unit(), true, options.currency(), options.costScope()));
+            var kind = material == null
+                    ? ProductionTree.MaterialKind.UNKNOWN
+                    : "PURCHASED".equals(material.sourceKind())
+                            ? ProductionTree.MaterialKind.RAW
+                            : "INTERNAL".equals(material.sourceKind())
+                                    ? ProductionTree.MaterialKind.INTERMEDIATE
+                                    : ProductionTree.MaterialKind.UNKNOWN;
+            issues.put(
+                    row.lineId(),
+                    new ProductionTree.IssueEvidence(
+                            material == null ? null : material.unit(), kind, null, null, null, null));
+            if (row.productionId() != null)
+                outputs.put(
+                        row.productionId(),
+                        new ProductionTree.OutputEvidence(
+                                options.quantityInterpretation(),
+                                options.costInterpretation(),
+                                List.of(),
+                                product == null ? null : product.unit(),
+                                true,
+                                options.currency(),
+                                options.costScope()));
         }
-        var evidence = new ProductionTree.Evidence(options.namespace(), ProductionTree.Scope.DIRECT_CONSUMPTION,
-                comparison.completeGraphCoverage() ? Set.copyOf(outputs.keySet()) : Set.of(), issues, outputs,
-                options.currency(), options.costScope());
-        return new AnalysisCommand(command.actualStartDate(), command.actualEndDate(), command.comparableStartDate(),
-                command.comparableEndDate(), command.leafThreshold(), command.stopThreshold(), command.execution(),
-                command.embedding(), new AnalysisCommand.Comparison(evidence, comparison.completeGraphCoverage(),
-                comparison.contextEvidence(), comparison.embeddings(), comparison.config()));
+        var evidence = new ProductionTree.Evidence(
+                options.namespace(),
+                ProductionTree.Scope.DIRECT_CONSUMPTION,
+                comparison.completeGraphCoverage() ? Set.copyOf(outputs.keySet()) : Set.of(),
+                issues,
+                outputs,
+                options.currency(),
+                options.costScope());
+        return new AnalysisCommand(
+                command.actualStartDate(),
+                command.actualEndDate(),
+                command.comparableStartDate(),
+                command.comparableEndDate(),
+                command.leafThreshold(),
+                command.stopThreshold(),
+                command.execution(),
+                command.embedding(),
+                new AnalysisCommand.Comparison(
+                        evidence,
+                        comparison.completeGraphCoverage(),
+                        comparison.contextEvidence(),
+                        comparison.embeddings(),
+                        comparison.config()));
     }
 
     /**
@@ -49,9 +78,11 @@ public final class WarehouseAnalysisAdapter {
      * Recorded amount/positive quantity takes precedence over the declared master cost;
      * division uses six decimal places and HALF_UP. Missing descriptions/suppliers stay missing.
      */
-    public static MaterialContext.Evidence context(AnalysisSourceLoader.Snapshot snapshot,
-                                                  AnalysisCommand.WarehouseOptions options,
-                                                  ProductionTree tree, ProductionTree.Occurrence node) {
+    public static MaterialContext.Evidence context(
+            AnalysisSourceLoader.Snapshot snapshot,
+            AnalysisCommand.WarehouseOptions options,
+            ProductionTree tree,
+            ProductionTree.Occurrence node) {
         if (options == null) return null;
         var material = snapshot.materials().get(node.materialId());
         if (material == null) return null;
@@ -67,10 +98,24 @@ public final class WarehouseAnalysisAdapter {
             basis = root ? "RECORDED_OUTPUT_COST_PER_OUTPUT_QUANTITY" : "RECORDED_ISSUE_AMOUNT_PER_QUANTITY";
             if (root) refs.add("production:" + tree.productionId());
         }
-        return new MaterialContext.Evidence(new MaterialContext.Description(material.name(), material.specification(),
-                material.category(), List.of("material_master:" + material.code())), material.sourceKind(),
-                blank(material.supplier()) ? List.of() : List.of(material.supplier()), cost, options.currency(),
-                material.unit(), options.costScope(), basis, List.copyOf(refs), false);
+        return new MaterialContext.Evidence(
+                new MaterialContext.Description(
+                        material.name(),
+                        material.specification(),
+                        material.category(),
+                        List.of("material_master:" + material.code())),
+                material.sourceKind(),
+                blank(material.supplier()) ? List.of() : List.of(material.supplier()),
+                cost,
+                options.currency(),
+                material.unit(),
+                options.costScope(),
+                basis,
+                List.copyOf(refs),
+                false);
     }
-    private static boolean blank(String value) { return value == null || value.isBlank(); }
+
+    private static boolean blank(String value) {
+        return value == null || value.isBlank();
+    }
 }

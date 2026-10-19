@@ -10,6 +10,4 @@ public record ReconciliationPeriodRequest(
         LocalDate comparableStartDate,
         LocalDate comparableEndDate,
         BigDecimal leafThreshold,
-        BigDecimal stopThreshold
-) {
-}
+        BigDecimal stopThreshold) {}

@@ -1,11 +1,10 @@
 package dev.margintrace.margin_attribution_backend.investigation;
 
 import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportRequest;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /** Generates an anomaly investigation report for one material and two periods. */
 @RestController

@@ -5,5 +5,4 @@ import dev.margintrace.margin_attribution_backend.importation.context.ImportCont
 public interface ImportHandler {
 
     void doImport(ImportContext context);
-
 }

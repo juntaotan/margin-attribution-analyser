@@ -5,7 +5,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.time.Instant;
 
 @Entity
@@ -28,8 +27,7 @@ public class AiProviderSettingsEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected AiProviderSettingsEntity() {
-    }
+    protected AiProviderSettingsEntity() {}
 
     public AiProviderSettingsEntity(AiConnectionSettings settings) {
         this.id = SINGLETON_ID;

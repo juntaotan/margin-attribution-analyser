@@ -5,16 +5,32 @@ import dev.margintrace.margin_attribution_backend.importation.model.ImportStatus
 import java.time.Instant;
 
 public record ImportJobResponse(
-        Long jobId, String filename, String targetTable, ImportStatus status,
-        String stage, int progress, long importedRows, long rejectedRows,
-        String errorCode, String errorMessage, Instant createdAt, Instant completedAt
-) {
+        Long jobId,
+        String filename,
+        String targetTable,
+        ImportStatus status,
+        String stage,
+        int progress,
+        long importedRows,
+        long rejectedRows,
+        String errorCode,
+        String errorMessage,
+        Instant createdAt,
+        Instant completedAt) {
     public static ImportJobResponse from(ImportJob job) {
         return new ImportJobResponse(
-                job.getId(), job.getOriginalFilename(), job.getMappingTableName(), job.getStatus(),
-                stage(job.getStatus()), progress(job.getStatus()), job.getImportedRows(), job.getRejectedRows(),
-                job.getErrorCode(), job.getErrorMessage(), job.getCreatedAt(), job.getCompletedAt()
-        );
+                job.getId(),
+                job.getOriginalFilename(),
+                job.getMappingTableName(),
+                job.getStatus(),
+                stage(job.getStatus()),
+                progress(job.getStatus()),
+                job.getImportedRows(),
+                job.getRejectedRows(),
+                job.getErrorCode(),
+                job.getErrorMessage(),
+                job.getCreatedAt(),
+                job.getCompletedAt());
     }
 
     private static String stage(ImportStatus status) {

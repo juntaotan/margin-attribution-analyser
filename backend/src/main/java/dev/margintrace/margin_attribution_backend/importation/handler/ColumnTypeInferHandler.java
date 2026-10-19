@@ -4,6 +4,10 @@ import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
+import java.io.InputStream;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -14,11 +18,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Component;
-
-import java.io.InputStream;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Infer the logical data type of each column within a previously detected Excel table.
@@ -60,10 +59,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
         String objectKey = context.getObjectKey();
         TableStructure tableStructure = context.getTableStructure();
 
-        try (
-                InputStream inputStream = rawFileReader.readFile(objectKey);
-                Workbook workbook = WorkbookFactory.create(inputStream)
-        ) {
+        try (InputStream inputStream = rawFileReader.readFile(objectKey);
+                Workbook workbook = WorkbookFactory.create(inputStream)) {
             Sheet sheet = workbook.getSheet(tableStructure.sheetName());
             context.setColumnTypes(inferColumnTypes(sheet, tableStructure));
         } catch (Exception e) {
@@ -90,9 +87,7 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
         Map<String, DataType> columnTypes = new LinkedHashMap<>();
         Row headerRow = sheet.getRow(tableStructure.headerRowIndex());
         if (headerRow == null) {
-            throw new IllegalArgumentException(
-                    "Header row does not exist at index " + tableStructure.headerRowIndex()
-            );
+            throw new IllegalArgumentException("Header row does not exist at index " + tableStructure.headerRowIndex());
         }
         DataFormatter dataFormatter = new DataFormatter();
 
@@ -146,7 +141,6 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
         }
 
         return selectColumnType(frequencies);
-
     }
 
     private DataType identifyCellType(Cell cell) {
@@ -161,9 +155,7 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
 
         return switch (cellType) {
             case NUMERIC -> identifyNumericType(cell);
-            case STRING -> cell.getStringCellValue().isBlank()
-                    ? DataType.UNKNOWN
-                    : DataType.TEXT;
+            case STRING -> cell.getStringCellValue().isBlank() ? DataType.UNKNOWN : DataType.TEXT;
             case BOOLEAN -> DataType.BOOLEAN;
             case BLANK, ERROR, _NONE, FORMULA -> DataType.UNKNOWN;
         };
@@ -174,9 +166,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
             return DataType.NUMERIC;
         }
 
-        TemporalFormatParts formatParts = inspectTemporalFormat(
-                cell.getCellStyle().getDataFormatString()
-        );
+        TemporalFormatParts formatParts =
+                inspectTemporalFormat(cell.getCellStyle().getDataFormatString());
         if (formatParts.hasDate() && formatParts.hasTime()) {
             return DataType.TIMESTAMP;
         }
@@ -193,9 +184,7 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
         if (numericValue >= 0 && numericValue < 1) {
             return DataType.TIME;
         }
-        return numericValue == Math.rint(numericValue)
-                ? DataType.DATE
-                : DataType.TIMESTAMP;
+        return numericValue == Math.rint(numericValue) ? DataType.DATE : DataType.TIMESTAMP;
     }
 
     private TemporalFormatParts inspectTemporalFormat(String dataFormat) {
@@ -224,9 +213,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
                 if (closingBracket < 0) {
                     break;
                 }
-                String bracketContent = dataFormat
-                        .substring(index + 1, closingBracket)
-                        .toLowerCase();
+                String bracketContent =
+                        dataFormat.substring(index + 1, closingBracket).toLowerCase();
                 if (bracketContent.matches("[hms]+")) {
                     normalized.append(bracketContent);
                 }
@@ -245,10 +233,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
                 || format.contains("a/p");
         boolean hasMonthOrMinute = format.indexOf('m') >= 0;
 
-        boolean hasTime = hasExplicitTime
-                || hasMonthOrMinute && format.indexOf(':') >= 0;
-        boolean hasDate = hasExplicitDate
-                || hasMonthOrMinute && !hasTime;
+        boolean hasTime = hasExplicitTime || hasMonthOrMinute && format.indexOf(':') >= 0;
+        boolean hasDate = hasExplicitDate || hasMonthOrMinute && !hasTime;
 
         return new TemporalFormatParts(hasDate, hasTime);
     }
@@ -258,15 +244,12 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
             return DataType.UNKNOWN;
         }
 
-        if (frequencies.keySet().stream().allMatch(this::isTemporalType)
-                && frequencies.size() > 1) {
+        if (frequencies.keySet().stream().allMatch(this::isTemporalType) && frequencies.size() > 1) {
             return DataType.TIMESTAMP;
         }
 
-        int highestFrequency = frequencies.values().stream()
-                .mapToInt(Integer::intValue)
-                .max()
-                .orElse(0);
+        int highestFrequency =
+                frequencies.values().stream().mapToInt(Integer::intValue).max().orElse(0);
 
         DataType selectedType = DataType.UNKNOWN;
         int typesWithHighestFrequency = 0;
@@ -281,11 +264,8 @@ public class ColumnTypeInferHandler extends AbstractImportHandler {
     }
 
     private boolean isTemporalType(DataType dataType) {
-        return dataType == DataType.DATE
-                || dataType == DataType.TIME
-                || dataType == DataType.TIMESTAMP;
+        return dataType == DataType.DATE || dataType == DataType.TIME || dataType == DataType.TIMESTAMP;
     }
 
-    private record TemporalFormatParts(boolean hasDate, boolean hasTime) {
-    }
+    private record TemporalFormatParts(boolean hasDate, boolean hasTime) {}
 }

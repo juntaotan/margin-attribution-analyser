@@ -2,6 +2,8 @@ package dev.margintrace.margin_attribution_backend.settings;
 
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiConnectionSettings;
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiRuntimeManager;
+import java.time.Instant;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,9 +13,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.Instant;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/settings/ai")
@@ -43,21 +42,14 @@ public class AiSettingsController {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> invalidSettings(
-            IllegalArgumentException exception) {
+    public ResponseEntity<Map<String, String>> invalidSettings(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
     }
 
-    public record SettingsRequest(String host, Integer port, String model) {
-    }
+    public record SettingsRequest(String host, Integer port, String model) {}
 
     public record SettingsResponse(
-            String host,
-            int port,
-            String model,
-            String baseUrl,
-            Instant updatedAt,
-            boolean persisted) {
+            String host, int port, String model, String baseUrl, Instant updatedAt, boolean persisted) {
         static SettingsResponse from(AiConnectionSettings settings) {
             return new SettingsResponse(
                     settings.host(),

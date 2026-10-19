@@ -4,6 +4,16 @@ import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringJoiner;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -16,17 +26,6 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
 
 /**
  * Creates a database table from the detected Excel structure and imports the source rows without warehouse mapping.
@@ -79,8 +78,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
     }
 
     private String buildRawTableName(ImportContext context) {
-        String normalizedSheetName = context
-                .getTableStructure()
+        String normalizedSheetName = context.getTableStructure()
                 .sheetName()
                 .trim()
                 .toLowerCase()
@@ -141,14 +139,15 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
         StringJoiner definition = new StringJoiner("," + System.lineSeparator());
         int columnIndex = 0;
         for (Map.Entry<String, DataType> entry : columnTypes.entrySet()) {
-            String columnType = switch (entry.getValue()) {
-                case NUMERIC -> "NUMERIC(20,6)";
-                case BOOLEAN -> "BOOLEAN";
-                case DATE -> "DATE";
-                case TIME -> "TIME";
-                case TIMESTAMP -> "TIMESTAMP";
-                case TEXT, UNKNOWN -> "TEXT";
-            };
+            String columnType =
+                    switch (entry.getValue()) {
+                        case NUMERIC -> "NUMERIC(20,6)";
+                        case BOOLEAN -> "BOOLEAN";
+                        case DATE -> "DATE";
+                        case TIME -> "TIME";
+                        case TIMESTAMP -> "TIMESTAMP";
+                        case TEXT, UNKNOWN -> "TEXT";
+                    };
             definition.add(columnNames.get(columnIndex++) + " " + columnType);
         }
         return definition.toString();
@@ -172,10 +171,8 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
     private void insertRows(ImportContext context, String tableName, List<String> columnNames) {
         TableStructure tableStructure = context.getTableStructure();
 
-        try (
-                InputStream inputStream = rawFileReader.readFile(context.getObjectKey());
-                Workbook workbook = WorkbookFactory.create(inputStream)
-        ) {
+        try (InputStream inputStream = rawFileReader.readFile(context.getObjectKey());
+                Workbook workbook = WorkbookFactory.create(inputStream)) {
             Sheet sheet = workbook.getSheet(tableStructure.sheetName());
             if (sheet == null) {
                 throw new IllegalArgumentException("Worksheet does not exist: " + tableStructure.sheetName());
@@ -204,28 +201,22 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
         return columnNames;
     }
 
-    private List<Object[]> readRows(
-            Sheet sheet,
-            TableStructure tableStructure,
-            Map<String, DataType> columnTypes
-    ) {
+    private List<Object[]> readRows(Sheet sheet, TableStructure tableStructure, Map<String, DataType> columnTypes) {
         List<Object[]> rows = new ArrayList<>();
         List<DataType> types = new ArrayList<>(columnTypes.values());
         DataFormatter formatter = new DataFormatter();
         FormulaEvaluator evaluator = sheet.getWorkbook().getCreationHelper().createFormulaEvaluator();
 
         for (int rowIndex = tableStructure.headerRowIndex() + 1;
-             rowIndex <= tableStructure.lastRowIndex();
-             rowIndex++) {
+                rowIndex <= tableStructure.lastRowIndex();
+                rowIndex++) {
             Row row = sheet.getRow(rowIndex);
             Object[] values = new Object[types.size()];
             boolean hasValue = false;
 
             for (int offset = 0; offset < types.size(); offset++) {
                 int columnIndex = tableStructure.leftColumnIndex() + offset;
-                Cell cell = row == null
-                        ? null
-                        : row.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                Cell cell = row == null ? null : row.getCell(columnIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
                 values[offset] = convertCellValue(cell, types.get(offset), formatter, evaluator);
                 hasValue |= values[offset] != null;
             }
@@ -238,11 +229,7 @@ public class DatabaseWriterHandler extends AbstractImportHandler {
     }
 
     private Object convertCellValue(
-            Cell cell,
-            DataType targetType,
-            DataFormatter formatter,
-            FormulaEvaluator evaluator
-    ) {
+            Cell cell, DataType targetType, DataFormatter formatter, FormulaEvaluator evaluator) {
         if (cell == null || cell.getCellType() == CellType.BLANK) {
             return null;
         }

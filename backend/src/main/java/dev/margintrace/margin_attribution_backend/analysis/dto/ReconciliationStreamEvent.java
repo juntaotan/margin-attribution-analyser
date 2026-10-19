@@ -5,10 +5,13 @@ import java.util.UUID;
 
 /** One line in the streamed analysis response. */
 public record ReconciliationStreamEvent(
-        String type, UUID analysisId, StreamCsrGraph actualGraph,
-        StreamCsrGraph comparableGraph, List<ReconciliationStreamPath> paths, String message) {
-    public static ReconciliationStreamEvent graph(UUID id, StreamCsrGraph actual,
-                                                  StreamCsrGraph comparable) {
+        String type,
+        UUID analysisId,
+        StreamCsrGraph actualGraph,
+        StreamCsrGraph comparableGraph,
+        List<ReconciliationStreamPath> paths,
+        String message) {
+    public static ReconciliationStreamEvent graph(UUID id, StreamCsrGraph actual, StreamCsrGraph comparable) {
         return new ReconciliationStreamEvent("graph", id, actual, comparable, null, null);
     }
 

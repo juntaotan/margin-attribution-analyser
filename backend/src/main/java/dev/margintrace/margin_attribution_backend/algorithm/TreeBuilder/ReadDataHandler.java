@@ -1,16 +1,15 @@
 package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
+import dev.margintrace.margin_attribution_backend.algorithm.port.PeriodRecords;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.time.LocalDate;
 import java.util.function.BiFunction;
-import dev.margintrace.margin_attribution_backend.algorithm.port.PeriodRecords;
+import org.springframework.stereotype.Component;
 
 /** Finds sold products in the requested period. */
 @Component
@@ -18,18 +17,23 @@ public class ReadDataHandler extends AbstractTraceHandler {
     private final BiFunction<LocalDate, LocalDate, List<PeriodRecords.Sale>> sales;
 
     @org.springframework.beans.factory.annotation.Autowired
-    public ReadDataHandler(
-            SalesDetailRepository salesDetailRepository,
-            EdgeBuildHandler next
-    ) {
-        this((start, end) -> salesDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(start, end)
-                .stream().map(s -> new PeriodRecords.Sale(String.valueOf(s.getId()), s.getDate(),
-                        s.getProductNo(), s.getProductQuantity(), s.getTotalCost())).toList(), next);
+    public ReadDataHandler(SalesDetailRepository salesDetailRepository, EdgeBuildHandler next) {
+        this(
+                (start, end) -> salesDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(start, end).stream()
+                        .map(s -> new PeriodRecords.Sale(
+                                String.valueOf(s.getId()),
+                                s.getDate(),
+                                s.getProductNo(),
+                                s.getProductQuantity(),
+                                s.getTotalCost()))
+                        .toList(),
+                next);
     }
 
     /** Reuses the construction chain with explicitly passed source records. */
     public ReadDataHandler(BiFunction<LocalDate, LocalDate, List<PeriodRecords.Sale>> sales, EdgeBuildHandler next) {
-        super(next); this.sales = sales;
+        super(next);
+        this.sales = sales;
     }
 
     @Override

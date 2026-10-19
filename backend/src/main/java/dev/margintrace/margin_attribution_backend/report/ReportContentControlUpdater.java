@@ -1,12 +1,13 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -16,26 +17,20 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+import org.springframework.stereotype.Component;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 @Component
 public class ReportContentControlUpdater {
 
-    private static final String WORD_NAMESPACE =
-            "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    private static final String WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
-    public UpdateResult replaceContentByAlias(
-            byte[] documentBytes,
-            String requestedAlias,
-            String replacementValue) throws IOException {
+    public UpdateResult replaceContentByAlias(byte[] documentBytes, String requestedAlias, String replacementValue)
+            throws IOException {
         String alias = requestedAlias == null ? "" : requestedAlias.trim();
         if (alias.isBlank()) {
             throw new IllegalArgumentException("A content control Alias is required");
@@ -46,15 +41,12 @@ public class ReportContentControlUpdater {
 
         UpdateResult result = replaceContents(documentBytes, Map.of(alias, replacementValue));
         if (result.updatedControls() == 0) {
-            throw new IllegalArgumentException(
-                    "No saved content control was found for Alias: " + alias);
+            throw new IllegalArgumentException("No saved content control was found for Alias: " + alias);
         }
         return result;
     }
 
-    public UpdateResult replaceContents(
-            byte[] documentBytes,
-            Map<String, String> replacements) throws IOException {
+    public UpdateResult replaceContents(byte[] documentBytes, Map<String, String> replacements) throws IOException {
         if (replacements == null || replacements.isEmpty()) {
             return new UpdateResult(documentBytes, 0);
         }
@@ -69,8 +61,8 @@ public class ReportContentControlUpdater {
 
         int updatedControls = 0;
         try (ZipInputStream input = new ZipInputStream(new ByteArrayInputStream(documentBytes));
-             ByteArrayOutputStream output = new ByteArrayOutputStream();
-             ZipOutputStream archive = new ZipOutputStream(output)) {
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                ZipOutputStream archive = new ZipOutputStream(output)) {
             ZipEntry entry;
             while ((entry = input.getNextEntry()) != null) {
                 ZipEntry copiedEntry = new ZipEntry(entry.getName());
@@ -93,9 +85,8 @@ public class ReportContentControlUpdater {
     }
 
     private PartUpdate updatePartBatch(
-            byte[] xml,
-            Map<String, String> originalReplacements,
-            Map<String, String> normalizedReplacements) throws IOException {
+            byte[] xml, Map<String, String> originalReplacements, Map<String, String> normalizedReplacements)
+            throws IOException {
         Document document = parseXml(xml);
         NodeList controls = document.getElementsByTagNameNS(WORD_NAMESPACE, "sdt");
         int updatedControls = 0;
@@ -139,16 +130,11 @@ public class ReportContentControlUpdater {
             }
         }
 
-        return updatedControls == 0
-                ? new PartUpdate(xml, 0)
-                : new PartUpdate(writeXml(document), updatedControls);
+        return updatedControls == 0 ? new PartUpdate(xml, 0) : new PartUpdate(writeXml(document), updatedControls);
     }
 
     private String resolveReplacementValue(
-            String alias,
-            String tag,
-            Map<String, String> original,
-            Map<String, String> normalized) {
+            String alias, String tag, Map<String, String> original, Map<String, String> normalized) {
         if (!alias.isBlank() && original.containsKey(alias)) {
             return original.get(alias);
         }
@@ -169,11 +155,7 @@ public class ReportContentControlUpdater {
         return key.replaceAll("[\\s_\\-]", "").toLowerCase(java.util.Locale.ROOT);
     }
 
-    private void replaceContent(
-            Document document,
-            Element control,
-            Element content,
-            String replacementValue) {
+    private void replaceContent(Document document, Element control, Element content, String replacementValue) {
         while (content.hasChildNodes()) {
             content.removeChild(content.getFirstChild());
         }
@@ -239,7 +221,9 @@ public class ReportContentControlUpdater {
 
     private String propertyValue(Element properties, String propertyName) {
         Element property = directChild(properties, propertyName);
-        return property == null ? "" : property.getAttributeNS(WORD_NAMESPACE, "val").trim();
+        return property == null
+                ? ""
+                : property.getAttributeNS(WORD_NAMESPACE, "val").trim();
     }
 
     private boolean isWordContentPart(String entryName) {
@@ -251,9 +235,7 @@ public class ReportContentControlUpdater {
         return entryName.matches("word/(header|footer)\\d+\\.xml");
     }
 
-    public record UpdateResult(byte[] documentBytes, int updatedControls) {
-    }
+    public record UpdateResult(byte[] documentBytes, int updatedControls) {}
 
-    private record PartUpdate(byte[] content, int updatedControls) {
-    }
+    private record PartUpdate(byte[] content, int updatedControls) {}
 }

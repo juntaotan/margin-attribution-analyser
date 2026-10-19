@@ -1,17 +1,16 @@
 package dev.margintrace.margin_attribution_backend.browse;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import io.minio.MinioClient;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class DataBrowserControllerTests {
     private DataBrowserController browser;
@@ -19,11 +18,14 @@ class DataBrowserControllerTests {
 
     @BeforeEach
     void setUp() {
-        var jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID()
-                + ";DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;MODE=PostgreSQL", "sa", ""));
+        var jdbc = new JdbcTemplate(new DriverManagerDataSource(
+                "jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;MODE=PostgreSQL",
+                "sa",
+                ""));
         jdbc.execute("CREATE SCHEMA raw");
         jdbc.execute("CREATE TABLE raw.example(id BIGINT PRIMARY KEY, amount NUMERIC(20,6), note VARCHAR)");
-        jdbc.execute("INSERT INTO raw.example VALUES(9007199254740993, 12345678901234.123456, NULL), (2, 0.100000, 'second')");
+        jdbc.execute(
+                "INSERT INTO raw.example VALUES(9007199254740993, 12345678901234.123456, NULL), (2, 0.100000, 'second')");
         jdbc.execute("CREATE TABLE public.material_master(material_no VARCHAR PRIMARY KEY)");
         jdbc.execute("CREATE TABLE public.ai_provider_settings(secret VARCHAR)");
         minio = mock(MinioClient.class);
@@ -60,6 +62,10 @@ class DataBrowserControllerTests {
     void missingBucketIsEmptyAndStorageFailuresAreExplicit() throws Exception {
         assertEquals(List.of(), browser.files(0, 50).get("items"));
         when(minio.bucketExists(any())).thenThrow(new IllegalStateException("offline"));
-        assertEquals(502, assertThrows(ResponseStatusException.class, () -> browser.files(0, 50)).getStatusCode().value());
+        assertEquals(
+                502,
+                assertThrows(ResponseStatusException.class, () -> browser.files(0, 50))
+                        .getStatusCode()
+                        .value());
     }
 }

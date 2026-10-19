@@ -3,14 +3,13 @@ package dev.margintrace.margin_attribution_backend.importation.handler;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Maps the data written to the database in the previous step {@link DatabaseWriterHandler} to the configured schema and
@@ -45,21 +44,19 @@ public class DataWarehouseWriterHandler extends AbstractImportHandler {
         }
 
         String sql = buildInsertSelectSql(
-                context.getRawTableName(),
-                context.getDataSetDefinition().tableName(),
-                mappedColumns
-        );
+                context.getRawTableName(), context.getDataSetDefinition().tableName(), mappedColumns);
         context.setWarehouseImportedRows(jdbcTemplate.update(sql));
         handleNext(context);
     }
 
     private List<MappedDatabaseColumn> buildMappedColumns(ImportContext context) {
         List<MappedDatabaseColumn> mappedColumns = new ArrayList<>();
-        for (Map.Entry<String, TargetFieldDefinition> mapping : context.getColumnMappings().entrySet()) {
+        for (Map.Entry<String, TargetFieldDefinition> mapping :
+                context.getColumnMappings().entrySet()) {
             String rawColumnName = context.getRawColumnNames().get(mapping.getKey());
             if (rawColumnName == null) {
-                throw new IllegalArgumentException("Raw database column is missing for source column: "
-                        + mapping.getKey());
+                throw new IllegalArgumentException(
+                        "Raw database column is missing for source column: " + mapping.getKey());
             }
             mappedColumns.add(new MappedDatabaseColumn(rawColumnName, mapping.getValue()));
         }
@@ -67,19 +64,17 @@ public class DataWarehouseWriterHandler extends AbstractImportHandler {
     }
 
     String buildInsertSelectSql(
-            String rawTableName,
-            String warehouseTableName,
-            List<MappedDatabaseColumn> mappedColumns
-    ) {
+            String rawTableName, String warehouseTableName, List<MappedDatabaseColumn> mappedColumns) {
         String targetColumns = mappedColumns.stream()
                 .map(column -> column.targetField().columnName())
                 .collect(Collectors.joining(","));
         String sourceColumns = mappedColumns.stream()
-                .map(column -> castExpression(column.rawColumnName(), column.targetField().dataType()))
+                .map(column -> castExpression(
+                        column.rawColumnName(), column.targetField().dataType()))
                 .collect(Collectors.joining(","));
 
-        return "INSERT INTO " + warehouseTableName + "(" + targetColumns + ") SELECT "
-                + sourceColumns + " FROM " + rawTableName;
+        return "INSERT INTO " + warehouseTableName + "(" + targetColumns + ") SELECT " + sourceColumns + " FROM "
+                + rawTableName;
     }
 
     private String castExpression(String rawColumnName, DataType targetType) {
@@ -111,11 +106,10 @@ public class DataWarehouseWriterHandler extends AbstractImportHandler {
             missingValues.add("columnMappings");
         }
         if (!missingValues.isEmpty()) {
-            throw new IllegalArgumentException("Missing warehouse writing context: "
-                    + String.join(", ", missingValues));
+            throw new IllegalArgumentException(
+                    "Missing warehouse writing context: " + String.join(", ", missingValues));
         }
     }
 
-    record MappedDatabaseColumn(String rawColumnName, TargetFieldDefinition targetField) {
-    }
+    record MappedDatabaseColumn(String rawColumnName, TargetFieldDefinition targetField) {}
 }

@@ -1,7 +1,6 @@
 package dev.margintrace.margin_attribution_backend.importation.mapping.model;
 
 import dev.margintrace.margin_attribution_backend.importation.model.DataSetType;
-
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -11,11 +10,7 @@ import java.util.Set;
  * Defines a canonical business data set and all target fields available for schema mapping.
  */
 public record DataSetDefinition(
-        DataSetType type,
-        String tableName,
-        Set<String> aliases,
-        List<TargetFieldDefinition> fields
-) {
+        DataSetType type, String tableName, Set<String> aliases, List<TargetFieldDefinition> fields) {
     public DataSetDefinition {
         if (type == null) {
             throw new IllegalArgumentException("Data set type must not be null");
@@ -53,9 +48,8 @@ public record DataSetDefinition(
         return fields.stream()
                 .filter(field -> field.fieldKey().equals(fieldKey))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Unknown field '%s' for data set %s".formatted(fieldKey, type)
-                ));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Unknown field '%s' for data set %s".formatted(fieldKey, type)));
     }
 
     private static void requireText(String value, String description) {

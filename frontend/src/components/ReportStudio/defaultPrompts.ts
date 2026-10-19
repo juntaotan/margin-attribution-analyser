@@ -31,7 +31,8 @@ export const PRECONFIGURED_PROMPTS: Record<string, PreconfiguredPromptDefinition
   'Gross Margin %': {
     key: 'Gross Margin %',
     label: 'Gross Margin Rate',
-    prompt: 'Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)',
+    prompt:
+      'Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)',
     format: 'percentage',
     description: 'Calculates gross margin as a share of revenue.',
   },
@@ -59,14 +60,16 @@ export const PRECONFIGURED_PROMPTS: Record<string, PreconfiguredPromptDefinition
   'PPV Variance': {
     key: 'PPV Variance',
     label: 'Purchase Price Variance',
-    prompt: 'Query actual purchase order settlement prices vs baseline standard costs to derive Purchase Price Variance rate',
+    prompt:
+      'Query actual purchase order settlement prices vs baseline standard costs to derive Purchase Price Variance rate',
     format: 'percentage',
     description: 'Evaluates procurement deviations between cleared purchase prices and frozen baseline standards.',
   },
   'Usage Variance': {
     key: 'Usage Variance',
     label: 'Material Overuse Rate',
-    prompt: 'Query inventory_usage to calculate total material consumption: sum(material_total_cost) for the active period',
+    prompt:
+      'Query inventory_usage to calculate total material consumption: sum(material_total_cost) for the active period',
     format: 'currency',
     description: 'Calculates total inventory material usage cost for the active reporting period.',
   },
@@ -89,9 +92,7 @@ export const PRECONFIGURED_PROMPTS: Record<string, PreconfiguredPromptDefinition
 /**
  * Normalizes a key (case-insensitive, strips spaces and special chars) to find preconfigured prompts.
  */
-export const getPreconfiguredPrompt = (
-  rawKey?: string
-): PreconfiguredPromptDefinition | undefined => {
+export const getPreconfiguredPrompt = (rawKey?: string): PreconfiguredPromptDefinition | undefined => {
   if (!rawKey || !rawKey.trim()) return undefined;
 
   const direct = PRECONFIGURED_PROMPTS[rawKey.trim()];

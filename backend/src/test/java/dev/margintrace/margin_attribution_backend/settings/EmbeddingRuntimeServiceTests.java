@@ -1,13 +1,12 @@
 package dev.margintrace.margin_attribution_backend.settings;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class EmbeddingRuntimeServiceTests {
     private static final String MODEL = "sentence-transformers/all-MiniLM-L6-v2";
@@ -33,21 +32,28 @@ class EmbeddingRuntimeServiceTests {
 
     @Test
     void successfulInstallationIsRecognisedFromTheMarker() throws Exception {
-        var service = fake("echo 'STAGE Downloading'; printf '{\"variant\":\"%s\",\"modelId\":\"" + MODEL + "\",\"revision\":\""
-                + REVISION + "\",\"cudaAvailable\":false}' \"$1\" > \"$2/installed.json\"");
+        var service = fake("echo 'STAGE Downloading'; printf '{\"variant\":\"%s\",\"modelId\":\"" + MODEL
+                + "\",\"revision\":\"" + REVISION + "\",\"cudaAvailable\":false}' \"$1\" > \"$2/installed.json\"");
         assertThat(service.status().state()).isEqualTo("NOT_INSTALLED");
         assertThat(service.install("cuda").state()).isEqualTo("INSTALLING");
         var status = await(service);
         assertThat(status.state()).isEqualTo("READY");
         assertThat(status.variant()).isEqualTo("cuda");
         assertThat(status.cudaAvailable()).isFalse();
-        assertThat(new EmbeddingRuntimeService(dir.toString(), MODEL, REVISION).status().state()).isEqualTo("READY");
-        assertThat(new EmbeddingRuntimeService(dir.toString(), MODEL, "0".repeat(40)).status().state()).isEqualTo("NOT_INSTALLED");
+        assertThat(new EmbeddingRuntimeService(dir.toString(), MODEL, REVISION)
+                        .status()
+                        .state())
+                .isEqualTo("READY");
+        assertThat(new EmbeddingRuntimeService(dir.toString(), MODEL, "0".repeat(40))
+                        .status()
+                        .state())
+                .isEqualTo("NOT_INSTALLED");
     }
 
     @Test
     void failureKeepsStageAndOutput() throws Exception {
-        var status = await(withInstall(fake("echo 'STAGE Installing PyTorch (cpu)'; echo 'No matching distribution'; exit 1"), "cpu"));
+        var status = await(withInstall(
+                fake("echo 'STAGE Installing PyTorch (cpu)'; echo 'No matching distribution'; exit 1"), "cpu"));
         assertThat(status.state()).isEqualTo("FAILED");
         assertThat(status.stage()).isEqualTo("Installing PyTorch (cpu)");
         assertThat(status.message()).contains("No matching distribution");

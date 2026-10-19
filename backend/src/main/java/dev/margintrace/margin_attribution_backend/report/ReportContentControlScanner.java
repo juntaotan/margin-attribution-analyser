@@ -1,5 +1,19 @@
 package dev.margintrace.margin_attribution_backend.report;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -7,26 +21,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 @Component
 public class ReportContentControlScanner {
 
-    private static final String WORD_NAMESPACE =
-            "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    private static final String WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     private static final int PREVIEW_LIMIT = 120;
 
     public List<ContentControlDescriptor> scan(byte[] documentBytes) throws IOException {
@@ -54,10 +52,8 @@ public class ReportContentControlScanner {
     }
 
     public List<String> contextsForControl(
-            byte[] documentBytes,
-            String requestedTag,
-            String requestedWordId,
-            String requestedAlias) throws IOException {
+            byte[] documentBytes, String requestedTag, String requestedWordId, String requestedAlias)
+            throws IOException {
         String tag = normalizedSelector(requestedTag);
         String wordId = normalizedSelector(requestedWordId);
         String alias = normalizedSelector(requestedAlias);
@@ -103,10 +99,8 @@ public class ReportContentControlScanner {
         return value == null ? "" : value.trim();
     }
 
-    private int scanPart(
-            byte[] xml,
-            Map<String, MutableContentControl> controls,
-            int unnamedControlIndex) throws IOException {
+    private int scanPart(byte[] xml, Map<String, MutableContentControl> controls, int unnamedControlIndex)
+            throws IOException {
         Document document = parseXml(xml);
         NodeList structuredDocumentTags = document.getElementsByTagNameNS(WORD_NAMESPACE, "sdt");
 
@@ -130,9 +124,7 @@ public class ReportContentControlScanner {
                 key = "content-control:unnamed-" + (++unnamedControlIndex);
             }
 
-            String displayName = !alias.isBlank()
-                    ? alias
-                    : (!tag.isBlank() ? tag : "Untitled content control");
+            String displayName = !alias.isBlank() ? alias : (!tag.isBlank() ? tag : "Untitled content control");
             String preview = extractPreview(control);
 
             MutableContentControl existing = controls.get(key);
@@ -193,7 +185,9 @@ public class ReportContentControlScanner {
 
     private String propertyValue(Element properties, String propertyName) {
         Element property = directChild(properties, propertyName);
-        return property == null ? "" : property.getAttributeNS(WORD_NAMESPACE, "val").trim();
+        return property == null
+                ? ""
+                : property.getAttributeNS(WORD_NAMESPACE, "val").trim();
     }
 
     private String extractPreview(Element control) {
@@ -212,9 +206,7 @@ public class ReportContentControlScanner {
         }
 
         String preview = String.join(" ", parts);
-        return preview.length() <= PREVIEW_LIMIT
-                ? preview
-                : preview.substring(0, PREVIEW_LIMIT - 1) + "…";
+        return preview.length() <= PREVIEW_LIMIT ? preview : preview.substring(0, PREVIEW_LIMIT - 1) + "…";
     }
 
     private String extractMarkedSentence(Element control) {
@@ -338,14 +330,7 @@ public class ReportContentControlScanner {
     }
 
     public record ContentControlDescriptor(
-            String id,
-            String tag,
-            String wordId,
-            String alias,
-            String preview,
-            int occurrences,
-            boolean tagged) {
-    }
+            String id, String tag, String wordId, String alias, String preview, int occurrences, boolean tagged) {}
 
     private static final class MutableContentControl {
         private final String id;
@@ -364,14 +349,7 @@ public class ReportContentControlScanner {
         }
 
         private ContentControlDescriptor toDescriptor() {
-            return new ContentControlDescriptor(
-                    id,
-                    tag,
-                    wordId,
-                    alias,
-                    preview,
-                    occurrences,
-                    !tag.isBlank());
+            return new ContentControlDescriptor(id, tag, wordId, alias, preview, occurrences, !tag.isBlank());
         }
     }
 }

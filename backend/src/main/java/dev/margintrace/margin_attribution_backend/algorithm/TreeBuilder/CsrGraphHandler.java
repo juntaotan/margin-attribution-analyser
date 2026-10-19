@@ -2,12 +2,11 @@ package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
-import org.springframework.stereotype.Component;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
 /** Converts the collected nodes and edges into a CSR graph. */
 @Component

@@ -16,5 +16,4 @@ public abstract class AbstractImportHandler implements ImportHandler {
             nextHandler.doImport(context);
         }
     }
-
 }

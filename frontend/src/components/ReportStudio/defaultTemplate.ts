@@ -13,25 +13,25 @@ export const createDefaultDocument = (): ReportDocument => {
   // Pre-seed 4 representative financial placeholder tokens
   const plan1 = parseSemanticPrompt(
     'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
-    context
+    context,
   );
   const res1 = executeSemanticQuery(plan1);
 
   const plan2 = parseSemanticPrompt(
     'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
-    context
+    context,
   );
   const res2 = executeSemanticQuery(plan2);
 
   const plan3 = parseSemanticPrompt(
     'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
-    context
+    context,
   );
   const res3 = executeSemanticQuery(plan3);
 
   const plan4 = parseSemanticPrompt(
     'Compare active ECN design bill of materials against baseline revision to calculate unit quota cost impact',
-    context
+    context,
   );
   const res4 = executeSemanticQuery(plan4);
 
@@ -112,7 +112,7 @@ export const createDefaultDocument = (): ReportDocument => {
       },
     ],
     tokens: {
-      'Revenue': {
+      Revenue: {
         id: 'Revenue',
         label: 'Net Sales Revenue',
         prompt: 'Query sales_details to calculate sum(total_revenue) for the active period',
@@ -139,7 +139,8 @@ export const createDefaultDocument = (): ReportDocument => {
       'Gross Margin %': {
         id: 'Gross Margin %',
         label: 'Gross Margin Rate',
-        prompt: 'Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)',
+        prompt:
+          'Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)',
         status: 'draft',
         resolvedValue: '59.2%',
         unit: '%',
@@ -161,8 +162,7 @@ export const createDefaultDocument = (): ReportDocument => {
       token_ppv: {
         id: 'token_ppv',
         label: 'PPV Deviation Rate',
-        prompt:
-          'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
+        prompt: 'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
         status: 'executed',
         semanticPlan: plan1,
         resolvedValue: res1.value,
@@ -172,8 +172,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'PPV Variance': {
         id: 'PPV Variance',
         label: 'PPV Deviation Rate',
-        prompt:
-          'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
+        prompt: 'Query actual purchase order settlement prices vs baseline standard costs to derive PPV deviation rate',
         status: 'executed',
         semanticPlan: plan1,
         resolvedValue: res1.value,
@@ -183,8 +182,7 @@ export const createDefaultDocument = (): ReportDocument => {
       token_overuse: {
         id: 'token_overuse',
         label: 'Material Overuse Rate',
-        prompt:
-          'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
+        prompt: 'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
         status: 'executed',
         semanticPlan: plan2,
         resolvedValue: res2.value,
@@ -194,8 +192,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'Usage Variance': {
         id: 'Usage Variance',
         label: 'Material Overuse Rate',
-        prompt:
-          'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
+        prompt: 'Analyze shop-floor material dispatches against work order planned BOM quotas to compute overuse rate',
         status: 'executed',
         semanticPlan: plan2,
         resolvedValue: res2.value,
@@ -205,8 +202,7 @@ export const createDefaultDocument = (): ReportDocument => {
       token_scrap: {
         id: 'token_scrap',
         label: 'Scrap Financial Impact',
-        prompt:
-          'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
+        prompt: 'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
         status: 'executed',
         semanticPlan: plan3,
         resolvedValue: res3.value,
@@ -216,8 +212,7 @@ export const createDefaultDocument = (): ReportDocument => {
       'Scrap Loss': {
         id: 'Scrap Loss',
         label: 'Scrap Financial Impact',
-        prompt:
-          'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
+        prompt: 'Aggregate defect and scrap write-offs in production logs to evaluate net scrap financial impact',
         status: 'executed',
         semanticPlan: plan3,
         resolvedValue: res3.value,

@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.charset.StandardCharsets;
-
 @RestController
 @RequestMapping("/api/v1/settings/template")
 @RequiredArgsConstructor
@@ -28,8 +26,8 @@ public class ReportTemplateController {
     }
 
     @PostMapping("/upload")
-    public ReportTemplateStore.TemplateMetadata uploadTemplate(
-            @RequestParam("file") MultipartFile file) throws Exception {
+    public ReportTemplateStore.TemplateMetadata uploadTemplate(@RequestParam("file") MultipartFile file)
+            throws Exception {
         return templateStore.uploadMasterTemplate(file.getOriginalFilename(), file.getBytes());
     }
 
@@ -38,9 +36,7 @@ public class ReportTemplateController {
         ReportTemplateStore.TemplateMetadata meta = templateStore.getMetadata();
         byte[] content = templateStore.loadOrCreateMasterTemplate();
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + meta.filename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + meta.filename() + "\"")
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                 .contentLength(content.length)

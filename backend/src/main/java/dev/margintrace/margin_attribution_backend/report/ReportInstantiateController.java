@@ -1,5 +1,6 @@
 package dev.margintrace.margin_attribution_backend.report;
 
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -10,11 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -31,20 +27,17 @@ public class ReportInstantiateController {
     private final ReportPlaceholderService placeholderService;
 
     @PostMapping("/preview-values")
-    public ReportPlaceholderResolutionService.PlaceholderValues previewValues(
-            @RequestBody ReportRequest request) {
+    public ReportPlaceholderResolutionService.PlaceholderValues previewValues(@RequestBody ReportRequest request) {
         validateRequest(request);
         return resolutionService.resolve(
                 request.actualStartDate(),
                 request.actualEndDate(),
                 request.comparableStartDate(),
-                request.comparableEndDate()
-        );
+                request.comparableEndDate());
     }
 
     @PostMapping("/instantiate")
-    public Object instantiateReport(
-            @RequestBody ReportRequest request) throws Exception {
+    public Object instantiateReport(@RequestBody ReportRequest request) throws Exception {
         validateRequest(request);
 
         // 1. Load cloned master template from Data Lake (MinIO)
@@ -56,8 +49,7 @@ public class ReportInstantiateController {
                 request.actualStartDate(),
                 request.actualEndDate(),
                 request.comparableStartDate(),
-                request.comparableEndDate()
-        );
+                request.comparableEndDate());
 
         // 3. Populate Word template
         ReportContentControlUpdater.UpdateResult populated =
@@ -81,23 +73,24 @@ public class ReportInstantiateController {
                     request.actualStartDate(),
                     request.actualEndDate(),
                     request.comparableStartDate() != null ? request.comparableStartDate() : "",
-                    request.comparableEndDate() != null ? request.comparableEndDate() : ""
-            );
+                    request.comparableEndDate() != null ? request.comparableEndDate() : "");
 
             return Map.of(
-                    "success", true,
-                    "title", generatedFilename,
-                    "redirectUrl", "/report-studio" + queryParams,
-                    "updatedControls", populated.updatedControls(),
-                    "documentVersion", documentStore.currentVersion()
-            );
+                    "success",
+                    true,
+                    "title",
+                    generatedFilename,
+                    "redirectUrl",
+                    "/report-studio" + queryParams,
+                    "updatedControls",
+                    populated.updatedControls(),
+                    "documentVersion",
+                    documentStore.currentVersion());
         }
 
         // Default mode: direct download file
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + generatedFilename + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + generatedFilename + "\"")
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                 .contentLength(populated.documentBytes().length)
@@ -108,14 +101,17 @@ public class ReportInstantiateController {
         if (request == null) {
             throw new IllegalArgumentException("Report request is required");
         }
-        if (request.actualStartDate() == null || request.actualStartDate().isBlank()
-                || request.actualEndDate() == null || request.actualEndDate().isBlank()) {
+        if (request.actualStartDate() == null
+                || request.actualStartDate().isBlank()
+                || request.actualEndDate() == null
+                || request.actualEndDate().isBlank()) {
             throw new IllegalArgumentException("Actual period start and end dates are required");
         }
     }
 
     private String generateFilename(ReportRequest request) {
-        String periodTag = request.actualStartDate().replace("-", "") + "_" + request.actualEndDate().replace("-", "");
+        String periodTag = request.actualStartDate().replace("-", "") + "_"
+                + request.actualEndDate().replace("-", "");
         return "Management_Commentary_" + periodTag + ".docx";
     }
 
@@ -124,6 +120,5 @@ public class ReportInstantiateController {
             String actualEndDate,
             String comparableStartDate,
             String comparableEndDate,
-            String mode
-    ) {}
+            String mode) {}
 }

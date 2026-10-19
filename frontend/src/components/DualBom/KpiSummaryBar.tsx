@@ -49,9 +49,7 @@ export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
         <div className="flex items-center gap-1.5">
           <GitFork className="w-3.5 h-3.5 text-slate-500" />
           <span className="text-slate-500">Penetrated Nodes:</span>
-          <span className="font-mono font-semibold text-slate-900">
-            {penetratedNodesCount} Penetrated Nodes
-          </span>
+          <span className="font-mono font-semibold text-slate-900">{penetratedNodesCount} Penetrated Nodes</span>
         </div>
 
         <div className="h-3.5 w-px bg-slate-200/80" />
@@ -68,8 +66,8 @@ export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
               riskTier.includes('High')
                 ? 'text-variance-unfavourable bg-variance-unfavourable-subtle border-variance-unfavourable-border'
                 : riskTier.includes('Moderate')
-                ? 'text-amber-700 bg-amber-50 border-amber-200'
-                : 'text-variance-favourable bg-variance-favourable-subtle border-variance-favourable-border'
+                  ? 'text-amber-700 bg-amber-50 border-amber-200'
+                  : 'text-variance-favourable bg-variance-favourable-subtle border-variance-favourable-border'
             }`}
           >
             {riskTier}
@@ -101,4 +99,3 @@ export const KpiSummaryBar: React.FC<KpiSummaryBarProps> = ({
     </div>
   );
 };
-

@@ -1,36 +1,34 @@
 package dev.margintrace.margin_attribution_backend.importation.service;
 
+import static dev.margintrace.margin_attribution_backend.importation.model.ImportStatus.*;
+
+import dev.margintrace.margin_attribution_backend.datalake.key.RawObjectKeyFactory;
 import dev.margintrace.margin_attribution_backend.datalake.model.StoredObject;
 import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileStorage;
-import dev.margintrace.margin_attribution_backend.datalake.key.RawObjectKeyFactory;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.handler.ColumnTypeInferHandler;
-import dev.margintrace.margin_attribution_backend.importation.handler.DatabaseWriterHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.DataWarehouseWriterHandler;
+import dev.margintrace.margin_attribution_backend.importation.handler.DatabaseWriterHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.FileValidationHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.SchemaMappingHandler;
 import dev.margintrace.margin_attribution_backend.importation.handler.TableBoundaryDetectHandler;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import lombok.RequiredArgsConstructor;
-
-import static dev.margintrace.margin_attribution_backend.importation.model.ImportStatus.*;
+import org.springframework.stereotype.Service;
 
 /**
  * Import Workflow
  *
  * <p> Manages the end-to-end import process and determines when an import job should transition to its next state as
  * each business stage begins, succeeds, or fails. </p>
- * 
+ *
  * <p> This class coordinates business handlers with {@link ImportJobStateService}. Transition rules belong to the import
  * domain model, while {@code ImportJobStateService} provides the transactional persistence boundary. Individual handlers
  * perform their assigned business operation. </p>
- * 
+ *
  * <p> On a business-stage failure, the exception is attached to the {@link ImportContext} for the current execution,
  * while a failure status and a safe error description are recorded against the persistent import job. Once a failure
  * state is reached, subsequent workflow stages are not executed. </p>
- * 
+ *
  * <p> The intended import lifecycle is: </p>
  * <ol>
  *     <li> {@code PENDING -> VALIDATING} when file validation begins. </li>
@@ -61,9 +59,9 @@ public class ImportWorkflow {
     private final RawFileStorage rawFileStorage;
     private final RawObjectKeyFactory objectKeyFactory;
 
-    /** 
+    /**
      * Executes the import workflow for the specified job and context.
-     * 
+     *
      * <p> The workflow executes the following stages in order: </p>
      * <ol>
      *    <li> File validation: uses the doImport method in {@link FileValidationHandler} </li>
@@ -72,7 +70,7 @@ public class ImportWorkflow {
      *    <li> Raw database writing: uses {@link DatabaseWriterHandler}. </li>
      *    <li> Warehouse writing: copies schema-mapped raw columns through {@link DataWarehouseWriterHandler}. </li>
      * </ol>
-     * 
+     *
      * @param jobId the persistent import job ID
      * @param context the file and confirmed target definition supplied by ImportService
      */
@@ -94,7 +92,7 @@ public class ImportWorkflow {
         try {
             // Generate a unique object key for the raw file storage based on the job ID and file extension
             String objectKey = objectKeyFactory.create(jobId, context.getExtension());
-            
+
             // Call store method in the datalake module to create a stored object in the data lake
             StoredObject storedObject = rawFileStorage.store(context.getFile(), objectKey);
             stateService.completeRawStorage(jobId, storedObject.objectKey());
@@ -126,12 +124,7 @@ public class ImportWorkflow {
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(
-                    jobId,
-                    TRANSFORMING,
-                    TRANSFORMING_FAILED,
-                    "SPREADSHEET_TRANSFORMATION_FAILED",
-                    e.getMessage()
-            );
+                    jobId, TRANSFORMING, TRANSFORMING_FAILED, "SPREADSHEET_TRANSFORMATION_FAILED", e.getMessage());
             return;
         }
 
@@ -144,12 +137,7 @@ public class ImportWorkflow {
         } catch (Exception e) {
             context.setError(e);
             stateService.fail(
-                    jobId,
-                    WRITING_TO_DATALAKE,
-                    WRITE_FAILED,
-                    "DATABASE_OR_WAREHOUSE_WRITE_FAILED",
-                    e.getMessage()
-            );
+                    jobId, WRITING_TO_DATALAKE, WRITE_FAILED, "DATABASE_OR_WAREHOUSE_WRITE_FAILED", e.getMessage());
             return;
         }
 

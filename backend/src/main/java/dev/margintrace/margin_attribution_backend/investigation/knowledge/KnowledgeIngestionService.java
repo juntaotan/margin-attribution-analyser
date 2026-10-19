@@ -11,14 +11,6 @@ import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileStorag
 import dev.margintrace.margin_attribution_backend.investigation.InvestigationConfiguration;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
-import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +25,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Adds documents to and removes them from the investigation knowledge base.
@@ -57,9 +56,13 @@ public class KnowledgeIngestionService {
     private final MinioClient minioClient;
     private final String rawBucket;
 
-    public KnowledgeIngestionService(KnowledgeRepository repository, EmbeddingStore<TextSegment> store,
-                                     LocalEmbeddingModel embeddingModel, RawFileStorage rawFileStorage,
-                                     MinioClient minioClient, @Value("${datalake.raw-bucket}") String rawBucket) {
+    public KnowledgeIngestionService(
+            KnowledgeRepository repository,
+            EmbeddingStore<TextSegment> store,
+            LocalEmbeddingModel embeddingModel,
+            RawFileStorage rawFileStorage,
+            MinioClient minioClient,
+            @Value("${datalake.raw-bucket}") String rawBucket) {
         this.repository = repository;
         this.store = store;
         this.embeddingModel = embeddingModel;
@@ -76,11 +79,12 @@ public class KnowledgeIngestionService {
      * @throws IllegalStateException    if the embedding runtime is unavailable
      */
     @Transactional
-    public KnowledgeRepository.KnowledgeDocument ingest(MultipartFile file, SourceType sourceType, String title,
-                                                        LocalDate effectiveDate) throws Exception {
+    public KnowledgeRepository.KnowledgeDocument ingest(
+            MultipartFile file, SourceType sourceType, String title, LocalDate effectiveDate) throws Exception {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("A non-empty file is required");
         if (sourceType == null) throw new IllegalArgumentException("sourceType must be ECN, QUALITY or CASE");
-        if (title == null || title.isBlank() || title.length() > 300) throw new IllegalArgumentException("A title of up to 300 characters is required");
+        if (title == null || title.isBlank() || title.length() > 300)
+            throw new IllegalArgumentException("A title of up to 300 characters is required");
         if (effectiveDate == null) throw new IllegalArgumentException("effectiveDate is required");
         String fileName = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename();
         List<String> passages;
@@ -97,8 +101,14 @@ public class KnowledgeIngestionService {
      * Splits, embeds and stores passages of an already-extracted document. Also used by the evaluation fixture.
      */
     @Transactional
-    public KnowledgeRepository.KnowledgeDocument add(UUID id, SourceType sourceType, String title, LocalDate effectiveDate,
-                                                     String fileName, String objectKey, List<String> passages) {
+    public KnowledgeRepository.KnowledgeDocument add(
+            UUID id,
+            SourceType sourceType,
+            String title,
+            LocalDate effectiveDate,
+            String fileName,
+            String objectKey,
+            List<String> passages) {
         DocumentSplitter splitter = DocumentSplitters.recursive(CHUNK_TOKENS, OVERLAP_TOKENS, embeddingModel);
         Metadata metadata = new Metadata()
                 .put("documentId", id.toString())
@@ -110,8 +120,15 @@ public class KnowledgeIngestionService {
         }
         if (segments.isEmpty()) throw new IllegalArgumentException("The document contains no text");
         List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
-        var document = new KnowledgeRepository.KnowledgeDocument(id, sourceType, title, effectiveDate, fileName,
-                objectKey, embeddingModel.signature(), OffsetDateTime.now(ZoneOffset.UTC));
+        var document = new KnowledgeRepository.KnowledgeDocument(
+                id,
+                sourceType,
+                title,
+                effectiveDate,
+                fileName,
+                objectKey,
+                embeddingModel.signature(),
+                OffsetDateTime.now(ZoneOffset.UTC));
         repository.insertDocument(document);
         List<String> chunkIds = new ArrayList<>();
         for (int i = 0; i < segments.size(); i++) {
@@ -127,19 +144,26 @@ public class KnowledgeIngestionService {
     /** Removes a document's vectors, rows and raw file. */
     @Transactional
     public void delete(UUID id) throws Exception {
-        var document = repository.findDocument(id)
+        var document = repository
+                .findDocument(id)
                 .orElseThrow(() -> new IllegalArgumentException("Knowledge document not found: " + id));
         List<String> chunkIds = repository.findChunkIds(id);
         if (!chunkIds.isEmpty()) store.removeAll(chunkIds);
         repository.deleteDocument(id);
-        minioClient.removeObject(RemoveObjectArgs.builder().bucket(rawBucket).object(document.objectKey()).build());
+        minioClient.removeObject(RemoveObjectArgs.builder()
+                .bucket(rawBucket)
+                .object(document.objectKey())
+                .build());
     }
 
     static List<String> passages(String fileName, InputStream input) throws IOException {
-        String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT) : "";
+        String extension = fileName.contains(".")
+                ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT)
+                : "";
         return switch (extension) {
             case "docx" -> {
-                try (XWPFDocument docx = new XWPFDocument(input); XWPFWordExtractor extractor = new XWPFWordExtractor(docx)) {
+                try (XWPFDocument docx = new XWPFDocument(input);
+                        XWPFWordExtractor extractor = new XWPFWordExtractor(docx)) {
                     yield List.of(extractor.getText());
                 }
             }
@@ -160,7 +184,9 @@ public class KnowledgeIngestionService {
             for (int i = 0; i < row.size(); i++) {
                 if (row.get(i).isBlank()) continue;
                 if (!passage.isEmpty()) passage.append("; ");
-                passage.append(i < header.size() ? header.get(i) : "column " + (i + 1)).append(": ").append(row.get(i).strip());
+                passage.append(i < header.size() ? header.get(i) : "column " + (i + 1))
+                        .append(": ")
+                        .append(row.get(i).strip());
             }
             passages.add(passage.toString());
         }
@@ -175,14 +201,19 @@ public class KnowledgeIngestionService {
         for (int i = 0; i < content.length(); i++) {
             char c = content.charAt(i);
             if (quoted) {
-                if (c == '"' && i + 1 < content.length() && content.charAt(i + 1) == '"') { field.append('"'); i++; }
-                else if (c == '"') quoted = false;
+                if (c == '"' && i + 1 < content.length() && content.charAt(i + 1) == '"') {
+                    field.append('"');
+                    i++;
+                } else if (c == '"') quoted = false;
                 else field.append(c);
             } else if (c == '"') quoted = true;
-            else if (c == ',') { row.add(field.toString()); field.setLength(0); }
-            else if (c == '\n' || c == '\r') {
+            else if (c == ',') {
+                row.add(field.toString());
+                field.setLength(0);
+            } else if (c == '\n' || c == '\r') {
                 if (c == '\r' && i + 1 < content.length() && content.charAt(i + 1) == '\n') i++;
-                row.add(field.toString()); field.setLength(0);
+                row.add(field.toString());
+                field.setLength(0);
                 if (row.stream().anyMatch(value -> !value.isBlank())) rows.add(row);
                 row = new ArrayList<>();
             } else field.append(c);

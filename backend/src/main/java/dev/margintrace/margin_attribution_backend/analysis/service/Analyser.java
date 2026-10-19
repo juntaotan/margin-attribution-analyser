@@ -1,8 +1,8 @@
 package dev.margintrace.margin_attribution_backend.analysis.service;
 
+import dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier.BomFrontierReconciler;
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.AttributionWorkflow;
 import dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder.MarginAttributionAlgorithm;
-import dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier.BomFrontierReconciler;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.algorithm.model.PropagationPath;
@@ -16,11 +16,8 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.StreamCsrGraph;
 import dev.margintrace.margin_attribution_backend.warehouse.model.BillOfMaterial;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.BillOfMaterialRepository;
-import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
+import dev.margintrace.margin_attribution_backend.warehouse.repository.SalesDetailRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -32,6 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -46,20 +45,24 @@ public class Analyser {
 
     /** Emits the exact CSR snapshots used by the reconciler before calculating paths. */
     public void streamReconciliation(
-            LocalDate actualStartDate, LocalDate actualEndDate,
-            LocalDate comparableStartDate, LocalDate comparableEndDate,
-            BigDecimal leafThreshold, BigDecimal stopThreshold,
-            UUID analysisId, Consumer<ReconciliationStreamEvent> emit) {
+            LocalDate actualStartDate,
+            LocalDate actualEndDate,
+            LocalDate comparableStartDate,
+            LocalDate comparableEndDate,
+            BigDecimal leafThreshold,
+            BigDecimal stopThreshold,
+            UUID analysisId,
+            Consumer<ReconciliationStreamEvent> emit) {
         validatePeriod(actualStartDate, actualEndDate, "actual");
         validatePeriod(comparableStartDate, comparableEndDate, "comparable");
         CsrGraph actualGraph = attributionWorkflow.trace(actualStartDate, actualEndDate);
         CsrGraph comparableGraph = attributionWorkflow.trace(comparableStartDate, comparableEndDate);
-        emit.accept(ReconciliationStreamEvent.graph(analysisId,
+        emit.accept(ReconciliationStreamEvent.graph(
+                analysisId,
                 StreamCsrGraph.from(actualGraph, analysisId, "actual"),
                 StreamCsrGraph.from(comparableGraph, analysisId, "comparable")));
 
-        List<PropagationPath> paths = reconciler.reconcile(
-                actualGraph, comparableGraph, leafThreshold, stopThreshold);
+        List<PropagationPath> paths = reconciler.reconcile(actualGraph, comparableGraph, leafThreshold, stopThreshold);
         List<ReconciliationStreamPath> streamPaths = paths.stream()
                 .map(path -> ReconciliationStreamPath.from(path, analysisId))
                 .toList();
@@ -68,23 +71,29 @@ public class Analyser {
 
     /** Returns complete threshold-triggered paths with recorded node values for the UI. */
     public ReconciliationAnalysisResponse reconcileGraphs(
-            CsrGraph actualGraph, CsrGraph comparableGraph,
-            BigDecimal leafThreshold, BigDecimal stopThreshold) {
-        List<PropagationPath> reconciledPaths = reconciler.reconcile(
-                actualGraph, comparableGraph, leafThreshold, stopThreshold);
+            CsrGraph actualGraph, CsrGraph comparableGraph, BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        List<PropagationPath> reconciledPaths =
+                reconciler.reconcile(actualGraph, comparableGraph, leafThreshold, stopThreshold);
         List<ReconciliationPathEntry> paths = reconciledPaths.stream()
                 .map(path -> new ReconciliationPathEntry(
-                        path.positions().stream().map(position -> actualGraph.nodes()[position]).toList(),
-                        path.edges(), path.endReason(), path.endingCostDifference()))
+                        path.positions().stream()
+                                .map(position -> actualGraph.nodes()[position])
+                                .toList(),
+                        path.edges(),
+                        path.endReason(),
+                        path.endingCostDifference()))
                 .toList();
         return new ReconciliationAnalysisResponse(UUID.randomUUID(), paths);
     }
 
     /** Builds both period graphs, then returns their threshold-triggered paths. */
     public ReconciliationAnalysisResponse reconcilePeriods(
-            LocalDate actualStartDate, LocalDate actualEndDate,
-            LocalDate comparableStartDate, LocalDate comparableEndDate,
-            BigDecimal leafThreshold, BigDecimal stopThreshold) {
+            LocalDate actualStartDate,
+            LocalDate actualEndDate,
+            LocalDate comparableStartDate,
+            LocalDate comparableEndDate,
+            BigDecimal leafThreshold,
+            BigDecimal stopThreshold) {
         validatePeriod(actualStartDate, actualEndDate, "actual");
         validatePeriod(comparableStartDate, comparableEndDate, "comparable");
         CsrGraph actualGraph = attributionWorkflow.trace(actualStartDate, actualEndDate);
@@ -119,7 +128,8 @@ public class Analyser {
         }
 
         Set<String> targets = new LinkedHashSet<>();
-        costDetailRepository.findAllByDateBetweenOrderByDateAscIdAsc(startDate, endDate)
+        costDetailRepository
+                .findAllByDateBetweenOrderByDateAscIdAsc(startDate, endDate)
                 .forEach(detail -> targets.add(detail.getProductNo()));
 
         // LinkedHashMap retains first-seen order; LinkedHashSet removes repeated edges.
@@ -130,8 +140,8 @@ public class Analyser {
                 // terminal target; these nodes have an empty downstream list if needed.
                 for (int position = 0; position < path.length; position++) {
                     Node upstream = graphNodes[path[position]];
-                    LinkedHashSet<Node> downstream = adjacency.computeIfAbsent(
-                            upstream, ignored -> new LinkedHashSet<>());
+                    LinkedHashSet<Node> downstream =
+                            adjacency.computeIfAbsent(upstream, ignored -> new LinkedHashSet<>());
 
                     // Consecutive positions form one direct upstream-to-downstream
                     // edge. A terminal node has no next position and keeps its key.
@@ -146,8 +156,7 @@ public class Analyser {
         // JSON object keys cannot contain Node objects, so expose each map entry as
         // a pair while preserving the exact Node values and direct relationships.
         for (Map.Entry<Node, LinkedHashSet<Node>> entry : adjacency.entrySet()) {
-            entries.add(new AnalysisAdjacencyEntry(
-                    entry.getKey(), List.copyOf(entry.getValue())));
+            entries.add(new AnalysisAdjacencyEntry(entry.getKey(), List.copyOf(entry.getValue())));
         }
 
         return AnalysisResults.builder()
@@ -203,16 +212,17 @@ public class Analyser {
         Map<String, BigDecimal> producedQuantities = new HashMap<>();
         if (startDate != null && endDate != null) {
             Map<String, Map<String, BigDecimal>> byProductOrder = new HashMap<>();
-            for (InventoryUsage usage : inventoryUsageRepository
-                    .findAllByDateBetweenOrderByDateAsc(startDate, endDate)) {
+            for (InventoryUsage usage :
+                    inventoryUsageRepository.findAllByDateBetweenOrderByDateAsc(startDate, endDate)) {
                 if (usage.getProductNum() != null) {
-                    byProductOrder.computeIfAbsent(usage.getProductNo(), ignored -> new HashMap<>())
+                    byProductOrder
+                            .computeIfAbsent(usage.getProductNo(), ignored -> new HashMap<>())
                             .putIfAbsent(usage.getOrderNo(), usage.getProductNum());
                 }
             }
             for (Map.Entry<String, Map<String, BigDecimal>> entry : byProductOrder.entrySet()) {
-                producedQuantities.put(entry.getKey(),
-                        entry.getValue().values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
+                producedQuantities.put(
+                        entry.getKey(), entry.getValue().values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
             }
         }
 
@@ -242,11 +252,12 @@ public class Analyser {
 
                 // Calculate planned total usage: parent quantity * unit usage
                 BigDecimal plannedUsage = parentNode.quantity().multiply(bom.getMaterialUsage());
-                Node materialNode = nodesByInventoryId.computeIfAbsent(
-                        materialId, id -> new Node(id, plannedUsage));
+                Node materialNode = nodesByInventoryId.computeIfAbsent(materialId, id -> new Node(id, plannedUsage));
 
                 // Sub-material is upstream; parent product is downstream
-                adjacency.computeIfAbsent(materialNode, ignored -> new LinkedHashSet<>()).add(parentNode);
+                adjacency
+                        .computeIfAbsent(materialNode, ignored -> new LinkedHashSet<>())
+                        .add(parentNode);
                 adjacency.computeIfAbsent(parentNode, ignored -> new LinkedHashSet<>());
 
                 if (!visitedProducts.contains(materialId)) {
@@ -257,8 +268,7 @@ public class Analyser {
 
         List<AnalysisAdjacencyEntry> entries = new ArrayList<>(adjacency.size());
         for (Map.Entry<Node, LinkedHashSet<Node>> entry : adjacency.entrySet()) {
-            entries.add(new AnalysisAdjacencyEntry(
-                    entry.getKey(), List.copyOf(entry.getValue())));
+            entries.add(new AnalysisAdjacencyEntry(entry.getKey(), List.copyOf(entry.getValue())));
         }
 
         return AnalysisResults.builder()

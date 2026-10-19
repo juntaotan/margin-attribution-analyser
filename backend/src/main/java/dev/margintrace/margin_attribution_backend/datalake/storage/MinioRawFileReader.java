@@ -3,15 +3,14 @@ package dev.margintrace.margin_attribution_backend.datalake.storage;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.errors.MinioException;
+import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
-
 @Component
 @RequiredArgsConstructor
-public class MinioRawFileReader implements RawFileReader{
+public class MinioRawFileReader implements RawFileReader {
 
     private final MinioClient minioClient;
 
@@ -30,8 +29,7 @@ public class MinioRawFileReader implements RawFileReader{
     public InputStream readFile(String objectKey) throws MinioException {
 
         InputStream input = minioClient.getObject(
-                GetObjectArgs.builder().bucket(bucket).object(objectKey).build()
-        );
+                GetObjectArgs.builder().bucket(bucket).object(objectKey).build());
 
         return input;
     }

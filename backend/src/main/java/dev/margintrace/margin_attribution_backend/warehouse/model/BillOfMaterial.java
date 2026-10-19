@@ -7,11 +7,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 
 /**
  * A component line in a bill of material.
@@ -21,11 +20,10 @@ import java.math.BigDecimal;
 @Entity
 @Table(
         name = "bill_of_material",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_bom_product_material",
-                columnNames = {"bom_no", "product_no", "material_no"}
-        )
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_bom_product_material",
+                        columnNames = {"bom_no", "product_no", "material_no"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BillOfMaterial {
@@ -47,12 +45,7 @@ public class BillOfMaterial {
     @Column(name = "material_usage", nullable = false, precision = 18, scale = 6)
     private BigDecimal materialUsage;
 
-    public static BillOfMaterial of(
-            String bomNo,
-            String productNo,
-            String materialNo,
-            BigDecimal materialUsage
-    ) {
+    public static BillOfMaterial of(String bomNo, String productNo, String materialNo, BigDecimal materialUsage) {
         BillOfMaterial line = new BillOfMaterial();
         line.bomNo = requireBusinessKey(bomNo, "BOM number");
         line.productNo = requireBusinessKey(productNo, "Product number");

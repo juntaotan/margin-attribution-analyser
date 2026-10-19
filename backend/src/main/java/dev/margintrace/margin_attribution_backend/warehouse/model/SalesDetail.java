@@ -8,23 +8,21 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /** Revenue and cost for one sold product movement. */
 @Entity
 @IdClass(SalesDetailId.class)
 @Table(
         name = "sales_details",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_sales_details_movement_product",
-                columnNames = {"movement_no", "product_no", "date"}
-        )
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_sales_details_movement_product",
+                        columnNames = {"movement_no", "product_no", "date"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SalesDetail {
@@ -59,8 +57,7 @@ public class SalesDetail {
             String productNo,
             BigDecimal productQuantity,
             BigDecimal totalRevenue,
-            BigDecimal totalCost
-    ) {
+            BigDecimal totalCost) {
         SalesDetail detail = new SalesDetail();
         detail.date = requireDate(date);
         detail.movementNo = requireBusinessKey(movementNo, "Movement number");

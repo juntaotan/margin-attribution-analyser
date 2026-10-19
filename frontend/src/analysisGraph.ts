@@ -145,5 +145,4 @@ export const formatQuantity = (quantity: number): string =>
   new Intl.NumberFormat('en-NZ', { maximumFractionDigits: 6 }).format(quantity);
 
 /** Formats recorded cost while keeping an unavailable amount distinct from zero. */
-export const formatAmount = (cost: number | null): string =>
-  cost == null ? '—' : `$${cost.toFixed(2)} NZD`;
+export const formatAmount = (cost: number | null): string => (cost == null ? '—' : `$${cost.toFixed(2)} NZD`);

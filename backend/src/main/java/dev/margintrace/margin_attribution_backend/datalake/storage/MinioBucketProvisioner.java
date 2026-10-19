@@ -29,11 +29,7 @@ public class MinioBucketProvisioner {
         }
 
         try {
-            minioClient.makeBucket(
-                    MakeBucketArgs.builder()
-                            .bucket(bucket)
-                            .build()
-            );
+            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
         } catch (Exception creationFailure) {
             try {
                 if (bucketExists()) {
@@ -48,9 +44,6 @@ public class MinioBucketProvisioner {
 
     private boolean bucketExists() throws Exception {
         return minioClient.bucketExists(
-                BucketExistsArgs.builder()
-                        .bucket(bucket)
-                        .build()
-        );
+                BucketExistsArgs.builder().bucket(bucket).build());
     }
 }

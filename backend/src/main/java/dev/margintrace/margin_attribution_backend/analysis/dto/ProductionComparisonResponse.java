@@ -10,6 +10,10 @@ import java.util.Set;
  * inspecting each start's numerical status; stationarity does not establish a cause.
  * Tree evidence and row/column source mappings identify every correspondence entry.
  */
-public record ProductionComparisonResponse(Set<String> statuses, List<String> missingVectors,
-        Map<String, String> embeddingVersions, ProductionTreeResponse trees,
-        FgwEngine.Result result, Boolean converged) {}
+public record ProductionComparisonResponse(
+        Set<String> statuses,
+        List<String> missingVectors,
+        Map<String, String> embeddingVersions,
+        ProductionTreeResponse trees,
+        FgwEngine.Result result,
+        Boolean converged) {}

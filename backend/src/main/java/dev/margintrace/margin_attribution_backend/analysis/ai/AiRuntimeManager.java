@@ -6,9 +6,6 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprintAssistant;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportPeriodAssistant;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -16,23 +13,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AiRuntimeManager {
     private final AtomicReference<AiRuntime> current;
-    private final HttpClient healthClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(3))
-            .build();
+    private final HttpClient healthClient =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
 
     public AiRuntimeManager(
             @Value("${analysis.llama.base-url:http://127.0.0.1:8081}") String baseUrl,
             @Value("${analysis.llama.model:local}") String model) {
         URI uri = URI.create(baseUrl.replaceAll("/+$", ""));
-        int port = uri.getPort() >= 0
-                ? uri.getPort()
-                : ("https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80);
-        this.current = new AtomicReference<>(build(
-                new AiConnectionSettings(uri.getHost(), port, model, null)));
+        int port = uri.getPort() >= 0 ? uri.getPort() : ("https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80);
+        this.current = new AtomicReference<>(build(new AiConnectionSettings(uri.getHost(), port, model, null)));
     }
 
     public AiRuntime current() {
@@ -52,49 +47,45 @@ public class AiRuntimeManager {
                     .timeout(Duration.ofSeconds(5))
                     .GET()
                     .build();
-            HttpResponse<String> response =
-                    healthClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = healthClient.send(request, HttpResponse.BodyHandlers.ofString());
             long latency = elapsedMillis(started);
             if (response.statusCode() == 200) {
-                return new ConnectionTest(true, true, latency,
-                        "Connected to llama.cpp; the model is ready");
+                return new ConnectionTest(true, true, latency, "Connected to llama.cpp; the model is ready");
             }
             if (response.statusCode() == 503 && response.body().contains("Loading model")) {
-                return new ConnectionTest(true, false, latency,
-                        "Connected to llama.cpp; the model is still loading");
+                return new ConnectionTest(true, false, latency, "Connected to llama.cpp; the model is still loading");
             }
-            return new ConnectionTest(true, false, latency,
-                    "llama.cpp health check returned HTTP " + response.statusCode());
+            return new ConnectionTest(
+                    true, false, latency, "llama.cpp health check returned HTTP " + response.statusCode());
         } catch (ConnectException exception) {
-            return new ConnectionTest(false, false, elapsedMillis(started),
+            return new ConnectionTest(
+                    false,
+                    false,
+                    elapsedMillis(started),
                     "Cannot connect to llama.cpp at " + settings.host() + ":" + settings.port());
         } catch (java.net.http.HttpTimeoutException exception) {
-            return new ConnectionTest(false, false, elapsedMillis(started),
-                    "Connection to llama.cpp timed out");
+            return new ConnectionTest(false, false, elapsedMillis(started), "Connection to llama.cpp timed out");
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            return new ConnectionTest(false, false, elapsedMillis(started),
-                    "llama.cpp health check was interrupted");
+            return new ConnectionTest(false, false, elapsedMillis(started), "llama.cpp health check was interrupted");
         } catch (Exception exception) {
-            return new ConnectionTest(false, false, elapsedMillis(started),
+            return new ConnectionTest(
+                    false,
+                    false,
+                    elapsedMillis(started),
                     "llama.cpp health check failed (" + exception.getClass().getSimpleName() + ")");
         }
     }
 
     private AiRuntime build(AiConnectionSettings settings) {
-        RootCauseAssistant rootCause = AiServices.create(
-                RootCauseAssistant.class, chatModel(settings, 384, false));
-        ReportPeriodAssistant period = AiServices.create(
-                ReportPeriodAssistant.class, chatModel(settings, 128, true));
-        ReportBlueprintAssistant blueprint = AiServices.create(
-                ReportBlueprintAssistant.class, chatModel(settings, 900, true));
+        RootCauseAssistant rootCause = AiServices.create(RootCauseAssistant.class, chatModel(settings, 384, false));
+        ReportPeriodAssistant period = AiServices.create(ReportPeriodAssistant.class, chatModel(settings, 128, true));
+        ReportBlueprintAssistant blueprint =
+                AiServices.create(ReportBlueprintAssistant.class, chatModel(settings, 900, true));
         return new AiRuntime(settings, rootCause, period, blueprint);
     }
 
-    private ChatModel chatModel(
-            AiConnectionSettings settings,
-            int maxOutputTokens,
-            boolean structuredOutput) {
+    private ChatModel chatModel(AiConnectionSettings settings, int maxOutputTokens, boolean structuredOutput) {
         OpenAiChatModel.OpenAiChatModelBuilder builder = OpenAiChatModel.builder()
                 .baseUrl(settings.baseUrl() + "/v1")
                 .apiKey("no-key")
@@ -118,13 +109,7 @@ public class AiRuntimeManager {
             AiConnectionSettings settings,
             RootCauseAssistant rootCauseAssistant,
             ReportPeriodAssistant reportPeriodAssistant,
-            ReportBlueprintAssistant reportBlueprintAssistant) {
-    }
+            ReportBlueprintAssistant reportBlueprintAssistant) {}
 
-    public record ConnectionTest(
-            boolean reachable,
-            boolean modelReady,
-            long latencyMs,
-            String message) {
-    }
+    public record ConnectionTest(boolean reachable, boolean modelReady, long latencyMs, String message) {}
 }

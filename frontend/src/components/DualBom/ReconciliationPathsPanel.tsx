@@ -23,8 +23,10 @@ export const ReconciliationPathsPanel: React.FC<ReconciliationPathsPanelProps> =
     ) : (
       <ol className="max-h-32 overflow-y-auto space-y-1">
         {paths.map((path, index) => (
-          <li key={`${index}-${path.edges.map((edge) => edge.edgeIndex).join('-')}`}
-              className="flex flex-wrap items-center gap-2 rounded border border-rose-200/70 bg-rose-50/60 px-2 py-1 text-xs">
+          <li
+            key={`${index}-${path.edges.map((edge) => edge.edgeIndex).join('-')}`}
+            className="flex flex-wrap items-center gap-2 rounded border border-rose-200/70 bg-rose-50/60 px-2 py-1 text-xs"
+          >
             <span className="font-semibold text-rose-700">#{index + 1}</span>
             <span className="font-mono text-slate-800 break-all">
               {path.nodes.map((node) => node.inventoryId).join(' → ')}

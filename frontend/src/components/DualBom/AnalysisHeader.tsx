@@ -65,25 +65,31 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
             <span className="w-5 h-5 rounded bg-slate-100 text-slate-800 border border-slate-200/80 flex items-center justify-center font-bold text-xs font-mono">
               Δ
             </span>
-            <h1 className="text-sm font-bold tracking-tight text-slate-900">
-              MarginTrace Analysis
-            </h1>
+            <h1 className="text-sm font-bold tracking-tight text-slate-900">MarginTrace Analysis</h1>
           </div>
           <span className="text-[11px] font-mono bg-[#f8fafc] px-1.5 py-0.5 rounded text-slate-600 border border-slate-200/80">
             Prototype
           </span>
-          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
-            status?.includes('Running')
-              ? 'bg-period-actual-subtle text-period-actual border-period-actual-border/50'
-              : status?.includes('Failed')
-              ? 'bg-variance-unfavourable-subtle text-variance-unfavourable border-variance-unfavourable-border/50'
-              : status && status !== 'Awaiting analysis'
-              ? 'bg-emerald-50/80 text-emerald-800 border-emerald-200/80'
-              : 'bg-slate-100 text-slate-600 border-slate-200/80'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              status?.includes('Running') ? 'bg-period-actual animate-pulse' : status?.includes('Failed') ? 'bg-variance-unfavourable' : 'bg-slate-400'
-            }`} />
+          <div
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${
+              status?.includes('Running')
+                ? 'bg-period-actual-subtle text-period-actual border-period-actual-border/50'
+                : status?.includes('Failed')
+                  ? 'bg-variance-unfavourable-subtle text-variance-unfavourable border-variance-unfavourable-border/50'
+                  : status && status !== 'Awaiting analysis'
+                    ? 'bg-emerald-50/80 text-emerald-800 border-emerald-200/80'
+                    : 'bg-slate-100 text-slate-600 border-slate-200/80'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                status?.includes('Running')
+                  ? 'bg-period-actual animate-pulse'
+                  : status?.includes('Failed')
+                    ? 'bg-variance-unfavourable'
+                    : 'bg-slate-400'
+              }`}
+            />
             <span>{status || 'Awaiting analysis'}</span>
           </div>
         </div>

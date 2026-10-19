@@ -1,12 +1,5 @@
 package dev.margintrace.margin_attribution_backend.importation.model;
 
-import java.time.Instant;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,9 +7,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "import_job")
@@ -75,8 +73,8 @@ public class ImportJob {
     private long version;
 
     // Create the first transaction PENDING using Static Factory Method
-    public static ImportJob pending(String originalFilename, String storageObjectKey,
-                                    String mappingTableName, boolean mappingResult) {
+    public static ImportJob pending(
+            String originalFilename, String storageObjectKey, String mappingTableName, boolean mappingResult) {
         if (mappingTableName == null || mappingTableName.isBlank() || mappingTableName.length() > 100) {
             throw new IllegalArgumentException("A valid mapping table name is required");
         }
@@ -168,5 +166,4 @@ public class ImportJob {
 
         return value.substring(0, maximumLength);
     }
-
 }

@@ -1,20 +1,19 @@
 package dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.GraphEdge;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import dev.margintrace.margin_attribution_backend.algorithm.model.PropagationPath;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests upward frontier propagation and graph preparation, adapted from OpenCL
@@ -26,84 +25,78 @@ class BomUpwardEngineTests {
 
     @Test
     void propagatesUntilAnAncestorMeetsTheThreshold() {
-        BomUpwardGraph graph = raw(new long[]{0, 0, 500, 1_500}, flags(4),
-                new int[]{0, 1}, edges(0, 2, 1, 2, 2, 3));
-        assertArrayEquals(new int[]{3}, engine.run(graph, 1_000));
+        BomUpwardGraph graph = raw(new long[] {0, 0, 500, 1_500}, flags(4), new int[] {0, 1}, edges(0, 2, 1, 2, 2, 3));
+        assertArrayEquals(new int[] {3}, engine.run(graph, 1_000));
     }
 
     @Test
     void positiveAndNegativeValuesUseAnInclusiveBoundary() {
-        BomUpwardGraph graph = raw(new long[]{0, 999, 1_000, 1_001, -999, -1_000, -1_001},
-                flags(7), new int[]{0}, edges(0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6));
-        assertSorted(new int[]{2, 3, 5, 6}, engine.run(graph, 1_000));
+        BomUpwardGraph graph = raw(
+                new long[] {0, 999, 1_000, 1_001, -999, -1_000, -1_001},
+                flags(7),
+                new int[] {0},
+                edges(0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6));
+        assertSorted(new int[] {2, 3, 5, 6}, engine.run(graph, 1_000));
     }
 
     @Test
     void zeroThresholdSelectsComparableZeroButNeverTestsTerminals() {
-        BomUpwardGraph graph = raw(new long[]{Long.MAX_VALUE, 0}, flags(2),
-                new int[]{0}, edges(0, 1));
-        assertArrayEquals(new int[]{1}, engine.run(graph, 0));
-        assertArrayEquals(new int[0], engine.run(raw(new long[]{Long.MAX_VALUE},
-                flags(1), new int[]{0}, edges()), 0));
+        BomUpwardGraph graph = raw(new long[] {Long.MAX_VALUE, 0}, flags(2), new int[] {0}, edges(0, 1));
+        assertArrayEquals(new int[] {1}, engine.run(graph, 0));
+        assertArrayEquals(
+                new int[0], engine.run(raw(new long[] {Long.MAX_VALUE}, flags(1), new int[] {0}, edges()), 0));
     }
 
     @Test
     void noncomparableNodesPropagateAndSelectedNodesStop() {
-        BomUpwardGraph chain = raw(new long[]{0, 5_000, 2_000},
-                new byte[]{1, 0, 1}, new int[]{0}, edges(0, 1, 1, 2));
-        assertArrayEquals(new int[]{2}, engine.run(chain, 1_000));
+        BomUpwardGraph chain =
+                raw(new long[] {0, 5_000, 2_000}, new byte[] {1, 0, 1}, new int[] {0}, edges(0, 1, 1, 2));
+        assertArrayEquals(new int[] {2}, engine.run(chain, 1_000));
 
-        BomUpwardGraph stopped = raw(new long[]{0, 2_000, 3_000}, flags(3),
-                new int[]{0}, edges(0, 1, 1, 2));
-        assertArrayEquals(new int[]{1}, engine.run(stopped, 1_000));
+        BomUpwardGraph stopped = raw(new long[] {0, 2_000, 3_000}, flags(3), new int[] {0}, edges(0, 1, 1, 2));
+        assertArrayEquals(new int[] {1}, engine.run(stopped, 1_000));
     }
 
     @Test
     void sharedParentsWaitForAllChildrenAndDiamondResultAppearsOnce() {
-        BomUpwardGraph graph = raw(new long[]{0, 0, 100, 1_500}, flags(4),
-                new int[]{0}, edges(0, 1, 0, 2, 1, 3, 2, 3));
-        assertArrayEquals(new int[]{3}, engine.run(graph, 1_000));
+        BomUpwardGraph graph =
+                raw(new long[] {0, 0, 100, 1_500}, flags(4), new int[] {0}, edges(0, 1, 0, 2, 1, 3, 2, 3));
+        assertArrayEquals(new int[] {3}, engine.run(graph, 1_000));
 
-        BomUpwardGraph twoTerminals = raw(new long[]{0, 0, 500, 1_500}, flags(4),
-                new int[]{0, 1}, edges(0, 2, 1, 2, 2, 3));
-        assertArrayEquals(new int[]{3}, engine.run(twoTerminals, 1_000));
+        BomUpwardGraph twoTerminals =
+                raw(new long[] {0, 0, 500, 1_500}, flags(4), new int[] {0, 1}, edges(0, 2, 1, 2, 2, 3));
+        assertArrayEquals(new int[] {3}, engine.run(twoTerminals, 1_000));
     }
 
     @Test
     void delayedChildMustPropagateBeforeItsParentIsSelected() {
-        BomUpwardGraph graph = raw(new long[]{0, 0, 2_000, 500}, flags(4),
-                new int[]{0, 1}, edges(0, 2, 1, 3, 3, 2));
-        assertArrayEquals(new int[]{2}, engine.run(graph, 1_000));
+        BomUpwardGraph graph = raw(new long[] {0, 0, 2_000, 500}, flags(4), new int[] {0, 1}, edges(0, 2, 1, 3, 3, 2));
+        assertArrayEquals(new int[] {2}, engine.run(graph, 1_000));
     }
 
     @Test
     void selectedOrUnseededChildBlocksItsAncestor() {
-        BomUpwardGraph selectedChild = raw(new long[]{0, 2_000, 500, 3_000}, flags(4),
-                new int[]{0}, edges(0, 1, 0, 2, 1, 3, 2, 3));
-        assertArrayEquals(new int[]{1}, engine.run(selectedChild, 1_000));
+        BomUpwardGraph selectedChild =
+                raw(new long[] {0, 2_000, 500, 3_000}, flags(4), new int[] {0}, edges(0, 1, 0, 2, 1, 3, 2, 3));
+        assertArrayEquals(new int[] {1}, engine.run(selectedChild, 1_000));
 
-        BomUpwardGraph missingTerminal = raw(new long[]{0, 0, 2_000}, flags(3),
-                new int[]{0}, edges(0, 2, 1, 2));
+        BomUpwardGraph missingTerminal = raw(new long[] {0, 0, 2_000}, flags(3), new int[] {0}, edges(0, 2, 1, 2));
         assertArrayEquals(new int[0], engine.run(missingTerminal, 1_000));
     }
 
     @Test
     void disconnectedAndEmptyFrontiersStayDisconnected() {
-        BomUpwardGraph disconnected = raw(new long[]{0, 2_000, 0, 3_000}, flags(4),
-                new int[]{0}, edges(0, 1, 2, 3));
-        assertArrayEquals(new int[]{1}, engine.run(disconnected, 1_000));
-        assertArrayEquals(new int[0], engine.run(raw(new long[0], new byte[0],
-                new int[0], edges()), 0));
-        assertArrayEquals(new int[0], engine.run(raw(new long[]{0, 2_000},
-                flags(2), new int[0], edges(0, 1)), 1_000));
-        assertArrayEquals(new int[0], engine.run(raw(new long[]{0, 2_000},
-                new byte[2], new int[]{0}, edges(0, 1)), 0));
+        BomUpwardGraph disconnected = raw(new long[] {0, 2_000, 0, 3_000}, flags(4), new int[] {0}, edges(0, 1, 2, 3));
+        assertArrayEquals(new int[] {1}, engine.run(disconnected, 1_000));
+        assertArrayEquals(new int[0], engine.run(raw(new long[0], new byte[0], new int[0], edges()), 0));
+        assertArrayEquals(new int[0], engine.run(raw(new long[] {0, 2_000}, flags(2), new int[0], edges(0, 1)), 1_000));
+        assertArrayEquals(
+                new int[0], engine.run(raw(new long[] {0, 2_000}, new byte[2], new int[] {0}, edges(0, 1)), 0));
     }
 
     @Test
     void repeatedCallsDoNotChangeTheGraphOrEngineState() {
-        BomUpwardGraph graph = raw(new long[]{0, 2_000, 3_000}, flags(3),
-                new int[]{0}, edges(0, 1, 1, 2));
+        BomUpwardGraph graph = raw(new long[] {0, 2_000, 3_000}, flags(3), new int[] {0}, edges(0, 1, 1, 2));
         int[] offsets = graph.offsets().clone();
         int[] reverseOffsets = graph.reverseOffsets().clone();
         int[] successors = graph.reverseSuccessors().clone();
@@ -111,9 +104,9 @@ class BomUpwardEngineTests {
         long[] values = graph.nodeValues().clone();
         byte[] flags = graph.nodeComparable().clone();
 
-        assertArrayEquals(new int[]{1}, engine.run(graph, 1_000));
-        assertArrayEquals(new int[]{2}, engine.run(graph, 2_500));
-        assertArrayEquals(new int[]{1}, engine.run(graph, 1_000));
+        assertArrayEquals(new int[] {1}, engine.run(graph, 1_000));
+        assertArrayEquals(new int[] {2}, engine.run(graph, 2_500));
+        assertArrayEquals(new int[] {1}, engine.run(graph, 1_000));
         assertArrayEquals(offsets, graph.offsets());
         assertArrayEquals(reverseOffsets, graph.reverseOffsets());
         assertArrayEquals(successors, graph.reverseSuccessors());
@@ -124,11 +117,14 @@ class BomUpwardEngineTests {
 
     @Test
     void unsignedThresholdIncludesMinValueAbsolutePattern() {
-        BomUpwardGraph graph = raw(new long[]{0, Long.MIN_VALUE, Long.MAX_VALUE, -1_001},
-                flags(4), new int[]{0}, edges(0, 1, 0, 2, 0, 3));
-        assertArrayEquals(new int[]{1}, engine.run(graph, Long.MIN_VALUE));
+        BomUpwardGraph graph = raw(
+                new long[] {0, Long.MIN_VALUE, Long.MAX_VALUE, -1_001},
+                flags(4),
+                new int[] {0},
+                edges(0, 1, 0, 2, 0, 3));
+        assertArrayEquals(new int[] {1}, engine.run(graph, Long.MIN_VALUE));
         assertArrayEquals(new int[0], engine.run(graph, -1L));
-        assertSorted(new int[]{1, 2, 3}, engine.run(graph, 1_000));
+        assertSorted(new int[] {1, 2, 3}, engine.run(graph, 1_000));
     }
 
     @Test
@@ -140,12 +136,15 @@ class BomUpwardEngineTests {
         }
         long[] values = new long[128];
         values[127] = 2_000;
-        assertArrayEquals(new int[]{127}, engine.run(raw(values, flags(128),
-                new int[]{0}, chainEdges), 1_000));
+        assertArrayEquals(new int[] {127}, engine.run(raw(values, flags(128), new int[] {0}, chainEdges), 1_000));
 
-        assertSorted(new int[]{1, 2, 3, 4}, engine.run(raw(
-                new long[]{0, 1_000, 1_001, 1_002, 1_003}, flags(5),
-                new int[]{0}, edges(0, 1, 0, 2, 0, 3, 0, 4)), 1_000));
+        assertSorted(
+                new int[] {1, 2, 3, 4},
+                engine.run(
+                        raw(
+                                new long[] {0, 1_000, 1_001, 1_002, 1_003}, flags(5),
+                                new int[] {0}, edges(0, 1, 0, 2, 0, 3, 0, 4)),
+                        1_000));
     }
 
     @Test
@@ -207,87 +206,90 @@ class BomUpwardEngineTests {
             int[] terminals = terminalsFromPairs(nodeCount, pairs);
             shuffle(terminals, random);
             BomUpwardGraph graph = raw(values, comparable, terminals, pairs);
-            for (long threshold : new long[]{0, 1_000, 2_001}) {
+            for (long threshold : new long[] {0, 1_000, 2_001}) {
                 int[] expected = scanChildren(values, comparable, pairs, threshold);
                 int[] actual = engine.run(graph, threshold);
                 Arrays.sort(expected);
                 Arrays.sort(actual);
-                assertArrayEquals(expected, actual,
-                        "seed=" + seed + " sample=" + sample + " threshold=" + threshold);
+                assertArrayEquals(expected, actual, "seed=" + seed + " sample=" + sample + " threshold=" + threshold);
             }
         }
     }
 
     @Test
     void preparerAlignsReorderedIdsAndUsesExactFractionalUnits() {
-        CsrGraph actual = csr(new Node[]{node("M", "0.000002"), node("P", "1.000000")},
-                edges(0, 1));
-        CsrGraph comparable = csr(new Node[]{node("P", "1.000001"),
-                node("M", "0.000001")}, edges());
-        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable,
-                decimal("0.000001"), decimal("0.000001"));
-        assertArrayEquals(new int[]{0}, prepared.graph().terminalNodes());
-        assertArrayEquals(new long[]{1, -1}, prepared.graph().nodeValues());
-        assertArrayEquals(new byte[]{1, 1}, prepared.graph().nodeComparable());
+        CsrGraph actual = csr(new Node[] {node("M", "0.000002"), node("P", "1.000000")}, edges(0, 1));
+        CsrGraph comparable = csr(new Node[] {node("P", "1.000001"), node("M", "0.000001")}, edges());
+        BomGraphPreparer.PreparedPruning prepared =
+                preparer.prepare(actual, comparable, decimal("0.000001"), decimal("0.000001"));
+        assertArrayEquals(new int[] {0}, prepared.graph().terminalNodes());
+        assertArrayEquals(new long[] {1, -1}, prepared.graph().nodeValues());
+        assertArrayEquals(new byte[] {1, 1}, prepared.graph().nodeComparable());
         assertEquals(1L, prepared.threshold());
-        assertArrayEquals(new int[]{1}, engine.run(prepared.graph(), prepared.threshold()));
+        assertArrayEquals(new int[] {1}, engine.run(prepared.graph(), prepared.threshold()));
     }
 
     @Test
     void preparerLetsMissingOrUnavailableCostsPropagate() {
-        CsrGraph actual = csr(new Node[]{node("M", "5"), new Node("A", decimal("1")),
-                node("B", "8"), node("C", "9"), node("S", "10")},
+        CsrGraph actual = csr(
+                new Node[] {node("M", "5"), new Node("A", decimal("1")), node("B", "8"), node("C", "9"), node("S", "10")
+                },
                 edges(0, 1, 1, 2, 2, 3, 3, 4));
-        CsrGraph comparable = csr(new Node[]{node("S", "7"), node("M", "0"),
-                node("A", "1"), new Node("B", decimal("1"))}, edges());
-        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable,
-                decimal("1"), decimal("2"));
-        assertArrayEquals(new byte[]{1, 0, 0, 0, 1}, prepared.graph().nodeComparable());
-        assertArrayEquals(new int[]{4}, engine.run(prepared.graph(), prepared.threshold()));
+        CsrGraph comparable =
+                csr(new Node[] {node("S", "7"), node("M", "0"), node("A", "1"), new Node("B", decimal("1"))}, edges());
+        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable, decimal("1"), decimal("2"));
+        assertArrayEquals(new byte[] {1, 0, 0, 0, 1}, prepared.graph().nodeComparable());
+        assertArrayEquals(new int[] {4}, engine.run(prepared.graph(), prepared.threshold()));
     }
 
     @Test
     void preparerCountsOnlyChildrenReachableFromSelectedLeaves() {
-        CsrGraph actual = csr(new Node[]{node("M1", "2"), node("M2", "3"),
-                node("M3", "0"), node("S", "0"), node("P", "10")},
+        CsrGraph actual = csr(
+                new Node[] {node("M1", "2"), node("M2", "3"), node("M3", "0"), node("S", "0"), node("P", "10")},
                 edges(0, 3, 1, 3, 2, 3, 3, 4));
-        CsrGraph comparable = csr(new Node[]{node("M1", "0"), node("M2", "0"),
-                node("M3", "0"), node("S", "0"), node("P", "0")}, edges());
-        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable,
-                decimal("1"), decimal("5"));
-        assertArrayEquals(new int[]{0, 1}, prepared.graph().terminalNodes());
-        assertArrayEquals(new int[]{0, 0, 0, 0, 2, 3}, prepared.graph().offsets());
-        assertArrayEquals(new int[]{4}, engine.run(prepared.graph(), prepared.threshold()));
+        CsrGraph comparable = csr(
+                new Node[] {node("M1", "0"), node("M2", "0"), node("M3", "0"), node("S", "0"), node("P", "0")},
+                edges());
+        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable, decimal("1"), decimal("5"));
+        assertArrayEquals(new int[] {0, 1}, prepared.graph().terminalNodes());
+        assertArrayEquals(new int[] {0, 0, 0, 0, 2, 3}, prepared.graph().offsets());
+        assertArrayEquals(new int[] {4}, engine.run(prepared.graph(), prepared.threshold()));
     }
 
     @Test
     void preparerWithNoEligibleLeavesReturnsAnEmptyFrontier() {
-        CsrGraph actual = csr(new Node[]{node("M", "0"), node("P", "10")}, edges(0, 1));
-        CsrGraph comparable = csr(new Node[]{node("M", "0"), node("P", "0")}, edges());
-        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable,
-                decimal("1"), decimal("1"));
+        CsrGraph actual = csr(new Node[] {node("M", "0"), node("P", "10")}, edges(0, 1));
+        CsrGraph comparable = csr(new Node[] {node("M", "0"), node("P", "0")}, edges());
+        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable, decimal("1"), decimal("1"));
         assertArrayEquals(new int[0], prepared.graph().terminalNodes());
-        assertArrayEquals(new int[]{0, 0, 0}, prepared.graph().offsets());
+        assertArrayEquals(new int[] {0, 0, 0}, prepared.graph().offsets());
         assertArrayEquals(new int[0], engine.run(prepared.graph(), prepared.threshold()));
     }
 
     @Test
     void reconcilerReconstructsEverySelectedLeafPathToTheBoundary() {
-        CsrGraph actual = csr(new Node[]{node("M1", "2"), node("M2", "3"),
-                node("S", "0"), node("P", "10")}, edges(0, 2, 1, 2, 2, 3));
-        CsrGraph comparable = csr(new Node[]{node("P", "0"), node("S", "0"),
-                node("M2", "0"), node("M1", "0")}, edges());
+        CsrGraph actual = csr(
+                new Node[] {node("M1", "2"), node("M2", "3"), node("S", "0"), node("P", "10")},
+                edges(0, 2, 1, 2, 2, 3));
+        CsrGraph comparable =
+                csr(new Node[] {node("P", "0"), node("S", "0"), node("M2", "0"), node("M1", "0")}, edges());
 
-        List<PropagationPath> paths = new BomFrontierReconciler().reconcile(
-                actual, comparable, decimal("1"), decimal("5"));
+        List<PropagationPath> paths =
+                new BomFrontierReconciler().reconcile(actual, comparable, decimal("1"), decimal("5"));
 
-        assertEquals(List.of(
-                new PropagationPath(List.of(0, 2, 3),
-                        List.of(new GraphEdge(0, 2, 0), new GraphEdge(2, 3, 2)),
-                        PropagationPath.EndReason.THRESHOLD_EXCEEDED, decimal("10.000000")),
-                new PropagationPath(List.of(1, 2, 3),
-                        List.of(new GraphEdge(1, 2, 1), new GraphEdge(2, 3, 2)),
-                        PropagationPath.EndReason.THRESHOLD_EXCEEDED, decimal("10.000000"))), paths);
+        assertEquals(
+                List.of(
+                        new PropagationPath(
+                                List.of(0, 2, 3),
+                                List.of(new GraphEdge(0, 2, 0), new GraphEdge(2, 3, 2)),
+                                PropagationPath.EndReason.THRESHOLD_EXCEEDED,
+                                decimal("10.000000")),
+                        new PropagationPath(
+                                List.of(1, 2, 3),
+                                List.of(new GraphEdge(1, 2, 1), new GraphEdge(2, 3, 2)),
+                                PropagationPath.EndReason.THRESHOLD_EXCEEDED,
+                                decimal("10.000000"))),
+                paths);
     }
 
     /** Builds raw engine arrays from material-to-product edges without changing result multiplicity. */
@@ -313,8 +315,7 @@ class BomUpwardEngineTests {
 
     /** Builds the shared CSR model with material-to-product edge orientation. */
     private static CsrGraph csr(Node[] nodes, int[] pairs) {
-        BomUpwardGraph graph = raw(new long[nodes.length], new byte[nodes.length],
-                new int[0], pairs);
+        BomUpwardGraph graph = raw(new long[nodes.length], new byte[nodes.length], new int[0], pairs);
         return new CsrGraph(nodes, graph.reverseOffsets(), graph.reverseSuccessors());
     }
 
@@ -385,8 +386,7 @@ class BomUpwardEngineTests {
                 if (ready) {
                     long value = values[node];
                     long magnitude = value < 0 ? -(value + 1) + 1 : value;
-                    boolean selected = comparable[node] != 0
-                            && Long.compareUnsigned(magnitude, threshold) >= 0;
+                    boolean selected = comparable[node] != 0 && Long.compareUnsigned(magnitude, threshold) >= 0;
                     state[node] = selected ? 2 : 1;
                     if (selected) {
                         results[resultCount++] = node;

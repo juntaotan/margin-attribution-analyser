@@ -1,7 +1,7 @@
 package dev.margintrace.margin_attribution_backend.analysis.dto;
 
-import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionTree.Evidence;
 import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionTree.ActualGraph;
+import dev.margintrace.margin_attribution_backend.algorithm.ProductionTree.ProductionTree.Evidence;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,7 +12,11 @@ import java.util.List;
  * actualGraph is the preceding stage's verified manufacturing CSR with explicit
  * selected roots and coverage. It is required; final tree CSR is never a fallback.
  */
-public record ProductionTreeRequest(List<String> productionIds, List<String> productIds,
-                                    LocalDate startDate, LocalDate endDate,
-                                    List<ReconciliationPathEntry> abnormalPaths, Evidence evidence,
-                                    ActualGraph actualGraph) {}
+public record ProductionTreeRequest(
+        List<String> productionIds,
+        List<String> productIds,
+        LocalDate startDate,
+        LocalDate endDate,
+        List<ReconciliationPathEntry> abnormalPaths,
+        Evidence evidence,
+        ActualGraph actualGraph) {}

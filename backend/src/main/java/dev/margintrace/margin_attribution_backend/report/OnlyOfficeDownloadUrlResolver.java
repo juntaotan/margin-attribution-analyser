@@ -7,16 +7,14 @@ import java.util.Objects;
 
 final class OnlyOfficeDownloadUrlResolver {
 
-    private OnlyOfficeDownloadUrlResolver() {
-    }
+    private OnlyOfficeDownloadUrlResolver() {}
 
     static URI resolve(String publicUrl, String internalUrl, URI documentUri) {
         URI publicUri = URI.create(publicUrl);
         URI internalUri = URI.create(internalUrl);
 
         if (!isHttpUri(documentUri)
-                || (!hasSameOrigin(documentUri, publicUri)
-                && !hasSameOrigin(documentUri, internalUri))) {
+                || (!hasSameOrigin(documentUri, publicUri) && !hasSameOrigin(documentUri, internalUri))) {
             throw new IllegalArgumentException("Unexpected ONLYOFFICE document download origin");
         }
 
@@ -28,8 +26,7 @@ final class OnlyOfficeDownloadUrlResolver {
                     internalUri.getPort(),
                     joinPaths(internalUri.getPath(), documentUri.getPath()),
                     documentUri.getQuery(),
-                    null
-            );
+                    null);
         } catch (URISyntaxException exception) {
             throw new IllegalArgumentException("Invalid ONLYOFFICE document download URL", exception);
         }
@@ -46,8 +43,7 @@ final class OnlyOfficeDownloadUrlResolver {
         return uri != null
                 && uri.isAbsolute()
                 && uri.getHost() != null
-                && ("http".equalsIgnoreCase(uri.getScheme())
-                || "https".equalsIgnoreCase(uri.getScheme()));
+                && ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()));
     }
 
     private static String normalizeHost(String host) {
@@ -62,9 +58,7 @@ final class OnlyOfficeDownloadUrlResolver {
     }
 
     private static String joinPaths(String basePath, String documentPath) {
-        String normalizedBase = basePath == null || "/".equals(basePath)
-                ? ""
-                : basePath.replaceAll("/+$", "");
+        String normalizedBase = basePath == null || "/".equals(basePath) ? "" : basePath.replaceAll("/+$", "");
         String normalizedDocument = documentPath == null || documentPath.isBlank()
                 ? "/"
                 : (documentPath.startsWith("/") ? documentPath : "/" + documentPath);

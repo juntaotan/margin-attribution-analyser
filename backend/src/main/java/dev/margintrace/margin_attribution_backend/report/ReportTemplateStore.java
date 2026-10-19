@@ -6,11 +6,6 @@ import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -19,10 +14,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -38,8 +36,7 @@ public class ReportTemplateStore {
             new ExpectedPlaceholder("Revenue", "Current period sales revenue"),
             new ExpectedPlaceholder("Revenue Change %", "Revenue growth rate vs comparable period"),
             new ExpectedPlaceholder("Gross Margin", "Current gross margin contribution"),
-            new ExpectedPlaceholder("Gross Margin %", "Current gross margin percentage")
-    );
+            new ExpectedPlaceholder("Gross Margin %", "Current gross margin percentage"));
 
     private final MinioClient minioClient;
     private final ReportContentControlScanner contentControlScanner;
@@ -90,12 +87,8 @@ public class ReportTemplateStore {
             if (matched) {
                 matchedCount++;
             }
-            placeholders.add(new PlaceholderItem(
-                    expected.key(),
-                    expected.label(),
-                    matched,
-                    preview != null ? preview : ""
-            ));
+            placeholders.add(
+                    new PlaceholderItem(expected.key(), expected.label(), matched, preview != null ? preview : ""));
         }
 
         return new TemplateMetadata(
@@ -106,11 +99,11 @@ public class ReportTemplateStore {
                 placeholders,
                 matchedCount,
                 EXPECTED_PLACEHOLDERS.size(),
-                templateVersion.get()
-        );
+                templateVersion.get());
     }
 
-    public synchronized TemplateMetadata uploadMasterTemplate(String originalFilename, byte[] content) throws Exception {
+    public synchronized TemplateMetadata uploadMasterTemplate(String originalFilename, byte[] content)
+            throws Exception {
         docxDocumentValidator.validate(originalFilename, content);
         saveMasterTemplate(content, originalFilename, true);
         return getMetadata();
@@ -133,11 +126,7 @@ public class ReportTemplateStore {
                 content,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
-        TemplateMetaRecord meta = new TemplateMetaRecord(
-                filename,
-                Instant.now().toString(),
-                isCustom
-        );
+        TemplateMetaRecord meta = new TemplateMetaRecord(filename, Instant.now().toString(), isCustom);
         byte[] metaBytes = objectMapper.writeValueAsBytes(meta);
         putObject(MASTER_TEMPLATE_META_KEY, metaBytes, "application/json");
 
@@ -152,15 +141,13 @@ public class ReportTemplateStore {
             return objectMapper.readValue(input.readAllBytes(), TemplateMetaRecord.class);
         } catch (Exception missingMeta) {
             return new TemplateMetaRecord(
-                    DEFAULT_TEMPLATE_FILENAME,
-                    Instant.now().toString(),
-                    false
-            );
+                    DEFAULT_TEMPLATE_FILENAME, Instant.now().toString(), false);
         }
     }
 
     private void ensureBucketExists() throws Exception {
-        boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+        boolean exists = minioClient.bucketExists(
+                BucketExistsArgs.builder().bucket(bucket).build());
         if (!exists) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
         }
@@ -168,12 +155,10 @@ public class ReportTemplateStore {
 
     private void putObject(String objectKey, byte[] content, String contentType) throws Exception {
         try (ByteArrayInputStream input = new ByteArrayInputStream(content)) {
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(objectKey)
-                    .stream(input, (long) content.length, -1L)
-                    .contentType(contentType)
-                    .build());
+            minioClient.putObject(
+                    PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(input, (long) content.length, -1L)
+                            .contentType(contentType)
+                            .build());
         }
     }
 
@@ -183,7 +168,8 @@ public class ReportTemplateStore {
     }
 
     public static byte[] createDefaultMasterTemplate() throws Exception {
-        String documentXml = """
+        String documentXml =
+                """
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -216,7 +202,7 @@ public class ReportTemplateStore {
                         <w:t>Dual-BOM Multi-Attribute Reconciliation &amp; Attribution Framework</w:t>
                       </w:r>
                     </w:p>
-                    
+
                     <w:p>
                       <w:pPr><w:spacing w:after="120"/></w:pPr>
                       <w:r><w:rPr><w:b/><w:color w:val="334155"/></w:rPr><w:t>Executive Reporting Parameters:</w:t></w:r>
@@ -365,7 +351,8 @@ public class ReportTemplateStore {
                 </w:document>
                 """;
 
-        String contentTypesXml = """
+        String contentTypesXml =
+                """
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
                   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -374,7 +361,8 @@ public class ReportTemplateStore {
                 </Types>
                 """;
 
-        String relsXml = """
+        String relsXml =
+                """
                 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
                   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
@@ -382,7 +370,7 @@ public class ReportTemplateStore {
                 """;
 
         try (ByteArrayOutputStream output = new ByteArrayOutputStream();
-             ZipOutputStream archive = new ZipOutputStream(output)) {
+                ZipOutputStream archive = new ZipOutputStream(output)) {
 
             archive.putNextEntry(new ZipEntry("[Content_Types].xml"));
             archive.write(contentTypesXml.getBytes(StandardCharsets.UTF_8));
@@ -403,12 +391,7 @@ public class ReportTemplateStore {
 
     public record ExpectedPlaceholder(String key, String label) {}
 
-    public record PlaceholderItem(
-            String key,
-            String label,
-            boolean detected,
-            String samplePreview
-    ) {}
+    public record PlaceholderItem(String key, String label, boolean detected, String samplePreview) {}
 
     public record TemplateMetadata(
             String filename,
@@ -418,12 +401,7 @@ public class ReportTemplateStore {
             List<PlaceholderItem> detectedPlaceholders,
             int matchedCount,
             int totalExpected,
-            long version
-    ) {}
+            long version) {}
 
-    private record TemplateMetaRecord(
-            String filename,
-            String updatedAt,
-            boolean isCustom
-    ) {}
+    private record TemplateMetaRecord(String filename, String updatedAt, boolean isCustom) {}
 }

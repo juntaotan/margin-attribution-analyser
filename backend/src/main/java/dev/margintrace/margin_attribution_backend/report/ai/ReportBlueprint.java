@@ -10,5 +10,4 @@ public record ReportBlueprint(
         String formula,
         String formulaDescription,
         String format,
-        String explanation) {
-}
+        String explanation) {}

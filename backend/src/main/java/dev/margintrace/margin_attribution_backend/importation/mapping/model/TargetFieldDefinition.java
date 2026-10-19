@@ -1,7 +1,6 @@
 package dev.margintrace.margin_attribution_backend.importation.mapping.model;
 
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -15,12 +14,7 @@ import java.util.Set;
  * @param aliases known source-header names for this field
  */
 public record TargetFieldDefinition(
-        String fieldKey,
-        String columnName,
-        DataType dataType,
-        boolean required,
-        Set<String> aliases
-) {
+        String fieldKey, String columnName, DataType dataType, boolean required, Set<String> aliases) {
     public TargetFieldDefinition {
         requireText(fieldKey, "Field key");
         requireText(columnName, "Column name");

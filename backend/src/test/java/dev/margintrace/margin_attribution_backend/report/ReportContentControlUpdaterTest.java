@@ -1,15 +1,14 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
 
 class ReportContentControlUpdaterTest {
 
@@ -18,7 +17,8 @@ class ReportContentControlUpdaterTest {
 
     @Test
     void replacesInlineControlContentByAlias() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -48,7 +48,8 @@ class ReportContentControlUpdaterTest {
 
     @Test
     void updatesOnlyControlsWithTheRequestedAlias() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -74,7 +75,8 @@ class ReportContentControlUpdaterTest {
 
     @Test
     void rejectsAnAliasThatDoesNotExist() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body/>
@@ -88,7 +90,8 @@ class ReportContentControlUpdaterTest {
 
     @Test
     void replacesMultipleControlsAndTextTokens() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -114,20 +117,20 @@ class ReportContentControlUpdaterTest {
         java.util.Map<String, String> replacements = java.util.Map.of(
                 "Current Period", "2026-08-01 ~ 2026-08-31",
                 "Revenue", "¥ 12,000.00",
-                "Gross Margin %", "59.2%"
-        );
+                "Gross Margin %", "59.2%");
 
         ReportContentControlUpdater.UpdateResult result = updater.replaceContents(document, replacements);
         assertThat(result.updatedControls()).isEqualTo(3);
 
         List<ReportContentControlScanner.ContentControlDescriptor> controls = scanner.scan(result.documentBytes());
-        assertThat(controls).extracting(ReportContentControlScanner.ContentControlDescriptor::preview)
+        assertThat(controls)
+                .extracting(ReportContentControlScanner.ContentControlDescriptor::preview)
                 .containsExactly("2026-08-01 ~ 2026-08-31", "¥ 12,000.00");
     }
 
     private byte[] docxWithDocumentXml(String xml) throws Exception {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream();
-             ZipOutputStream archive = new ZipOutputStream(output)) {
+                ZipOutputStream archive = new ZipOutputStream(output)) {
             archive.putNextEntry(new ZipEntry("word/document.xml"));
             archive.write(xml.getBytes(StandardCharsets.UTF_8));
             archive.closeEntry();

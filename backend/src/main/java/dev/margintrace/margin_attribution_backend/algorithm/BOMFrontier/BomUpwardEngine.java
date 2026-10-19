@@ -11,12 +11,10 @@ import java.util.Arrays;
 public final class BomUpwardEngine implements FrontierEngine {
 
     /** Per-run timings used by the cross-backend benchmark. */
-    public record RunTimings(double inputMs, double computeMs, double outputMs, double totalMs) {
-    }
+    public record RunTimings(double inputMs, double computeMs, double outputMs, double totalMs) {}
 
     /** Selected nodes together with the measured execution phases. */
-    public record ProfiledRun(int[] nodes, RunTimings timings) {
-    }
+    public record ProfiledRun(int[] nodes, RunTimings timings) {}
 
     /**
      * Traverses from terminals toward products and returns qualifying products in traversal order.
@@ -56,13 +54,11 @@ public final class BomUpwardEngine implements FrontierEngine {
         int resultCount = 0;
         while (queueHead < queueTail) {
             int material = queue[queueHead++];
-            for (int edge = graph.reverseOffsets()[material];
-                    edge < graph.reverseOffsets()[material + 1]; edge++) {
+            for (int edge = graph.reverseOffsets()[material]; edge < graph.reverseOffsets()[material + 1]; edge++) {
                 int product = graph.reverseSuccessors()[edge];
                 if (--remaining[product] == 0) {
                     long value = graph.nodeValues()[product];
-                    if (graph.nodeComparable()[product] != 0
-                            && Long.compareUnsigned(Math.abs(value), threshold) >= 0) {
+                    if (graph.nodeComparable()[product] != 0 && Long.compareUnsigned(Math.abs(value), threshold) >= 0) {
                         results[resultCount++] = product;
                     } else {
                         queue[queueTail++] = product;
@@ -75,11 +71,13 @@ public final class BomUpwardEngine implements FrontierEngine {
         long outputStart = computeEnd;
         int[] selectedNodes = Arrays.copyOf(results, resultCount);
         long outputEnd = System.nanoTime();
-        return new ProfiledRun(selectedNodes, new RunTimings(
-                milliseconds(inputEnd - inputStart),
-                milliseconds(computeEnd - computeStart),
-                milliseconds(outputEnd - outputStart),
-                milliseconds(outputEnd - totalStart)));
+        return new ProfiledRun(
+                selectedNodes,
+                new RunTimings(
+                        milliseconds(inputEnd - inputStart),
+                        milliseconds(computeEnd - computeStart),
+                        milliseconds(outputEnd - outputStart),
+                        milliseconds(outputEnd - totalStart)));
     }
 
     private static double milliseconds(long nanoseconds) {

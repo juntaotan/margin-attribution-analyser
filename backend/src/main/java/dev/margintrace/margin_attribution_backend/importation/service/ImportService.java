@@ -9,9 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Coordinates the end-to-end file import process.
  *
- * <p> The import process includes file validation, raw file storage, structural analysis, schema inference, record 
+ * <p> The import process includes file validation, raw file storage, structural analysis, schema inference, record
  * transformation, persistence, and import status tracking.</p>
- * 
+ *
  * <p> Import job state transitions are managed by {@link ImportJobStateService}, while the individual processing stages
  * are executed by {@link ImportWorkflow}.</p>
  */
@@ -24,12 +24,13 @@ public class ImportService {
     // Executes the import workflow
     private final ImportWorkflow importWorkflow;
     private final ImportTaskExecutor importTaskExecutor;
-    private final dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog presetCatalog;
+    private final dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog
+            presetCatalog;
 
     /**
      * Executes the import workflow for the provided file, creating a new import job and returning its ID to allow
      * ImportWorkflow to handle the import job.
-     * 
+     *
      * @param file the file to import
      * @return the ID of the created import job
      */
@@ -45,10 +46,10 @@ public class ImportService {
         context.setMappingTableName(definition.tableName());
         context.setMappingResult(mappingResult);
         context.setDataSetDefinition(definition);
-        
+
         // Create a PENDING transaction and write into PostgreSQL
-        ImportJob job = stateService.createPendingJob(
-                file.getOriginalFilename(), definition.tableName(), mappingResult);
+        ImportJob job =
+                stateService.createPendingJob(file.getOriginalFilename(), definition.tableName(), mappingResult);
         if (importWorkflow.stageRawFile(job.getId(), context)) {
             importTaskExecutor.process(job.getId(), definition.tableName(), context.getObjectKey());
         }

@@ -1,10 +1,6 @@
 package dev.margintrace.margin_attribution_backend.report;
 
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprint;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -44,29 +43,53 @@ public class ReportPlaceholderService {
     public record PreconfiguredPrompt(String prompt, String format) {}
 
     public static final Map<String, PreconfiguredPrompt> DEFAULT_PROMPTS = Map.ofEntries(
-            Map.entry("Revenue", new PreconfiguredPrompt(
-                    "Query sales_details to calculate sum(total_revenue) for the active period", "currency")),
-            Map.entry("Revenue Change %", new PreconfiguredPrompt(
-                    "Compare sum(total_revenue) from sales_details across current and baseline periods", "percentage")),
-            Map.entry("Gross Margin", new PreconfiguredPrompt(
-                    "Query sales_details to calculate sum(total_revenue - total_cost) for the active period", "currency")),
-            Map.entry("Gross Margin %", new PreconfiguredPrompt(
-                    "Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)", "percentage")),
-            Map.entry("Cost of Goods Sold", new PreconfiguredPrompt(
-                    "Query sales_details to calculate sum(total_cost) for the active period", "currency")),
-            Map.entry("Current Period", new PreconfiguredPrompt(
-                    "Extract the active reporting cycle period from sales_details date range", "text")),
-            Map.entry("Comparison Period", new PreconfiguredPrompt(
-                    "Extract the comparable baseline cycle period from historical sales_details date range", "text")),
-            Map.entry("PPV Variance", new PreconfiguredPrompt(
-                    "Query purchases for purchase price variance in the active period", "percentage")),
-            Map.entry("Usage Variance", new PreconfiguredPrompt(
-                    "Query inventory_usage to calculate sum(material_total_cost) for the active period", "currency")),
-            Map.entry("Scrap Loss", new PreconfiguredPrompt(
-                    "Aggregate recorded material losses in inventory_usage", "currency")),
-            Map.entry("ECN Impact", new PreconfiguredPrompt(
-                    "Compare bill_of_material usage across revisions", "currency"))
-    );
+            Map.entry(
+                    "Revenue",
+                    new PreconfiguredPrompt(
+                            "Query sales_details to calculate sum(total_revenue) for the active period", "currency")),
+            Map.entry(
+                    "Revenue Change %",
+                    new PreconfiguredPrompt(
+                            "Compare sum(total_revenue) from sales_details across current and baseline periods",
+                            "percentage")),
+            Map.entry(
+                    "Gross Margin",
+                    new PreconfiguredPrompt(
+                            "Query sales_details to calculate sum(total_revenue - total_cost) for the active period",
+                            "currency")),
+            Map.entry(
+                    "Gross Margin %",
+                    new PreconfiguredPrompt(
+                            "Query sales_details to calculate round(sum(total_revenue - total_cost) / nullif(sum(total_revenue), 0) * 100, 2)",
+                            "percentage")),
+            Map.entry(
+                    "Cost of Goods Sold",
+                    new PreconfiguredPrompt(
+                            "Query sales_details to calculate sum(total_cost) for the active period", "currency")),
+            Map.entry(
+                    "Current Period",
+                    new PreconfiguredPrompt(
+                            "Extract the active reporting cycle period from sales_details date range", "text")),
+            Map.entry(
+                    "Comparison Period",
+                    new PreconfiguredPrompt(
+                            "Extract the comparable baseline cycle period from historical sales_details date range",
+                            "text")),
+            Map.entry(
+                    "PPV Variance",
+                    new PreconfiguredPrompt(
+                            "Query purchases for purchase price variance in the active period", "percentage")),
+            Map.entry(
+                    "Usage Variance",
+                    new PreconfiguredPrompt(
+                            "Query inventory_usage to calculate sum(material_total_cost) for the active period",
+                            "currency")),
+            Map.entry(
+                    "Scrap Loss",
+                    new PreconfiguredPrompt("Aggregate recorded material losses in inventory_usage", "currency")),
+            Map.entry(
+                    "ECN Impact",
+                    new PreconfiguredPrompt("Compare bill_of_material usage across revisions", "currency")));
 
     public PreconfiguredPrompt getPreconfiguredPrompt(String tag) {
         if (tag == null || tag.isBlank()) {
@@ -77,7 +100,8 @@ public class ReportPlaceholderService {
         }
         String normalized = tag.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
         for (Map.Entry<String, PreconfiguredPrompt> entry : DEFAULT_PROMPTS.entrySet()) {
-            String candidateNorm = entry.getKey().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
+            String candidateNorm =
+                    entry.getKey().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
             if (candidateNorm.equals(normalized)) {
                 return entry.getValue();
             }
@@ -92,7 +116,9 @@ public class ReportPlaceholderService {
             for (PlaceholderSyncItem item : items) {
                 if (item.tag() != null && !item.tag().isBlank()) {
                     String tag = item.tag().trim();
-                    String alias = (item.alias() != null && !item.alias().isBlank()) ? item.alias().trim() : tag;
+                    String alias = (item.alias() != null && !item.alias().isBlank())
+                            ? item.alias().trim()
+                            : tag;
                     Optional<ReportPlaceholderConfigEntity> existing =
                             configRepository.findByDocumentIdAndControlTag(docId, tag);
                     if (existing.isPresent()) {
@@ -114,8 +140,7 @@ public class ReportPlaceholderService {
                                     "2026-01-01 to 2026-01-31",
                                     null,
                                     null,
-                                    preconfigured.format()
-                            );
+                                    preconfigured.format());
                             configRepository.save(config);
                         }
                     }
@@ -139,21 +164,15 @@ public class ReportPlaceholderService {
             if (existing.isPresent()) {
                 ReportPlaceholderConfigEntity config = existing.get();
                 config.setDuration(activeDuration);
-                if (config.getPrompt() == null || config.getPrompt().isBlank() || config.getPrompt().startsWith("Duration:")) {
+                if (config.getPrompt() == null
+                        || config.getPrompt().isBlank()
+                        || config.getPrompt().startsWith("Duration:")) {
                     config.setPrompt(fullPrompt);
                 }
                 configRepository.save(config);
             } else {
                 ReportPlaceholderConfigEntity config = new ReportPlaceholderConfigEntity(
-                        docId,
-                        tag,
-                        tag,
-                        fullPrompt,
-                        activeDuration,
-                        null,
-                        null,
-                        defaultPrompt.format()
-                );
+                        docId, tag, tag, fullPrompt, activeDuration, null, null, defaultPrompt.format());
                 configRepository.save(config);
             }
         }
@@ -203,12 +222,7 @@ public class ReportPlaceholderService {
         config = configRepository.save(config);
 
         // 4. Create query run
-        ReportQueryRunEntity run = new ReportQueryRunEntity(
-                config,
-                config.getRevision(),
-                prompt,
-                blueprint,
-                sql);
+        ReportQueryRunEntity run = new ReportQueryRunEntity(config, config.getRevision(), prompt, blueprint, sql);
         run = runRepository.save(run);
 
         // 5. Execute SQL
@@ -224,12 +238,7 @@ public class ReportPlaceholderService {
         run = runRepository.save(run);
 
         return new GenerateResult(
-                config.getId(),
-                run.getId(),
-                config.getRevision(),
-                blueprint,
-                queryResult,
-                executionError);
+                config.getId(), run.getId(), config.getRevision(), blueprint, queryResult, executionError);
     }
 
     @Transactional
@@ -237,7 +246,8 @@ public class ReportPlaceholderService {
         if (runId == null) {
             throw new IllegalArgumentException("Run ID is required");
         }
-        ReportQueryRunEntity run = runRepository.findById(runId)
+        ReportQueryRunEntity run = runRepository
+                .findById(runId)
                 .orElseThrow(() -> new IllegalArgumentException("Query run not found: " + runId));
 
         if (run.getPlanSnapshot() == null) {
@@ -261,7 +271,8 @@ public class ReportPlaceholderService {
         if (runId == null) {
             throw new IllegalArgumentException("Run ID is required to apply changes");
         }
-        ReportQueryRunEntity run = runRepository.findById(runId)
+        ReportQueryRunEntity run = runRepository
+                .findById(runId)
                 .orElseThrow(() -> new IllegalArgumentException("Query run not found: " + runId));
 
         if (run.getStatus() != ReportQueryRunStatus.SUCCEEDED && run.getStatus() != ReportQueryRunStatus.APPLIED) {
@@ -293,23 +304,23 @@ public class ReportPlaceholderService {
         runRepository.save(run);
 
         return new ApplyResult(
-                documentStore.currentVersion(),
-                updateResult.updatedControls(),
-                run.getId(),
-                formattedValue);
+                documentStore.currentVersion(), updateResult.updatedControls(), run.getId(), formattedValue);
     }
 
     public String formatValue(ReportQueryService.QueryResult queryResult, String format) {
-        if (queryResult == null || queryResult.rows() == null || queryResult.rows().isEmpty()) {
+        if (queryResult == null
+                || queryResult.rows() == null
+                || queryResult.rows().isEmpty()) {
             throw new IllegalArgumentException("There is no result value to save");
         }
         Map<String, Object> firstRow = queryResult.rows().getFirst();
         if (firstRow == null || firstRow.isEmpty()) {
             throw new IllegalArgumentException("There is no result value to save");
         }
-        String firstColumn = (queryResult.columns() != null && !queryResult.columns().isEmpty())
-                ? queryResult.columns().getFirst()
-                : firstRow.keySet().iterator().next();
+        String firstColumn =
+                (queryResult.columns() != null && !queryResult.columns().isEmpty())
+                        ? queryResult.columns().getFirst()
+                        : firstRow.keySet().iterator().next();
         Object valueObj = firstRow.get(firstColumn);
         if (valueObj == null) {
             throw new IllegalArgumentException("There is no result value to save");
@@ -326,7 +337,9 @@ public class ReportPlaceholderService {
             }
         } else if ("percentage".equalsIgnoreCase(format)) {
             try {
-                java.math.BigDecimal bd = new java.math.BigDecimal(value.replace("%", "").trim()).setScale(1, java.math.RoundingMode.HALF_UP);
+                java.math.BigDecimal bd = new java.math.BigDecimal(
+                                value.replace("%", "").trim())
+                        .setScale(1, java.math.RoundingMode.HALF_UP);
                 return bd.toPlainString() + "%";
             } catch (Exception ignored) {
                 if (!value.trim().endsWith("%")) {
@@ -340,18 +353,19 @@ public class ReportPlaceholderService {
     private PlaceholderConfigDto toDto(ReportPlaceholderConfigEntity entity) {
         Optional<ReportQueryRunEntity> latestRun =
                 runRepository.findFirstByPlaceholderConfigIdOrderByExecutedAtDesc(entity.getId());
-        PlaceholderRunDto runDto = latestRun.map(run -> new PlaceholderRunDto(
-                run.getId(),
-                run.getConfigRevision(),
-                run.getPromptSnapshot(),
-                run.getPlanSnapshot(),
-                run.getExecutedSql(),
-                run.getResultSnapshot(),
-                run.getStatus(),
-                run.getErrorMessage(),
-                run.getExecutedAt(),
-                run.getAppliedAt()
-        )).orElse(null);
+        PlaceholderRunDto runDto = latestRun
+                .map(run -> new PlaceholderRunDto(
+                        run.getId(),
+                        run.getConfigRevision(),
+                        run.getPromptSnapshot(),
+                        run.getPlanSnapshot(),
+                        run.getExecutedSql(),
+                        run.getResultSnapshot(),
+                        run.getStatus(),
+                        run.getErrorMessage(),
+                        run.getExecutedAt(),
+                        run.getAppliedAt()))
+                .orElse(null);
 
         return new PlaceholderConfigDto(
                 entity.getId(),
@@ -366,8 +380,7 @@ public class ReportPlaceholderService {
                 entity.getRevision(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                runDto
-        );
+                runDto);
     }
 
     private String extractDuration(String prompt) {
@@ -382,12 +395,7 @@ public class ReportPlaceholderService {
         return (documentId == null || documentId.isBlank()) ? "default" : documentId.trim();
     }
 
-    public record GenerateRequest(
-            String documentId,
-            String tag,
-            String alias,
-            String prompt) {
-    }
+    public record GenerateRequest(String documentId, String tag, String alias, String prompt) {}
 
     public record GenerateResult(
             UUID configId,
@@ -395,20 +403,11 @@ public class ReportPlaceholderService {
             Long revision,
             ReportBlueprint blueprint,
             ReportQueryService.QueryResult result,
-            String error) {
-    }
+            String error) {}
 
-    public record PlaceholderSyncItem(
-            String tag,
-            String alias) {
-    }
+    public record PlaceholderSyncItem(String tag, String alias) {}
 
-    public record ApplyResult(
-            long documentVersion,
-            int updatedControls,
-            UUID runId,
-            String appliedValue) {
-    }
+    public record ApplyResult(long documentVersion, int updatedControls, UUID runId, String appliedValue) {}
 
     public record PlaceholderConfigDto(
             UUID id,
@@ -423,8 +422,7 @@ public class ReportPlaceholderService {
             Long revision,
             Instant createdAt,
             Instant updatedAt,
-            PlaceholderRunDto lastRun) {
-    }
+            PlaceholderRunDto lastRun) {}
 
     public record PlaceholderRunDto(
             UUID id,
@@ -436,6 +434,5 @@ public class ReportPlaceholderService {
             ReportQueryRunStatus status,
             String errorMessage,
             Instant executedAt,
-            Instant appliedAt) {
-    }
+            Instant appliedAt) {}
 }

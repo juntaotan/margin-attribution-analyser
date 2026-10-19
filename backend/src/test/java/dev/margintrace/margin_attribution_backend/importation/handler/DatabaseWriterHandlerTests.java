@@ -1,28 +1,28 @@
 package dev.margintrace.margin_attribution_backend.importation.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.h2.jdbcx.JdbcDataSource;
-import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 class DatabaseWriterHandlerTests {
 
     @Test
     void preservesSixDecimalPlacesBeforeWarehouseMapping() throws Exception {
         byte[] bytes;
-        try (var workbook = new XSSFWorkbook(); var output = new ByteArrayOutputStream()) {
+        try (var workbook = new XSSFWorkbook();
+                var output = new ByteArrayOutputStream()) {
             var sheet = workbook.createSheet("Precision");
             sheet.createRow(0).createCell(0).setCellValue("Amount");
             sheet.createRow(1).createCell(0).setCellValue(1.234567);
@@ -53,10 +53,7 @@ class DatabaseWriterHandlerTests {
         columnTypes.put("Order No", DataType.TEXT);
         columnTypes.put("Total Price", DataType.NUMERIC);
 
-        String sql = handler.buildCreateTableSql(
-                "sales_data",
-                handler.buildColumnStatement(columnTypes)
-        );
+        String sql = handler.buildCreateTableSql("sales_data", handler.buildColumnStatement(columnTypes));
 
         assertThat(sql)
                 .isEqualTo("CREATE TABLE sales_data("
@@ -70,7 +67,7 @@ class DatabaseWriterHandlerTests {
     void createsTableAndInsertsExcelRows() throws Exception {
         byte[] workbookBytes;
         try (XSSFWorkbook workbook = new XSSFWorkbook();
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             var sheet = workbook.createSheet("Sales Data");
             var header = sheet.createRow(0);
             header.createCell(0).setCellValue("Order No");
@@ -106,12 +103,10 @@ class DatabaseWriterHandlerTests {
         handler.doImport(context);
 
         assertThat(context.getRawTableName()).startsWith("raw.sales_data_");
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM " + context.getRawTableName(), Integer.class
-        )).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + context.getRawTableName(), Integer.class))
+                .isEqualTo(2);
         assertThat(jdbcTemplate.queryForMap(
-                "SELECT order_no_0, total_price_0 FROM " + context.getRawTableName() + " WHERE id = 1"
-        ))
+                        "SELECT order_no_0, total_price_0 FROM " + context.getRawTableName() + " WHERE id = 1"))
                 .containsEntry("ORDER_NO_0", "SO-001")
                 .containsEntry("TOTAL_PRICE_0", new BigDecimal("12.500000"));
     }

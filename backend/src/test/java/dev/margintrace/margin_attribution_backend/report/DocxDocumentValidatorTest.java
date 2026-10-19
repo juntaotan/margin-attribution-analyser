@@ -1,12 +1,11 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+
+import java.io.ByteArrayOutputStream;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.junit.jupiter.api.Test;
 
 class DocxDocumentValidatorTest {
 
@@ -16,7 +15,7 @@ class DocxDocumentValidatorTest {
     void acceptsAValidDocxDocument() throws Exception {
         byte[] document;
         try (XWPFDocument wordDocument = new XWPFDocument();
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             wordDocument.createParagraph().createRun().setText("Uploaded report");
             wordDocument.write(output);
             document = output.toByteArray();
@@ -27,13 +26,12 @@ class DocxDocumentValidatorTest {
 
     @Test
     void rejectsAFileWithTheWrongExtension() {
-        assertThatIllegalArgumentException().isThrownBy(() ->
-                validator.validate("report.xlsx", new byte[]{1}));
+        assertThatIllegalArgumentException().isThrownBy(() -> validator.validate("report.xlsx", new byte[] {1}));
     }
 
     @Test
     void rejectsInvalidDocxContent() {
-        assertThatIllegalArgumentException().isThrownBy(() ->
-                validator.validate("report.docx", "not a zip".getBytes()));
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> validator.validate("report.docx", "not a zip".getBytes()));
     }
 }

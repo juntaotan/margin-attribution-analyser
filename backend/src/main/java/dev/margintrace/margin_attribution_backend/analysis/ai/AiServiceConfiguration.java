@@ -10,19 +10,17 @@ public class AiServiceConfiguration {
 
     @Bean
     RootCauseAssistant rootCauseAssistant(AiRuntimeManager runtimeManager) {
-        return (category, evidence) -> runtimeManager.current()
-                .rootCauseAssistant().summarize(category, evidence);
+        return (category, evidence) ->
+                runtimeManager.current().rootCauseAssistant().summarize(category, evidence);
     }
 
     @Bean
     ReportPeriodAssistant reportPeriodAssistant(AiRuntimeManager runtimeManager) {
-        return documentText -> runtimeManager.current()
-                .reportPeriodAssistant().extract(documentText);
+        return documentText -> runtimeManager.current().reportPeriodAssistant().extract(documentText);
     }
 
     @Bean
     ReportBlueprintAssistant reportBlueprintAssistant(AiRuntimeManager runtimeManager) {
-        return prompt -> runtimeManager.current()
-                .reportBlueprintAssistant().generate(prompt);
+        return prompt -> runtimeManager.current().reportBlueprintAssistant().generate(prompt);
     }
 }

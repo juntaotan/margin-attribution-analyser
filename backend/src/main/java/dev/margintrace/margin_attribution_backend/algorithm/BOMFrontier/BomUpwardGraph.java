@@ -12,5 +12,4 @@ public record BomUpwardGraph(
         int[] reverseSuccessors,
         int[] terminalNodes,
         long[] nodeValues,
-        byte[] nodeComparable) {
-}
+        byte[] nodeComparable) {}

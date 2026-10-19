@@ -43,9 +43,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
         <div className="flex items-center gap-3 flex-wrap">
           {/* Actual Date Range */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Start Date:
-            </span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Start Date:</span>
             <div className="flex items-center bg-white border border-slate-300/80 hover:border-slate-400 focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 px-2 py-0.5 rounded gap-1 font-mono text-xs text-slate-800 shadow-2xs transition-colors">
               <Calendar className="w-3 h-3 text-slate-400 pointer-events-none" />
               <input
@@ -58,9 +56,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
 
             <span className="text-slate-400 font-mono">➔</span>
 
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              End Date:
-            </span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">End Date:</span>
             <div className="flex items-center bg-white border border-slate-300/80 hover:border-slate-400 focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 px-2 py-0.5 rounded gap-1 font-mono text-xs text-slate-800 shadow-2xs transition-colors">
               <Calendar className="w-3 h-3 text-slate-400 pointer-events-none" />
               <input
@@ -103,7 +99,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
                 ? 'bg-period-actual-subtle text-period-actual-dark border-period-actual-border/50'
                 : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-300/80 shadow-2xs'
             }`}
-            title={thresholdsOpen ? "Collapse thresholds drawer" : "Expand thresholds drawer"}
+            title={thresholdsOpen ? 'Collapse thresholds drawer' : 'Expand thresholds drawer'}
             aria-expanded={thresholdsOpen}
           >
             <SlidersHorizontal className="w-3 h-3 text-slate-500" />
@@ -111,7 +107,11 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
             <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
               Mat: {leafThreshold} · Stop: ${threshold}
             </span>
-            {thresholdsOpen ? <ChevronUp className="w-3 h-3 text-slate-400" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
+            {thresholdsOpen ? (
+              <ChevronUp className="w-3 h-3 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            )}
           </button>
 
           {/* Execute Button */}
@@ -143,9 +143,7 @@ export const ScopeControlsBar: React.FC<ScopeControlsBarProps> = ({
           </label>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Cost stop θ:
-            </span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cost stop θ:</span>
             <div className="flex items-center bg-white border border-slate-300/80 hover:border-slate-400 focus-within:border-slate-600 focus-within:ring-1 focus-within:ring-slate-300 rounded px-1.5 py-0.5 shadow-2xs transition-colors">
               <span className="text-slate-400 font-mono text-xs pr-1">$</span>
               <input

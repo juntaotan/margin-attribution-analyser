@@ -6,6 +6,4 @@ public record TableStructure(
         int leftColumnIndex,
         int rightColumnIndex,
         int lastRowIndex,
-        double confidence
-) {
-}
+        double confidence) {}

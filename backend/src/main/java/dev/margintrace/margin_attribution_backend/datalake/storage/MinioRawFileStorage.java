@@ -4,12 +4,11 @@ import dev.margintrace.margin_attribution_backend.datalake.model.StoredObject;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
+import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.InputStream;
 
 @Component
 @RequiredArgsConstructor
@@ -21,10 +20,10 @@ public class MinioRawFileStorage implements RawFileStorage {
     @Value("${datalake.raw-bucket}")
     private String bucket;
 
-    /** 
+    /**
      * Stores the provided file in the configured MinIO bucket using the specified object key. The method reads the file's
      * input stream and uploads it to MinIO, returning a {@link StoredObject} containing metadata about the stored file.
-     * 
+     *
      * @param file the file that user imports to be stored
      * @param objectKey the key under which the file will be stored in the data lake
      * @return StoredObject
@@ -35,15 +34,12 @@ public class MinioRawFileStorage implements RawFileStorage {
         bucketProvisioner.ensureRawBucketExists();
 
         try (InputStream input = file.getInputStream()) {
-            // Create a upload request to MinIO with the specified bucket, object (key), input content, file size, and content type
+            // Create a upload request to MinIO with the specified bucket, object (key), input content, file size, and
+            // content type
             ObjectWriteResponse response = minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(objectKey)
-                            .stream(input, file.getSize(), -1L)
+                    PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(input, file.getSize(), -1L)
                             .contentType(file.getContentType())
-                            .build()
-            );
+                            .build());
 
             return new StoredObject(bucket, objectKey, response.etag(), file.getSize());
         }

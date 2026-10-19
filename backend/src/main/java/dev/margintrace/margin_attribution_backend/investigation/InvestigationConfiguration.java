@@ -9,6 +9,8 @@ import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiConnectionSettings;
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiRuntimeManager;
 import dev.margintrace.margin_attribution_backend.investigation.knowledge.LocalEmbeddingModel;
+import java.time.Duration;
+import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,9 +18,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.flyway.autoconfigure.FlywayMigrationInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import javax.sql.DataSource;
-import java.time.Duration;
 
 /**
  * Wires the optional anomaly investigation feature.
@@ -49,7 +48,7 @@ public class InvestigationConfiguration {
             DataSource dataSource,
             ObjectProvider<FlywayMigrationInitializer> mainMigrations,
             @Value("${margin.investigation.flyway-locations:classpath:db/investigation}") String[] locations) {
-        mainMigrations.ifAvailable(initializer -> { });
+        mainMigrations.ifAvailable(initializer -> {});
         Flyway.configure()
                 .dataSource(dataSource)
                 .locations(locations)
@@ -119,5 +118,5 @@ public class InvestigationConfiguration {
     }
 
     /** Marker for a migrated feature schema. */
-    public record InvestigationSchema() { }
+    public record InvestigationSchema() {}
 }

@@ -1,15 +1,14 @@
 package dev.margintrace.margin_attribution_backend.analysis.ai;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.sun.net.httpserver.HttpServer;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprint;
-import org.junit.jupiter.api.Test;
-
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class AiServiceConfigurationTests {
 
@@ -25,23 +24,20 @@ class AiServiceConfigurationTests {
             AiRuntimeManager runtimeManager = new AiRuntimeManager(
                     "http://127.0.0.1:" + server.getAddress().getPort(), "local");
             AiServiceConfiguration configuration = new AiServiceConfiguration();
-            RootCauseAssistant summaryAssistant =
-                    configuration.rootCauseAssistant(runtimeManager);
+            RootCauseAssistant summaryAssistant = configuration.rootCauseAssistant(runtimeManager);
             var periodAssistant = configuration.reportPeriodAssistant(runtimeManager);
             var blueprintAssistant = configuration.reportBlueprintAssistant(runtimeManager);
 
-            String summary = summaryAssistant
-                    .summarize("Unit cost change", "Unit cost increased.");
-            var period = periodAssistant
-                    .extract("1. [[TARGET tag=x]] January 2026");
-            ReportBlueprint blueprint = blueprintAssistant
-                    .generate("Revenue for Duration: January 2026");
+            String summary = summaryAssistant.summarize("Unit cost change", "Unit cost increased.");
+            var period = periodAssistant.extract("1. [[TARGET tag=x]] January 2026");
+            ReportBlueprint blueprint = blueprintAssistant.generate("Revenue for Duration: January 2026");
 
             assertThat(summary).isEqualTo("Unit cost increased.");
             assertThat(period.found()).isTrue();
             assertThat(period.duration()).isEqualTo("January 2026");
             assertThat(blueprint.sourceTable()).isEqualTo("sales_details");
-            assertThat(blueprint.inputFields()).singleElement()
+            assertThat(blueprint.inputFields())
+                    .singleElement()
                     .extracting(field -> field.field())
                     .isEqualTo("total_revenue");
             assertThat(requests).hasSize(3);
@@ -52,8 +48,7 @@ class AiServiceConfigurationTests {
             runtimeManager.reload(new AiConnectionSettings(
                     "127.0.0.1", replacement.getAddress().getPort(), "local", null));
 
-            assertThat(summaryAssistant.summarize("Any", "Any"))
-                    .isEqualTo("Runtime reloaded.");
+            assertThat(summaryAssistant.summarize("Any", "Any")).isEqualTo("Runtime reloaded.");
         } finally {
             server.stop(0);
             replacement.stop(0);
@@ -65,13 +60,11 @@ class AiServiceConfigurationTests {
         HttpServer server = aiServer(new CopyOnWriteArrayList<>(), "unused");
         server.start();
         try {
-            AiRuntimeManager runtimeManager =
-                    new AiRuntimeManager("http://127.0.0.1:1", "local");
-            AiConnectionSettings candidate = new AiConnectionSettings(
-                    "127.0.0.1", server.getAddress().getPort(), "local", null);
+            AiRuntimeManager runtimeManager = new AiRuntimeManager("http://127.0.0.1:1", "local");
+            AiConnectionSettings candidate =
+                    new AiConnectionSettings("127.0.0.1", server.getAddress().getPort(), "local", null);
 
-            AiRuntimeManager.ConnectionTest result =
-                    runtimeManager.testConnection(candidate);
+            AiRuntimeManager.ConnectionTest result = runtimeManager.testConnection(candidate);
 
             assertThat(result.reachable()).isTrue();
             assertThat(result.modelReady()).isTrue();
@@ -101,7 +94,8 @@ class AiServiceConfigurationTests {
                 content = """
                         {"found":true,"duration":"January 2026"}""";
             } else {
-                content = """
+                content =
+                        """
                         {"sourceTable":"sales_details","sourceTableLabel":"sales_details (Sales revenue and cost)",
                          "filterConditions":["date is within January 2026"],
                          "inputFields":[{"field":"total_revenue","label":"Revenue",
@@ -109,8 +103,8 @@ class AiServiceConfigurationTests {
                          "formulaDescription":"Sum sales revenue","format":"currency",
                          "explanation":"Uses recorded sales lines"}""";
             }
-            String response = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":"
-                    + jsonString(content) + "},\"finish_reason\":\"stop\"}],\"model\":\"local\"}";
+            String response = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":" + jsonString(content)
+                    + "},\"finish_reason\":\"stop\"}],\"model\":\"local\"}";
             byte[] body = response.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, body.length);
@@ -121,9 +115,6 @@ class AiServiceConfigurationTests {
     }
 
     private static String jsonString(String value) {
-        return "\"" + value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n") + "\"";
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
     }
 }

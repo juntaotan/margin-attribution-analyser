@@ -3,12 +3,11 @@ package dev.margintrace.margin_attribution_backend.importation.handler;
 import dev.margintrace.margin_attribution_backend.datalake.storage.RawFileReader;
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
+import java.io.InputStream;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
-
-import java.io.InputStream;
-import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -23,10 +22,8 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
         String objectKey = context.getObjectKey();
 
         // Input data from Excel workbook
-        try (
-                InputStream inputStream = rawFileReader.readFile(objectKey);
-                Workbook workbook = WorkbookFactory.create(inputStream);
-        ){
+        try (InputStream inputStream = rawFileReader.readFile(objectKey);
+                Workbook workbook = WorkbookFactory.create(inputStream); ) {
             int indexNum = workbook.getNumberOfSheets();
 
             List<TableStructure> tableList = new ArrayList<>();
@@ -80,8 +77,7 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
 
         double confidence = Math.min(
                 Math.min(topBoundary.proportion(), bottomBoundary.proportion()),
-                Math.min(leftBoundary.proportion(), rightBoundary.proportion())
-        );
+                Math.min(leftBoundary.proportion(), rightBoundary.proportion()));
 
         return new TableStructure(
                 sheetName,
@@ -89,8 +85,7 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
                 leftBoundary.index(),
                 rightBoundary.index(),
                 bottomBoundary.index(),
-                confidence
-        );
+                confidence);
     }
 
     private ModeResult calculateMode(Collection<Integer> boundaryIndexes, boolean preferLowerIndex) {
@@ -106,8 +101,8 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
         for (Map.Entry<Integer, Integer> entry : frequencies.entrySet()) {
             int index = entry.getKey();
             int frequency = entry.getValue();
-            boolean preferredTie = frequency == modeFrequency
-                    && (preferLowerIndex ? index < modeIndex : index > modeIndex);
+            boolean preferredTie =
+                    frequency == modeFrequency && (preferLowerIndex ? index < modeIndex : index > modeIndex);
 
             if (frequency > modeFrequency || preferredTie) {
                 modeIndex = index;
@@ -118,6 +113,5 @@ public class TableBoundaryDetectHandler extends AbstractImportHandler {
         return new ModeResult(modeIndex, (double) modeFrequency / boundaryIndexes.size());
     }
 
-    private record ModeResult(int index, double proportion) {
-    }
+    private record ModeResult(int index, double proportion) {}
 }

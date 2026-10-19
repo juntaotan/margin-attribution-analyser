@@ -9,8 +9,12 @@ import java.util.Map;
  * Embeddings are keyed by the stable occurrence IDs returned by inspection.
  * Every vector, including each root, has its own version and 384 finite values.
  */
-public record ProductionComparisonRequest(ProductionTreeRequest trees,
-        String leftProductionId, String rightProductionId, Map<String, Embedding> embeddings,
-        FgwEngine.Config config, List<double[]> initialMatrices) {
+public record ProductionComparisonRequest(
+        ProductionTreeRequest trees,
+        String leftProductionId,
+        String rightProductionId,
+        Map<String, Embedding> embeddings,
+        FgwEngine.Config config,
+        List<double[]> initialMatrices) {
     public record Embedding(String version, double[] values) {}
 }

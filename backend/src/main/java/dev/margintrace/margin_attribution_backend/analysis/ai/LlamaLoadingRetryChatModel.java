@@ -7,7 +7,6 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.response.ChatResponse;
-
 import java.util.Set;
 
 final class LlamaLoadingRetryChatModel implements ChatModel {

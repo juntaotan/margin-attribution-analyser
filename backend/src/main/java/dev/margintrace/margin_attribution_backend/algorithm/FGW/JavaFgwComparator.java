@@ -8,11 +8,17 @@ package dev.margintrace.margin_attribution_backend.algorithm.FGW;
 public final class JavaFgwComparator implements FgwComparator {
     private String baseline;
     private FgwEngine.Session session;
+
     public FgwEngine.Result compare(FgwEngine.Comparison input, FgwEngine.Config config) {
         if (!input.left().instanceId().equals(baseline)) {
-            session = new FgwEngine.Session(input.left(), config); baseline = input.left().instanceId();
+            session = new FgwEngine.Session(input.left(), config);
+            baseline = input.left().instanceId();
         }
         return session.compare(input.right(), input.initialMatrices());
     }
-    public void close() { session = null; baseline = null; }
+
+    public void close() {
+        session = null;
+        baseline = null;
+    }
 }

@@ -1,10 +1,9 @@
 package dev.margintrace.margin_attribution_backend.analysis.dto;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.List;
 import java.util.UUID;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder

@@ -1,21 +1,20 @@
 package dev.margintrace.margin_attribution_backend.importation.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
-import org.h2.jdbcx.JdbcDataSource;
-import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
-
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 class DataWarehouseWriterHandlerTests {
     private final java.util.List<java.sql.Connection> connections = new java.util.ArrayList<>();
@@ -25,12 +24,12 @@ class DataWarehouseWriterHandlerTests {
         for (var connection : connections) connection.close();
     }
 
-
     @Test
     void importsSalesRevenueCostAndProductTarget() throws Exception {
         JdbcTemplate jdbcTemplate = createJdbcTemplate();
         jdbcTemplate.execute("CREATE SCHEMA raw");
-        jdbcTemplate.execute("""
+        jdbcTemplate.execute(
+                """
                 CREATE TABLE sales_details (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                     date DATE NOT NULL, movement_no VARCHAR(100) NOT NULL,
@@ -38,27 +37,53 @@ class DataWarehouseWriterHandlerTests {
                     total_revenue NUMERIC(18,6) NOT NULL, total_cost NUMERIC(18,6) NOT NULL
                 )
                 """);
-        jdbcTemplate.execute("""
+        jdbcTemplate.execute(
+                """
                 CREATE TABLE raw.sales_lines (
                     sale_date DATE, movement VARCHAR(100), item_no VARCHAR(100),
                     quantity NUMERIC(18,6), revenue NUMERIC(18,6), cost NUMERIC(18,6)
                 )
                 """);
-        jdbcTemplate.update("INSERT INTO raw.sales_lines VALUES (?, ?, ?, ?, ?, ?)",
-                java.sql.Date.valueOf("2026-01-15"), "MOVE-1", "PROD-A", 2, 50, 30);
+        jdbcTemplate.update(
+                "INSERT INTO raw.sales_lines VALUES (?, ?, ?, ?, ?, ?)",
+                java.sql.Date.valueOf("2026-01-15"),
+                "MOVE-1",
+                "PROD-A",
+                2,
+                50,
+                30);
 
         ImportContext context = new ImportContext();
         context.setMappingTableName("sales_details");
         context.setMappingResult(true);
         context.setTableStructure(new TableStructure("sales", 0, 0, 5, 1, 1.0));
         context.setColumnTypes(new LinkedHashMap<>(Map.of(
-                "Cost Date", DataType.DATE, "Movement No", DataType.TEXT,
-                "Item No", DataType.TEXT, "Quantity", DataType.NUMERIC,
-                "Total Revenue", DataType.NUMERIC, "Total Cost", DataType.NUMERIC)));
+                "Cost Date",
+                DataType.DATE,
+                "Movement No",
+                DataType.TEXT,
+                "Item No",
+                DataType.TEXT,
+                "Quantity",
+                DataType.NUMERIC,
+                "Total Revenue",
+                DataType.NUMERIC,
+                "Total Cost",
+                DataType.NUMERIC)));
         context.setRawTableName("raw.sales_lines");
         context.setRawColumnNames(Map.of(
-                "Cost Date", "sale_date", "Movement No", "movement", "Item No", "item_no",
-                "Quantity", "quantity", "Total Revenue", "revenue", "Total Cost", "cost"));
+                "Cost Date",
+                "sale_date",
+                "Movement No",
+                "movement",
+                "Item No",
+                "item_no",
+                "Quantity",
+                "quantity",
+                "Total Revenue",
+                "revenue",
+                "Total Cost",
+                "cost"));
 
         new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
         new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
@@ -74,7 +99,8 @@ class DataWarehouseWriterHandlerTests {
     void importsMaterialWithOnlyItsNumber() throws Exception {
         JdbcTemplate jdbcTemplate = createJdbcTemplate();
         jdbcTemplate.execute("CREATE SCHEMA raw");
-        jdbcTemplate.execute("""
+        jdbcTemplate.execute(
+                """
                 CREATE TABLE material_master (
                     material_no VARCHAR(100) NOT NULL PRIMARY KEY,
                     material_name VARCHAR(200), material_type VARCHAR(30),
@@ -118,25 +144,44 @@ class DataWarehouseWriterHandlerTests {
                 .containsEntry("SUPPLIER", null)
                 .containsEntry("SOURCE_KIND", null)
                 .containsEntry("UNIT_COST", null);
-        jdbcTemplate.execute("""
+        jdbcTemplate.execute(
+                """
                 CREATE TABLE raw.materials (
                     material_no VARCHAR(100), vendor VARCHAR(200),
                     source_kind VARCHAR(16), unit_cost NUMERIC(18,6)
                 )
                 """);
-        jdbcTemplate.update("INSERT INTO raw.materials VALUES (?, ?, ?, ?)",
-                "RAW", "Supplier A", "PURCHASED", new BigDecimal("12.345678"));
-        jdbcTemplate.update("INSERT INTO raw.materials VALUES (?, ?, ?, ?)",
-                "PRODUCT", null, "INTERNAL", BigDecimal.ZERO);
+        jdbcTemplate.update(
+                "INSERT INTO raw.materials VALUES (?, ?, ?, ?)",
+                "RAW",
+                "Supplier A",
+                "PURCHASED",
+                new BigDecimal("12.345678"));
+        jdbcTemplate.update(
+                "INSERT INTO raw.materials VALUES (?, ?, ?, ?)", "PRODUCT", null, "INTERNAL", BigDecimal.ZERO);
         ImportContext context = new ImportContext();
         context.setMappingTableName("material_master");
         context.setMappingResult(true);
         context.setTableStructure(new TableStructure("materials", 0, 0, 3, 2, 1.0));
-        context.setColumnTypes(Map.of("Material No", DataType.TEXT, "Vendor", DataType.TEXT,
-                "Source Kind", DataType.TEXT, "Unit Cost", DataType.NUMERIC));
+        context.setColumnTypes(Map.of(
+                "Material No",
+                DataType.TEXT,
+                "Vendor",
+                DataType.TEXT,
+                "Source Kind",
+                DataType.TEXT,
+                "Unit Cost",
+                DataType.NUMERIC));
         context.setRawTableName("raw.materials");
-        context.setRawColumnNames(Map.of("Material No", "material_no", "Vendor", "vendor",
-                "Source Kind", "source_kind", "Unit Cost", "unit_cost"));
+        context.setRawColumnNames(Map.of(
+                "Material No",
+                "material_no",
+                "Vendor",
+                "vendor",
+                "Source Kind",
+                "source_kind",
+                "Unit Cost",
+                "unit_cost"));
         new SchemaMappingHandler(new SchemaMappingPresetCatalog()).doImport(context);
         new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
         assertThat(context.getWarehouseImportedRows()).isEqualTo(2);
@@ -149,15 +194,16 @@ class DataWarehouseWriterHandlerTests {
                 .containsEntry("SOURCE_KIND", "INTERNAL")
                 .containsEntry("UNIT_COST", new BigDecimal("0.000000"));
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO material_master (material_no, source_kind) VALUES (?, ?)", "INVALID", "UNKNOWN"))
+                        "INSERT INTO material_master (material_no, source_kind) VALUES (?, ?)", "INVALID", "UNKNOWN"))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO material_master (material_no, unit_cost) VALUES (?, ?)", "NEGATIVE", -1))
+                        "INSERT INTO material_master (material_no, unit_cost) VALUES (?, ?)", "NEGATIVE", -1))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     private static void applyMaterialEmbeddingMigration(JdbcTemplate jdbcTemplate) throws Exception {
-        ScriptUtils.executeSqlScript(jdbcTemplate.getDataSource().getConnection(),
+        ScriptUtils.executeSqlScript(
+                jdbcTemplate.getDataSource().getConnection(),
                 new ClassPathResource("db/migration/V8__add_material_embedding_fields.sql"));
     }
 
@@ -165,7 +211,8 @@ class DataWarehouseWriterHandlerTests {
     void importsMaterialConsumptionDirectlyIntoInventoryUsage() throws Exception {
         JdbcTemplate jdbcTemplate = createJdbcTemplate();
         jdbcTemplate.execute("CREATE SCHEMA IF NOT EXISTS raw");
-        jdbcTemplate.execute("""
+        jdbcTemplate.execute(
+                """
                 CREATE TABLE inventory_usage (
                     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                     date DATE NOT NULL,
@@ -177,15 +224,23 @@ class DataWarehouseWriterHandlerTests {
                     material_total_cost NUMERIC(18,6)
                 )
                 """);
-        jdbcTemplate.execute("""
+        jdbcTemplate.execute(
+                """
                 CREATE TABLE raw.material_lines (
                     consumption_no VARCHAR(100), production_no VARCHAR(100), movement_date DATE,
                     product_no VARCHAR(100), material_no VARCHAR(100),
                     material_num NUMERIC(18,6), material_cost NUMERIC(18,6)
                 )
                 """);
-        jdbcTemplate.update("INSERT INTO raw.material_lines VALUES (?, ?, ?, ?, ?, ?, ?)",
-                "MC-1", "PO-1", java.sql.Date.valueOf("2026-01-15"), "P", "M", 4, 123.45);
+        jdbcTemplate.update(
+                "INSERT INTO raw.material_lines VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "MC-1",
+                "PO-1",
+                java.sql.Date.valueOf("2026-01-15"),
+                "P",
+                "M",
+                4,
+                123.45);
 
         ImportContext context = new ImportContext();
         context.setMappingTableName("material_consumption");
@@ -214,7 +269,9 @@ class DataWarehouseWriterHandlerTests {
         new DataWarehouseWriterHandler(jdbcTemplate).doImport(context);
 
         assertThat(context.getWarehouseImportedRows()).isEqualTo(1);
-        assertThat(jdbcTemplate.queryForMap("""
+        assertThat(
+                        jdbcTemplate.queryForMap(
+                                """
                 SELECT date, movement_no, order_no, product_no,
                        material_no, material_num, material_total_cost
                 FROM inventory_usage
@@ -230,8 +287,8 @@ class DataWarehouseWriterHandlerTests {
 
     private JdbcTemplate createJdbcTemplate() throws Exception {
         JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL("jdbc:h2:mem:data-warehouse-writer-"
-                + java.util.UUID.randomUUID() + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1");
+        dataSource.setURL("jdbc:h2:mem:data-warehouse-writer-" + java.util.UUID.randomUUID()
+                + ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1");
         var connection = dataSource.getConnection();
         connections.add(connection);
         return new JdbcTemplate(new org.springframework.jdbc.datasource.SingleConnectionDataSource(connection, true));

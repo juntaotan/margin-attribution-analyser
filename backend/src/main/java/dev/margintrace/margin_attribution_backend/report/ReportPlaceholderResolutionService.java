@@ -1,10 +1,5 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
@@ -12,6 +7,10 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -21,18 +20,15 @@ public class ReportPlaceholderResolutionService {
     private final JdbcTemplate jdbcTemplate;
 
     public PlaceholderValues resolve(
-            String actualStartDate,
-            String actualEndDate,
-            String comparableStartDate,
-            String comparableEndDate) {
+            String actualStartDate, String actualEndDate, String comparableStartDate, String comparableEndDate) {
         String currentPeriod = formatPeriod(actualStartDate, actualEndDate);
         String comparisonPeriod = formatPeriod(comparableStartDate, comparableEndDate);
         PeriodTotals actual = queryTotals(actualStartDate, actualEndDate);
         PeriodTotals comparable = queryTotals(comparableStartDate, comparableEndDate);
         BigDecimal margin = actual.revenue().subtract(actual.cost());
         BigDecimal marginPercent = percentage(margin, actual.revenue());
-        BigDecimal revenueChangePercent = percentage(
-                actual.revenue().subtract(comparable.revenue()), comparable.revenue());
+        BigDecimal revenueChangePercent =
+                percentage(actual.revenue().subtract(comparable.revenue()), comparable.revenue());
 
         String revenue = formatCurrency(actual.revenue());
         String revenueChange = formatPercentage(revenueChangePercent);
@@ -54,9 +50,19 @@ public class ReportPlaceholderResolutionService {
         replacements.put("gross_margin", grossMargin);
         replacements.put("gross_margin_percent", grossMarginRate);
         replacements.put("Cost of Goods Sold", formatCurrency(actual.cost()));
-        return new PlaceholderValues(currentPeriod, comparisonPeriod, revenue, actual.revenue().doubleValue(),
-                revenueChange, revenueChangePercent.doubleValue(), grossMargin, margin.doubleValue(),
-                grossMarginRate, marginPercent.doubleValue(), false, replacements);
+        return new PlaceholderValues(
+                currentPeriod,
+                comparisonPeriod,
+                revenue,
+                actual.revenue().doubleValue(),
+                revenueChange,
+                revenueChangePercent.doubleValue(),
+                grossMargin,
+                margin.doubleValue(),
+                grossMarginRate,
+                marginPercent.doubleValue(),
+                false,
+                replacements);
     }
 
     private PeriodTotals queryTotals(String startDate, String endDate) {
@@ -65,27 +71,31 @@ public class ReportPlaceholderResolutionService {
         try {
             Date start = Date.valueOf(LocalDate.parse(startDate.trim()));
             Date end = Date.valueOf(LocalDate.parse(endDate.trim()));
-            return jdbcTemplate.queryForObject(sql, (result, row) -> new PeriodTotals(
-                    result.getBigDecimal(1), result.getBigDecimal(2)), start, end);
+            return jdbcTemplate.queryForObject(
+                    sql,
+                    (result, row) -> new PeriodTotals(result.getBigDecimal(1), result.getBigDecimal(2)),
+                    start,
+                    end);
         } catch (Exception exception) {
-            log.warn("Failed to query sales details for range [{} to {}]: {}",
-                    startDate, endDate, exception.getMessage());
+            log.warn(
+                    "Failed to query sales details for range [{} to {}]: {}",
+                    startDate,
+                    endDate,
+                    exception.getMessage());
             return new PeriodTotals(BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
 
     private BigDecimal percentage(BigDecimal numerator, BigDecimal denominator) {
         if (denominator.signum() == 0) return BigDecimal.ZERO;
-        return numerator.multiply(BigDecimal.valueOf(100))
-                .divide(denominator, 1, RoundingMode.HALF_UP);
+        return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 1, RoundingMode.HALF_UP);
     }
 
     private String formatPercentage(BigDecimal percentage) {
-        return String.format(Locale.ROOT, "%+.1f%%", percentage.doubleValue())
-                .replace("+0.0%", "0.0%");
+        return String.format(Locale.ROOT, "%+.1f%%", percentage.doubleValue()).replace("+0.0%", "0.0%");
     }
 
-    private record PeriodTotals(BigDecimal revenue, BigDecimal cost) { }
+    private record PeriodTotals(BigDecimal revenue, BigDecimal cost) {}
 
     private String formatPeriod(String start, String end) {
         if (start == null || start.isBlank()) return end != null ? end : "";
@@ -110,6 +120,5 @@ public class ReportPlaceholderResolutionService {
             String grossMarginPercent,
             double grossMarginPercentRaw,
             boolean aiAssisted,
-            Map<String, String> replacements
-    ) {}
+            Map<String, String> replacements) {}
 }

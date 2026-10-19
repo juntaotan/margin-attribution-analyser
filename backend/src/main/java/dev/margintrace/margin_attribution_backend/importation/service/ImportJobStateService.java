@@ -1,16 +1,14 @@
 package dev.margintrace.margin_attribution_backend.importation.service;
 
-import java.util.UUID;
-
 import dev.margintrace.margin_attribution_backend.importation.model.FileExtension;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportJob;
 import dev.margintrace.margin_attribution_backend.importation.model.ImportStatus;
 import dev.margintrace.margin_attribution_backend.importation.repository.ImportJobRepository;
-import org.springframework.stereotype.Service;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-
-import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <h1>Import Job State Service</h1>
  *
  * <p>
- * Service for managing the state of import jobs. It provides methods to create new import jobs, 
- * transition their states, and handle failures. And its status are defined in the ImportStatus enum, 
+ * Service for managing the state of import jobs. It provides methods to create new import jobs,
+ * transition their states, and handle failures. And its status are defined in the ImportStatus enum,
  * which includes states such as PENDING, VALIDATING, VALIDATED, and FAILED.
  * </p>
  *
@@ -41,11 +39,12 @@ public class ImportJobStateService {
     @Transactional
     public ImportJob createPendingJob(String originalFilename, String mappingTableName, boolean mappingResult) {
         String storageObjectKey = IMPORT_OBJECT_PREFIX + UUID.randomUUID();
-        return importJobRepository.save(ImportJob.pending(
-                originalFilename, storageObjectKey, mappingTableName, mappingResult));
+        return importJobRepository.save(
+                ImportJob.pending(originalFilename, storageObjectKey, mappingTableName, mappingResult));
     }
 
-    // Performs a pure state transition when no additional stage result needs to be persisted that is used when an import stage begins
+    // Performs a pure state transition when no additional stage result needs to be persisted that is used when an
+    // import stage begins
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void transition(Long jobId, ImportStatus expected, ImportStatus next) {
         ImportJob job = getJobWithExpectedStatus(jobId, expected);
@@ -72,7 +71,8 @@ public class ImportJobStateService {
 
     @Transactional(readOnly = true)
     public ImportJob getRequiredJob(Long jobId) {
-        return importJobRepository.findById(jobId)
+        return importJobRepository
+                .findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Import job not found: " + jobId));
     }
 
@@ -84,21 +84,21 @@ public class ImportJobStateService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void fail(Long jobId, ImportStatus expected, ImportStatus failureStatus, String errorCode, String errorMessage) {
+    public void fail(
+            Long jobId, ImportStatus expected, ImportStatus failureStatus, String errorCode, String errorMessage) {
         ImportJob job = getJobWithExpectedStatus(jobId, expected);
 
         job.transitionToFailure(failureStatus, errorCode, errorMessage);
     }
 
     private ImportJob getJobWithExpectedStatus(Long jobId, ImportStatus expected) {
-        ImportJob job = importJobRepository.findById(jobId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Import job not found: " + jobId));
+        ImportJob job = importJobRepository
+                .findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Import job not found: " + jobId));
 
         if (job.getStatus() != expected) {
             throw new IllegalStateException(
-                    "Import job %d expected %s, but was %s"
-                            .formatted(jobId, expected, job.getStatus()));
+                    "Import job %d expected %s, but was %s".formatted(jobId, expected, job.getStatus()));
         }
         return job;
     }

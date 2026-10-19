@@ -7,12 +7,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /**
  * A material line on a purchase order.
@@ -22,11 +21,10 @@ import java.time.LocalDate;
 @Entity
 @Table(
         name = "purchases",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_purchase_order_product",
-                columnNames = {"purchase_order_no", "product_no"}
-        )
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_purchase_order_product",
+                        columnNames = {"purchase_order_no", "product_no"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PurchaseOrderLine {
@@ -61,8 +59,7 @@ public class PurchaseOrderLine {
             LocalDate date,
             String materialNo,
             BigDecimal materialQuantity,
-            BigDecimal lineTotalCost
-    ) {
+            BigDecimal lineTotalCost) {
         PurchaseOrderLine line = new PurchaseOrderLine();
         line.purchaseOrderNo = requireBusinessKey(purchaseOrderNo, "Purchase order number");
         line.date = requireDate(date);

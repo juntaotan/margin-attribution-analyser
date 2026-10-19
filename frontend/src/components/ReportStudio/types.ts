@@ -109,4 +109,3 @@ export interface ApplyPlaceholderResponse {
   runId: string;
   appliedValue: string;
 }
-

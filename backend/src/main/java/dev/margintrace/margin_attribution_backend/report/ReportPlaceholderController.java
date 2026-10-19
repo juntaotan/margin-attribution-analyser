@@ -1,6 +1,9 @@
 package dev.margintrace.margin_attribution_backend.report;
 
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiUnavailableException;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,10 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/report-studio")
@@ -53,8 +52,7 @@ public class ReportPlaceholderController {
     }
 
     @PostMapping("/query-runs/{runId}/execute")
-    public ReportQueryService.QueryResult executeRun(
-            @PathVariable UUID runId) {
+    public ReportQueryService.QueryResult executeRun(@PathVariable UUID runId) {
         try {
             return placeholderService.executeRun(runId);
         } catch (IllegalArgumentException exception) {
@@ -63,14 +61,12 @@ public class ReportPlaceholderController {
     }
 
     @PostMapping("/placeholders/apply")
-    public synchronized Map<String, Object> applyPlaceholder(
-            @RequestBody ApplyRequest request) throws Exception {
+    public synchronized Map<String, Object> applyPlaceholder(@RequestBody ApplyRequest request) throws Exception {
         if (request == null || request.runId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A query runId is required to apply");
         }
         try {
-            ReportPlaceholderService.ApplyResult result =
-                    placeholderService.applyRun(request.runId(), request.alias());
+            ReportPlaceholderService.ApplyResult result = placeholderService.applyRun(request.runId(), request.alias());
             onlyOfficeController.invalidateIssuedDocumentKeys();
             return Map.of(
                     "documentVersion", result.documentVersion(),
@@ -83,12 +79,7 @@ public class ReportPlaceholderController {
     }
 
     public record BatchSyncRequest(
-            String documentId,
-            List<ReportPlaceholderService.PlaceholderSyncItem> placeholders) {
-    }
+            String documentId, List<ReportPlaceholderService.PlaceholderSyncItem> placeholders) {}
 
-    public record ApplyRequest(
-            UUID runId,
-            String alias) {
-    }
+    public record ApplyRequest(UUID runId, String alias) {}
 }

@@ -2,7 +2,17 @@ package dev.margintrace.margin_attribution_backend.report;
 
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiUnavailableException;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprint;
-
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -17,18 +27,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/report-studio/onlyoffice")
@@ -48,9 +46,8 @@ public class OnlyOfficeController {
     private final ReportPlaceholderService reportPlaceholderService;
     private final Set<String> issuedDocumentKeys = ConcurrentHashMap.newKeySet();
     private final Set<String> supersededDocumentKeys = ConcurrentHashMap.newKeySet();
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
+    private final HttpClient httpClient =
+            HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
 
     @Value("${onlyoffice.public-url}")
     private String publicUrl;
@@ -74,17 +71,18 @@ public class OnlyOfficeController {
         document.put("key", documentKey);
         document.put("title", documentStore.currentTitle());
         document.put("url", baseBackendUrl + "/api/report-studio/onlyoffice/document?accessToken=" + accessToken);
-        document.put("permissions", Map.of(
-                "edit", true,
-                "download", true,
-                "print", true
-        ));
+        document.put(
+                "permissions",
+                Map.of(
+                        "edit", true,
+                        "download", true,
+                        "print", true));
 
         Map<String, Object> editorConfig = new LinkedHashMap<>();
         editorConfig.put("mode", "edit");
         editorConfig.put("lang", "en");
-        editorConfig.put("callbackUrl",
-                baseBackendUrl + "/api/report-studio/onlyoffice/callback?accessToken=" + accessToken);
+        editorConfig.put(
+                "callbackUrl", baseBackendUrl + "/api/report-studio/onlyoffice/callback?accessToken=" + accessToken);
         editorConfig.put("user", Map.of("id", "margintrace-local-user", "name", "MarginTrace User"));
         editorConfig.put("customization", Map.of("autosave", true, "forcesave", true));
 
@@ -95,10 +93,7 @@ public class OnlyOfficeController {
         signedConfig.put("type", "desktop");
         signedConfig.put("token", jwtSigner.sign(signedConfig));
 
-        return Map.of(
-                "documentServerUrl", withoutTrailingSlash(publicUrl),
-                "config", signedConfig
-        );
+        return Map.of("documentServerUrl", withoutTrailingSlash(publicUrl), "config", signedConfig);
     }
 
     @GetMapping("/document")
@@ -134,26 +129,19 @@ public class OnlyOfficeController {
         issuedDocumentKeys.clear();
         documentStore.replaceDefaultDocument(content, title);
 
-        return Map.of(
-                "title", title,
-                "documentVersion", documentStore.currentVersion()
-        );
+        return Map.of("title", title, "documentVersion", documentStore.currentVersion());
     }
 
     @GetMapping("/content-controls")
     public Map<String, Object> contentControls() throws Exception {
         byte[] content = documentStore.loadOrCreateDefaultDocument();
-        List<ReportContentControlScanner.ContentControlDescriptor> controls =
-                contentControlScanner.scan(content);
-        return Map.of(
-                "documentVersion", documentStore.currentVersion(),
-                "controls", controls
-        );
+        List<ReportContentControlScanner.ContentControlDescriptor> controls = contentControlScanner.scan(content);
+        return Map.of("documentVersion", documentStore.currentVersion(), "controls", controls);
     }
 
     @PostMapping("/content-controls/duration")
-    public ReportDurationService.DurationAnalysis analyzeDuration(
-            @RequestBody DurationAnalysisRequest request) throws Exception {
+    public ReportDurationService.DurationAnalysis analyzeDuration(@RequestBody DurationAnalysisRequest request)
+            throws Exception {
         try {
             return reportDurationService.analyze(
                     request == null ? null : request.tag(),
@@ -165,21 +153,18 @@ public class OnlyOfficeController {
     }
 
     @PostMapping("/content-controls/blueprint")
-    public ReportBlueprint generateBlueprint(
-            @RequestBody BlueprintRequest request) {
+    public ReportBlueprint generateBlueprint(@RequestBody BlueprintRequest request) {
         try {
             return reportBlueprintService.generate(request == null ? null : request.prompt());
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         } catch (AiUnavailableException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), exception);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), exception);
         }
     }
 
     @PostMapping("/content-controls/blueprint/execute")
-    public ReportQueryService.QueryResult executeBlueprint(
-            @RequestBody ReportBlueprint blueprint) {
+    public ReportQueryService.QueryResult executeBlueprint(@RequestBody ReportBlueprint blueprint) {
         try {
             return reportQueryService.execute(blueprint);
         } catch (IllegalArgumentException exception) {
@@ -188,8 +173,8 @@ public class OnlyOfficeController {
     }
 
     @PostMapping("/content-controls/apply")
-    public synchronized Map<String, Object> applyContentControl(
-            @RequestBody ApplyContentControlRequest request) throws Exception {
+    public synchronized Map<String, Object> applyContentControl(@RequestBody ApplyContentControlRequest request)
+            throws Exception {
         try {
             if (request != null && request.runId() != null) {
                 ReportPlaceholderService.ApplyResult result =
@@ -201,11 +186,10 @@ public class OnlyOfficeController {
                         "runId", result.runId().toString());
             }
 
-            ReportContentControlUpdater.UpdateResult update =
-                    contentControlUpdater.replaceContentByAlias(
-                            documentStore.loadOrCreateDefaultDocument(),
-                            request == null ? null : request.alias(),
-                            request == null ? null : request.value());
+            ReportContentControlUpdater.UpdateResult update = contentControlUpdater.replaceContentByAlias(
+                    documentStore.loadOrCreateDefaultDocument(),
+                    request == null ? null : request.alias(),
+                    request == null ? null : request.value());
             invalidateIssuedDocumentKeys();
             documentStore.saveDefaultDocument(update.documentBytes());
             return Map.of(
@@ -223,8 +207,7 @@ public class OnlyOfficeController {
 
     @PostMapping("/callback")
     public synchronized Map<String, Integer> callback(
-            @RequestParam String accessToken,
-            @RequestBody Map<String, Object> callback) throws Exception {
+            @RequestParam String accessToken, @RequestBody Map<String, Object> callback) throws Exception {
         verifyAccessToken(accessToken);
         int status = callback.get("status") instanceof Number number ? number.intValue() : 0;
         String callbackKey = callback.get("key") instanceof String key ? key : "";
@@ -234,13 +217,9 @@ public class OnlyOfficeController {
         }
 
         if ((status == 2 || status == 6) && callback.get("url") instanceof String documentUrl) {
-            URI uri = OnlyOfficeDownloadUrlResolver.resolve(
-                    publicUrl,
-                    onlyOfficeInternalUrl,
-                    URI.create(documentUrl));
-            HttpResponse<byte[]> response = httpClient.send(
-                    HttpRequest.newBuilder(uri).GET().build(),
-                    HttpResponse.BodyHandlers.ofByteArray());
+            URI uri = OnlyOfficeDownloadUrlResolver.resolve(publicUrl, onlyOfficeInternalUrl, URI.create(documentUrl));
+            HttpResponse<byte[]> response =
+                    httpClient.send(HttpRequest.newBuilder(uri).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new IllegalStateException("ONLYOFFICE returned document HTTP " + response.statusCode());
             }
@@ -270,7 +249,8 @@ public class OnlyOfficeController {
         }
 
         String normalized = originalFileName.replace('\\', '/');
-        String fileName = normalized.substring(normalized.lastIndexOf('/') + 1)
+        String fileName = normalized
+                .substring(normalized.lastIndexOf('/') + 1)
                 .replaceAll("[\\p{Cntrl}]", "")
                 .trim();
         if (fileName.isBlank()) {
@@ -279,8 +259,7 @@ public class OnlyOfficeController {
         return fileName.length() <= 200 ? fileName : fileName.substring(fileName.length() - 200);
     }
 
-    public record BlueprintRequest(String prompt) {
-    }
+    public record BlueprintRequest(String prompt) {}
 
     public record ApplyContentControlRequest(java.util.UUID runId, String alias, String value) {
         public ApplyContentControlRequest(String alias, String value) {
@@ -288,6 +267,5 @@ public class OnlyOfficeController {
         }
     }
 
-    public record DurationAnalysisRequest(String tag, String wordId, String alias) {
-    }
+    public record DurationAnalysisRequest(String tag, String wordId, String alias) {}
 }

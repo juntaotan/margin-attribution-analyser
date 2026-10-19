@@ -1,15 +1,14 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import tools.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Base64;
 import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class OnlyOfficeJwtSigner {
@@ -19,9 +18,7 @@ public class OnlyOfficeJwtSigner {
     private final ObjectMapper objectMapper;
     private final byte[] secret;
 
-    public OnlyOfficeJwtSigner(
-            ObjectMapper objectMapper,
-            @Value("${onlyoffice.jwt-secret}") String secret) {
+    public OnlyOfficeJwtSigner(ObjectMapper objectMapper, @Value("${onlyoffice.jwt-secret}") String secret) {
         if (secret == null || secret.isBlank()) {
             throw new IllegalArgumentException("ONLYOFFICE JWT secret must not be blank");
         }

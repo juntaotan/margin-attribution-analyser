@@ -1,12 +1,11 @@
 package dev.margintrace.margin_attribution_backend.algorithm.TreeBuilder;
 
+import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
+import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
-import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
-import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
 
 /**
  * This class implements the margin attribution algorithm.
@@ -24,24 +23,14 @@ public class MarginAttributionAlgorithm {
 
         int nodeCount = graph.nodes().length;
         if (position < 0 || position >= nodeCount) {
-            throw new IndexOutOfBoundsException(
-                    "position must be between 0 and " + (nodeCount - 1) + ": " + position
-            );
+            throw new IndexOutOfBoundsException("position must be between 0 and " + (nodeCount - 1) + ": " + position);
         }
 
         int[] reverseOffsets = calculateReverseOffsets(nodeCount, graph.successors());
         int[] predecessors = buildPredecessors(graph, reverseOffsets);
 
         List<int[]> paths = new ArrayList<>();
-        tracePaths(
-                position,
-                reverseOffsets,
-                predecessors,
-                new int[nodeCount],
-                0,
-                new boolean[nodeCount],
-                paths
-        );
+        tracePaths(position, reverseOffsets, predecessors, new int[nodeCount], 0, new boolean[nodeCount], paths);
         return paths.toArray(int[][]::new);
     }
 
@@ -57,17 +46,13 @@ public class MarginAttributionAlgorithm {
 
         int nodeCount = graph.nodes().length;
         if (position < 0 || position >= nodeCount) {
-            throw new IndexOutOfBoundsException(
-                    "position must be between 0 and " + (nodeCount - 1) + ": " + position
-            );
+            throw new IndexOutOfBoundsException("position must be between 0 and " + (nodeCount - 1) + ": " + position);
         }
 
         int[] reverseOffsets = calculateReverseOffsets(nodeCount, graph.successors());
         int[] predecessors = buildPredecessors(graph, reverseOffsets);
         List<Integer> upstreamPositions = new ArrayList<>();
-        for (int edgeIndex = reverseOffsets[position];
-             edgeIndex < reverseOffsets[position + 1];
-             edgeIndex++) {
+        for (int edgeIndex = reverseOffsets[position]; edgeIndex < reverseOffsets[position + 1]; edgeIndex++) {
             upstreamPositions.add(predecessors[edgeIndex]);
         }
         return upstreamPositions;
@@ -80,8 +65,7 @@ public class MarginAttributionAlgorithm {
             int[] reversePath,
             int pathLength,
             boolean[] positionsOnPath,
-            List<int[]> paths
-    ) {
+            List<int[]> paths) {
         if (positionsOnPath[position]) {
             throw new IllegalArgumentException("graph contains a cycle at position: " + position);
         }
@@ -106,8 +90,7 @@ public class MarginAttributionAlgorithm {
                         reversePath,
                         pathLength + 1,
                         positionsOnPath,
-                        paths
-                );
+                        paths);
             }
         }
 
@@ -134,8 +117,8 @@ public class MarginAttributionAlgorithm {
 
         for (int predecessor = 0; predecessor < nodeCount; predecessor++) {
             for (int edgeIndex = graph.offset()[predecessor];
-                 edgeIndex < graph.offset()[predecessor + 1];
-                 edgeIndex++) {
+                    edgeIndex < graph.offset()[predecessor + 1];
+                    edgeIndex++) {
                 int successor = graph.successors()[edgeIndex];
                 predecessors[insertionOffsets[successor]++] = predecessor;
             }
@@ -147,10 +130,7 @@ public class MarginAttributionAlgorithm {
         Objects.requireNonNull(graph, "graph must not be null");
         Node[] nodes = Objects.requireNonNull(graph.nodes(), "graph nodes must not be null");
         int[] offsets = Objects.requireNonNull(graph.offset(), "graph offsets must not be null");
-        int[] successors = Objects.requireNonNull(
-                graph.successors(),
-                "graph successors must not be null"
-        );
+        int[] successors = Objects.requireNonNull(graph.successors(), "graph successors must not be null");
 
         if (offsets.length != nodes.length + 1) {
             throw new IllegalArgumentException("graph offsets length must equal node count + 1");

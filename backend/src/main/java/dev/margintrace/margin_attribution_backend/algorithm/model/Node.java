@@ -4,11 +4,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /** A recorded quantity and its total cost; null cost means unavailable, not zero. */
-public record Node (
-    String inventoryId,
-    BigDecimal quantity,
-    BigDecimal cost
-) {
+public record Node(String inventoryId, BigDecimal quantity, BigDecimal cost) {
     public Node(String inventoryId, BigDecimal quantity) {
         this(inventoryId, quantity, null);
     }

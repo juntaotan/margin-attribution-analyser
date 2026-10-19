@@ -5,21 +5,19 @@ import dev.margintrace.margin_attribution_backend.analysis.ai.AiUnavailableExcep
 import dev.margintrace.margin_attribution_backend.report.ai.BlueprintInputField;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprint;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprintAssistant;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class ReportBlueprintService {
-    private static final Set<String> ALLOWED_TABLES = Set.of(
-            "material_master", "inventory_usage", "bill_of_material", "sales_details", "purchases");
+    private static final Set<String> ALLOWED_TABLES =
+            Set.of("material_master", "inventory_usage", "bill_of_material", "sales_details", "purchases");
 
-    private static final Set<String> FORMATS =
-            Set.of("percentage", "currency", "number", "text");
+    private static final Set<String> FORMATS = Set.of("percentage", "currency", "number", "text");
 
     private final ReportBlueprintAssistant blueprintAssistant;
     private final AiErrorMapper aiErrorMapper;
@@ -45,8 +43,7 @@ public class ReportBlueprintService {
 
         String sourceTable = required(blueprint.sourceTable(), "sourceTable");
         if (!ALLOWED_TABLES.contains(sourceTable)) {
-            throw new AiUnavailableException(
-                    "llama.cpp selected an unknown source table: " + sourceTable);
+            throw new AiUnavailableException("llama.cpp selected an unknown source table: " + sourceTable);
         }
 
         List<String> filters = blueprint.filterConditions() == null
@@ -59,9 +56,8 @@ public class ReportBlueprintService {
         if (blueprint.inputFields() == null) {
             throw new AiUnavailableException("llama.cpp returned invalid Blueprint input fields");
         }
-        List<BlueprintInputField> inputFields = blueprint.inputFields().stream()
-                .map(this::validateField)
-                .toList();
+        List<BlueprintInputField> inputFields =
+                blueprint.inputFields().stream().map(this::validateField).toList();
 
         String format = required(blueprint.format(), "format").toLowerCase(Locale.ROOT);
         if (!FORMATS.contains(format)) {
@@ -69,8 +65,9 @@ public class ReportBlueprintService {
         }
 
         String label = blueprint.sourceTableLabel() == null
-                || blueprint.sourceTableLabel().isBlank()
-                ? sourceTable : blueprint.sourceTableLabel().trim();
+                        || blueprint.sourceTableLabel().isBlank()
+                ? sourceTable
+                : blueprint.sourceTableLabel().trim();
 
         return new ReportBlueprint(
                 sourceTable,

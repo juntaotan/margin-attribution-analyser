@@ -21,7 +21,7 @@ public class ImportJobController {
     private final ImportJobStateService stateService;
 
     /**
-     * Imports a file and processes it based on the provided mapping table name 
+     * Imports a file and processes it based on the provided mapping table name
      * and mapping result. Therefore, the mapping job is executed in the frontend
      * and returns the mapping result to the backend for further processing.
      * @param file
@@ -31,10 +31,9 @@ public class ImportJobController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImportJobResponse> importFile(
-        @RequestParam("file") MultipartFile file,
-        @RequestParam("mappingTableName") String mappingTableName,
-        @RequestParam(value = "mappingResult", defaultValue = "true") boolean mappingResult
-    ) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("mappingTableName") String mappingTableName,
+            @RequestParam(value = "mappingResult", defaultValue = "true") boolean mappingResult) {
         if (!mappingResult) {
             return ResponseEntity.badRequest().build();
         }
@@ -60,9 +59,7 @@ public class ImportJobController {
 
     @GetMapping
     public ImportJobPageResponse listJobs(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return ImportJobPageResponse.from(stateService.listJobs(page, size));
     }
 }

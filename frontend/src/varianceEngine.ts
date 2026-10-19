@@ -1,6 +1,4 @@
-import {
-  AnalysisAdjacencyEntry, AnalysisNode, COST_OF_GOODS_SOLD_NODE_ID,
-} from './analysisGraph';
+import { AnalysisAdjacencyEntry, AnalysisNode, COST_OF_GOODS_SOLD_NODE_ID } from './analysisGraph';
 
 export type SeverityLevel = 'sync' | 'minor' | 'moderate' | 'major' | 'favorable';
 
@@ -9,12 +7,12 @@ export type SeverityLevel = 'sync' | 'minor' | 'moderate' | 'major' | 'favorable
  * Reserved for convolution-based decomposition algorithms from backend.
  */
 export interface CostBreakdown {
-  materialCost?: number;   // 料 (Direct Material)
-  laborCost?: number;      // 工 (Direct Labor)
-  overheadCost?: number;   // 费 (Manufacturing Overhead)
-  materialRatio?: number;  // 0~100 (Default 100)
-  laborRatio?: number;     // 0~100 (Default 0)
-  overheadRatio?: number;  // 0~100 (Default 0)
+  materialCost?: number; // 料 (Direct Material)
+  laborCost?: number; // 工 (Direct Labor)
+  overheadCost?: number; // 费 (Manufacturing Overhead)
+  materialRatio?: number; // 0~100 (Default 100)
+  laborRatio?: number; // 0~100 (Default 0)
+  overheadRatio?: number; // 0~100 (Default 0)
 }
 
 export interface DualBomNode {
@@ -69,9 +67,9 @@ export function getCostBreakdown(node?: DualBomNode | null): {
         materialRatio: (mRatio / sum) * 100,
         laborRatio: (lRatio / sum) * 100,
         overheadRatio: (oRatio / sum) * 100,
-        materialCost: cb.materialCost ?? (total * (mRatio / sum)),
-        laborCost: cb.laborCost ?? (total * (lRatio / sum)),
-        overheadCost: cb.overheadCost ?? (total * (oRatio / sum)),
+        materialCost: cb.materialCost ?? total * (mRatio / sum),
+        laborCost: cb.laborCost ?? total * (lRatio / sum),
+        overheadCost: cb.overheadCost ?? total * (oRatio / sum),
       };
     }
     if (cb.materialCost !== undefined || cb.laborCost !== undefined || cb.overheadCost !== undefined) {
@@ -169,11 +167,13 @@ export const resolveMaterialName = (inventoryId: string): string => {
     }
   }
   // Clean readable title fallback
-  return inventoryId
-    .replace(/^EBOM-|^PBOM-/, '')
-    .replace(/-(ACT|M|BLK|LOT)$/, '')
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase()) + ' Component';
+  return (
+    inventoryId
+      .replace(/^EBOM-|^PBOM-/, '')
+      .replace(/-(ACT|M|BLK|LOT)$/, '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase()) + ' Component'
+  );
 };
 
 export const resolveStation = (level: number, inventoryId: string): string => {
@@ -182,7 +182,7 @@ export const resolveStation = (level: number, inventoryId: string): string => {
   if (inventoryId.includes('EL')) return 'ST-04 (Avionics Harness)';
   if (inventoryId.includes('TC')) return 'ST-12 (Autoclave & Thermal)';
   if (level === 1) return 'ST-08 (Sub-assembly Line)';
-  return `ST-${10 + (level * 2)}`;
+  return `ST-${10 + level * 2}`;
 };
 
 export const resolveWorkOrder = (inventoryId: string, index: number): string => {
@@ -196,297 +196,260 @@ export const resolveLotNo = (inventoryId: string): string => {
   return `LOT-${clean.slice(0, 3)}-${1000 + (hash % 8999)}`;
 };
 
-export const reconcileDualBom = (
-  actualEntries: AnalysisAdjacencyEntry[],
-  bomEntries: AnalysisAdjacencyEntry[],
-  threshold = 250.0
-): DualBomReconciliationResult => {
-  const actualNodeMap = new Map<string, AnalysisNode>();
-  const bomNodeMap = new Map<string, AnalysisNode>();
+/** Removes the EBOM/PBOM prefixes and variant suffixes so that planned and actual nodes share one identifier. */
+const toCanonical = (id: string): string => id.replace(/^EBOM-|^PBOM-/, '').replace(/-(ACT|M|BLK|LOT)$/, '');
 
-  // Map graph relations (downstream = parent, upstream = component)
-  const parentChildMap = new Map<string, Set<string>>(); // parent -> children
-  const childParentMap = new Map<string, string>(); // child -> parent
+/** Indexes every upstream and downstream node of the entries by inventory ID; later entries replace earlier ones. */
+const indexNodes = (entries: AnalysisAdjacencyEntry[]): Map<string, AnalysisNode> => {
+  const nodes = new Map<string, AnalysisNode>();
+  for (const entry of entries) {
+    nodes.set(entry.upstream.inventoryId, entry.upstream);
+    for (const d of entry.downstream) {
+      nodes.set(d.inventoryId, d);
+    }
+  }
+  return nodes;
+};
 
-  const collectRelations = (entries: AnalysisAdjacencyEntry[]) => {
-    for (const entry of entries) {
-      const childId = entry.upstream.inventoryId;
-      for (const parent of entry.downstream) {
-        const parentId = parent.inventoryId;
-        if (!parentChildMap.has(parentId)) {
-          parentChildMap.set(parentId, new Set());
-        }
-        parentChildMap.get(parentId)!.add(childId);
-        childParentMap.set(childId, parentId);
+/** Adds the parent-to-component relations of the entries (downstream = parent, upstream = component). */
+const collectRelations = (entries: AnalysisAdjacencyEntry[], parentChildMap: Map<string, Set<string>>) => {
+  for (const entry of entries) {
+    const childId = entry.upstream.inventoryId;
+    for (const parent of entry.downstream) {
+      if (!parentChildMap.has(parent.inventoryId)) {
+        parentChildMap.set(parent.inventoryId, new Set());
       }
-    }
-  };
-
-  for (const entry of actualEntries) {
-    actualNodeMap.set(entry.upstream.inventoryId, entry.upstream);
-    for (const d of entry.downstream) {
-      actualNodeMap.set(d.inventoryId, d);
+      parentChildMap.get(parent.inventoryId)!.add(childId);
     }
   }
+};
 
-  for (const entry of bomEntries) {
-    bomNodeMap.set(entry.upstream.inventoryId, entry.upstream);
-    for (const d of entry.downstream) {
-      bomNodeMap.set(d.inventoryId, d);
-    }
-  }
+interface CanonicalTree {
+  ids: Set<string>;
+  children: Map<string, string[]>;
+  parents: Map<string, string>;
+}
 
-  collectRelations(actualEntries);
-  collectRelations(bomEntries);
-
-  // Collect all unique canonical node identifiers
-  const allCanonicalIds = new Set<string>();
-  const canonicalMap = new Map<string, string>(); // specific id -> canonical id
-
-  const toCanonical = (id: string): string => {
-    return id.replace(/^EBOM-|^PBOM-/, '').replace(/-(ACT|M|BLK|LOT)$/, '');
-  };
-
-  for (const id of [...actualNodeMap.keys(), ...bomNodeMap.keys()]) {
-    const canonical = toCanonical(id);
-    allCanonicalIds.add(canonical);
-    canonicalMap.set(id, canonical);
-  }
-
-  // Map canonical relationships: parent -> children, child -> parent
-  const canonicalChildrenMap = new Map<string, string[]>();
-  const canonicalParentMap = new Map<string, string>();
-
-  for (const [pId, children] of parentChildMap.entries()) {
+/** Merges node relations onto canonical identifiers, dropping duplicate and self-referencing edges. */
+const buildCanonicalTree = (nodeIds: string[], parentChildMap: Map<string, Set<string>>): CanonicalTree => {
+  const ids = new Set(nodeIds.map(toCanonical));
+  const children = new Map<string, string[]>();
+  const parents = new Map<string, string>();
+  for (const [pId, childIds] of parentChildMap.entries()) {
     const pCanonical = toCanonical(pId);
-    if (!canonicalChildrenMap.has(pCanonical)) {
-      canonicalChildrenMap.set(pCanonical, []);
+    if (!children.has(pCanonical)) {
+      children.set(pCanonical, []);
     }
-    const list = canonicalChildrenMap.get(pCanonical)!;
-    for (const child of children) {
+    const list = children.get(pCanonical)!;
+    for (const child of childIds) {
       const cCanonical = toCanonical(child);
       if (!list.includes(cCanonical) && cCanonical !== pCanonical) {
         list.push(cCanonical);
-        canonicalParentMap.set(cCanonical, pCanonical);
+        parents.set(cCanonical, pCanonical);
       }
     }
   }
+  return { ids, children, parents };
+};
 
-  // Identify root canonical nodes (no parent)
-  const canonicalRoots = Array.from(allCanonicalIds).filter((c) => !canonicalParentMap.has(c));
+interface DfsNodeInfo {
+  canonical: string;
+  level: number;
+  parentId: string | null;
+  isLastChild: boolean;
+  ancestorContinues: boolean[];
+}
 
-  // Depth-First Pre-Order Traversal to preserve top-to-bottom connected tree hierarchy
-  interface DfsNodeInfo {
-    canonical: string;
-    level: number;
-    parentId: string | null;
-    isLastChild: boolean;
-    ancestorContinues: boolean[];
-  }
-
+/**
+ * Lists the tree in depth-first pre-order, from each root (a node without a parent), so that the display keeps
+ * a connected top-to-bottom hierarchy. Nodes only reachable through cycles are appended afterwards at level 1.
+ */
+const traverseDepthFirst = (tree: CanonicalTree): DfsNodeInfo[] => {
   const dfsList: DfsNodeInfo[] = [];
   const visited = new Set<string>();
 
-  const dfsTraverse = (
+  const visit = (
     nodeId: string,
     level: number,
     parentId: string | null,
     isLast: boolean,
-    ancestorContinues: boolean[]
+    ancestorContinues: boolean[],
   ) => {
     if (visited.has(nodeId)) return;
     visited.add(nodeId);
+    dfsList.push({ canonical: nodeId, level, parentId, isLastChild: isLast, ancestorContinues });
 
-    dfsList.push({
-      canonical: nodeId,
-      level,
-      parentId,
-      isLastChild: isLast,
-      ancestorContinues,
-    });
-
-    const children = canonicalChildrenMap.get(nodeId) || [];
+    const children = tree.children.get(nodeId) || [];
     children.forEach((childId, idx) => {
-      const isLastChildOfThis = idx === children.length - 1;
       const nextAncestorContinues = level === 0 ? [] : [...ancestorContinues, !isLast];
-      dfsTraverse(childId, level + 1, nodeId, isLastChildOfThis, nextAncestorContinues);
+      visit(childId, level + 1, nodeId, idx === children.length - 1, nextAncestorContinues);
     });
   };
 
-  canonicalRoots.forEach((rootId, idx) => {
-    dfsTraverse(rootId, 0, null, idx === canonicalRoots.length - 1, []);
-  });
-
-  // Any remaining orphan nodes
-  for (const c of allCanonicalIds) {
-    if (!visited.has(c)) {
-      dfsTraverse(c, 1, null, true, []);
-    }
+  const roots = Array.from(tree.ids).filter((c) => !tree.parents.has(c));
+  roots.forEach((rootId, idx) => visit(rootId, 0, null, idx === roots.length - 1, []));
+  for (const c of tree.ids) {
+    if (!visited.has(c)) visit(c, 1, null, true, []);
   }
+  return dfsList;
+};
 
-  // Build reconciled nodes following the DFS tree order
-  const dualNodes: DualBomNode[] = [];
-  const nodesById = new Map<string, DualBomNode>();
-  let totalCostVariance = 0;
-  let penetratedCount = 0;
+/** Returns the first node whose canonical identifier matches, in map insertion order. */
+const findByCanonical = (nodes: Map<string, AnalysisNode>, canonical: string): AnalysisNode | undefined => {
+  for (const [id, node] of nodes.entries()) {
+    if (toCanonical(id) === canonical) return node;
+  }
+  return undefined;
+};
 
-  dfsList.forEach((item, index) => {
-    const canonical = item.canonical;
+/**
+ * Grades a variance against the threshold. Overruns above the threshold are "penetrated": moderate up to three
+ * times the threshold and major beyond it. Savings beyond the threshold are favourable; smaller savings are in sync.
+ */
+const classifySeverity = (effectiveDelta: number, threshold: number): SeverityLevel => {
+  if (Math.abs(effectiveDelta) < 0.001) return 'sync';
+  if (effectiveDelta < -threshold) return 'favorable';
+  if (effectiveDelta > 0 && effectiveDelta <= threshold) return 'minor';
+  if (effectiveDelta > threshold && effectiveDelta <= threshold * 3) return 'moderate';
+  if (effectiveDelta > threshold * 3) return 'major';
+  return 'sync';
+};
 
-    // Match actual node variant
-    let actualNode: AnalysisNode | undefined;
-    for (const [id, node] of actualNodeMap.entries()) {
-      if (toCanonical(id) === canonical) {
-        actualNode = node;
-        break;
-      }
-    }
+const LEDGER_STATUS: Record<SeverityLevel, MaterialLedgerItem['status']> = {
+  major: 'Over-issued',
+  moderate: 'Scrap Extra',
+  favorable: 'Released',
+  minor: 'Over-cost',
+  sync: 'Normal',
+};
 
-    // Match bom node variant
-    let bomNode: AnalysisNode | undefined;
-    for (const [id, node] of bomNodeMap.entries()) {
-      if (toCanonical(id) === canonical) {
-        bomNode = node;
-        break;
-      }
-    }
+/**
+ * Compares the actual and planned node for one tree position. Missing quantities fall back to the other side, or
+ * 1; the baseline cost falls back to the standard quantity at the actual unit cost. Without costs, a quantity
+ * difference is graded at 50 per unit.
+ */
+const buildDualNode = (
+  item: DfsNodeInfo,
+  index: number,
+  actualNode: AnalysisNode | undefined,
+  bomNode: AnalysisNode | undefined,
+  childrenIds: string[],
+  threshold: number,
+): DualBomNode => {
+  const canonical = item.canonical;
+  const actualQty = actualNode?.quantity ?? bomNode?.quantity ?? 1;
+  const standardQty = bomNode?.quantity ?? actualQty;
+  const actualCost = actualNode?.cost ?? null;
+  const unitCost = actualCost !== null && actualQty > 0 ? actualCost / actualQty : null;
+  const baselineCost = bomNode?.cost ?? (unitCost !== null ? standardQty * unitCost : null);
 
-    const actualQty = actualNode?.quantity ?? (bomNode?.quantity ?? 1);
-    const standardQty = bomNode?.quantity ?? actualQty;
-    const actualCost = actualNode?.cost ?? null;
-    const unitCost = actualCost !== null && actualQty > 0 ? actualCost / actualQty : null;
-    const baselineCost = bomNode?.cost ?? (unitCost !== null ? standardQty * unitCost : null);
+  const qtyDelta = actualQty - standardQty;
+  const costDelta = actualCost !== null && baselineCost !== null ? actualCost - baselineCost : null;
+  const severity = classifySeverity(costDelta !== null ? costDelta : qtyDelta * 50, threshold);
 
-    const qtyDelta = actualQty - standardQty;
-    const qtyDeltaPercent = standardQty > 0 ? (qtyDelta / standardQty) * 100 : 0;
-    const costDelta = actualCost !== null && baselineCost !== null ? actualCost - baselineCost : null;
+  return {
+    id: actualNode?.inventoryId || bomNode?.inventoryId || `BOM-${canonical}`,
+    name: resolveMaterialName(canonical),
+    level: item.level,
+    standardQty,
+    actualQty,
+    quantityDelta: qtyDelta,
+    quantityDeltaPercent: standardQty > 0 ? (qtyDelta / standardQty) * 100 : 0,
+    unitCost,
+    baselineCost,
+    actualCost,
+    costDelta,
+    severity,
+    workOrder: resolveWorkOrder(canonical, index),
+    lotNo: resolveLotNo(canonical),
+    station: resolveStation(item.level, canonical),
+    ecn: `ECN-2024-R${(index % 6) + 1}`,
+    isPenetrated: severity === 'moderate' || severity === 'major',
+    parentId: item.parentId,
+    childrenIds,
+    statusText: `[${LEDGER_STATUS[severity]}]`,
+    isLastChild: item.isLastChild,
+    ancestorContinues: item.ancestorContinues,
+  };
+};
 
-    // Determine severity
-    let severity: SeverityLevel = 'sync';
-    let isPenetrated = false;
+const toLedgerItem = (n: DualBomNode): MaterialLedgerItem => ({
+  id: n.id,
+  workOrder: n.workOrder,
+  materialCode: n.id,
+  description: n.name,
+  batchLot: n.lotNo,
+  station: n.station.split(' ')[0],
+  bomQty: n.standardQty,
+  actualQty: n.actualQty,
+  unitCost: n.unitCost,
+  totalCost: n.actualCost,
+  varianceDelta: n.costDelta,
+  status: LEDGER_STATUS[n.severity],
+  severity: n.severity,
+  node: n,
+});
 
-    const effectiveDelta = costDelta !== null ? costDelta : qtyDelta * 50;
+const assessRisk = (penetratedCount: number, netVariance: number): string => {
+  if (penetratedCount >= 3 || netVariance > 1000) return 'Tier-1 High Risk';
+  if (penetratedCount > 0 || netVariance > 300) return 'Tier-2 Moderate Risk';
+  return 'Nominal In-Spec';
+};
 
-    if (Math.abs(effectiveDelta) < 0.001) {
-      severity = 'sync';
-    } else if (effectiveDelta < -threshold) {
-      severity = 'favorable';
-    } else if (effectiveDelta > 0 && effectiveDelta <= threshold) {
-      severity = 'minor';
-    } else if (effectiveDelta > threshold && effectiveDelta <= threshold * 3) {
-      severity = 'moderate';
-      isPenetrated = true;
-      penetratedCount++;
-    } else if (effectiveDelta > threshold * 3) {
-      severity = 'major';
-      isPenetrated = true;
-      penetratedCount++;
-    } else {
-      severity = 'sync';
-    }
+/**
+ * Reconciles actual consumption with the planned BOM on a shared tree of canonical material identifiers.
+ *
+ * @param actualEntries adjacency entries of the actual-consumption graph.
+ * @param bomEntries adjacency entries of the planned BOM graph.
+ * @param threshold cost variance above which a node counts as penetrated.
+ * @returns the reconciled nodes in display order, the material ledger (excluding cost of goods sold), and the net
+ *   variance, taken from the cost-of-goods-sold node when present and otherwise summed over all nodes.
+ */
+export const reconcileDualBom = (
+  actualEntries: AnalysisAdjacencyEntry[],
+  bomEntries: AnalysisAdjacencyEntry[],
+  threshold = 250.0,
+): DualBomReconciliationResult => {
+  const actualNodeMap = indexNodes(actualEntries);
+  const bomNodeMap = indexNodes(bomEntries);
+  const parentChildMap = new Map<string, Set<string>>();
+  collectRelations(actualEntries, parentChildMap);
+  collectRelations(bomEntries, parentChildMap);
+  const tree = buildCanonicalTree([...actualNodeMap.keys(), ...bomNodeMap.keys()], parentChildMap);
 
-    if (costDelta !== null) {
-      totalCostVariance += costDelta;
-    }
-
-    const inventoryId = actualNode?.inventoryId || bomNode?.inventoryId || `BOM-${canonical}`;
-    const name = resolveMaterialName(canonical);
-    const station = resolveStation(item.level, canonical);
-    const workOrder = resolveWorkOrder(canonical, index);
-    const lotNo = resolveLotNo(canonical);
-    const ecn = `ECN-2024-R${(index % 6) + 1}`;
-
-    let statusText = '[Normal]';
-    if (severity === 'major') statusText = '[Over-issued]';
-    else if (severity === 'moderate') statusText = '[Scrap Extra]';
-    else if (severity === 'favorable') statusText = '[Released]';
-    else if (severity === 'minor') statusText = '[Over-cost]';
-
-    const dualNode: DualBomNode = {
-      id: inventoryId,
-      name,
-      level: item.level,
-      standardQty,
-      actualQty,
-      quantityDelta: qtyDelta,
-      quantityDeltaPercent: qtyDeltaPercent,
-      unitCost,
-      baselineCost,
-      actualCost,
-      costDelta,
-      severity,
-      workOrder,
-      lotNo,
-      station,
-      ecn,
-      isPenetrated,
-      parentId: item.parentId,
-      childrenIds: canonicalChildrenMap.get(canonical) || [],
-      statusText,
-      isLastChild: item.isLastChild,
-      ancestorContinues: item.ancestorContinues,
-    };
-
-    dualNodes.push(dualNode);
-    nodesById.set(inventoryId, dualNode);
-  });
-
-  // Material ledger table items
-  const ledgerItems: MaterialLedgerItem[] = dualNodes
-    .filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID)
-    .map((n) => {
-      let status: MaterialLedgerItem['status'] = 'Normal';
-      if (n.severity === 'major') status = 'Over-issued';
-      else if (n.severity === 'moderate') status = 'Scrap Extra';
-      else if (n.severity === 'favorable') status = 'Released';
-      else if (n.severity === 'minor') status = 'Over-cost';
-
-      return {
-        id: n.id,
-        workOrder: n.workOrder,
-        materialCode: n.id,
-        description: n.name,
-        batchLot: n.lotNo,
-        station: n.station.split(' ')[0],
-        bomQty: n.standardQty,
-        actualQty: n.actualQty,
-        unitCost: n.unitCost,
-        totalCost: n.actualCost,
-        varianceDelta: n.costDelta,
-        status,
-        severity: n.severity,
-        node: n,
-      };
-    });
-
-  const rootNodes = dualNodes.filter((n) => n.level === 0);
-  const costOfGoodsSold = dualNodes.find(
-    (node) => node.id === COST_OF_GOODS_SOLD_NODE_ID,
+  const dualNodes = traverseDepthFirst(tree).map((item, index) =>
+    buildDualNode(
+      item,
+      index,
+      findByCanonical(actualNodeMap, item.canonical),
+      findByCanonical(bomNodeMap, item.canonical),
+      tree.children.get(item.canonical) || [],
+      threshold,
+    ),
   );
-  const netVariance = costOfGoodsSold?.costDelta ?? totalCostVariance;
 
-  // Overall Risk Assessment
-  let riskTier = 'Nominal In-Spec';
-  if (penetratedCount >= 3 || netVariance > 1000) {
-    riskTier = 'Tier-1 High Risk';
-  } else if (penetratedCount > 0 || netVariance > 300) {
-    riskTier = 'Tier-2 Moderate Risk';
+  let totalCostVariance = 0;
+  for (const node of dualNodes) {
+    if (node.costDelta !== null) totalCostVariance += node.costDelta;
   }
+  const penetratedCount = dualNodes.filter((node) => node.isPenetrated).length;
+  const costOfGoodsSold = dualNodes.find((node) => node.id === COST_OF_GOODS_SOLD_NODE_ID);
+  const netVariance = costOfGoodsSold?.costDelta ?? totalCostVariance;
 
   return {
     nodes: dualNodes,
-    nodesById,
-    rootNodes,
-    ledgerItems,
+    nodesById: new Map(dualNodes.map((node) => [node.id, node])),
+    rootNodes: dualNodes.filter((n) => n.level === 0),
+    ledgerItems: dualNodes.filter((node) => node.id !== COST_OF_GOODS_SOLD_NODE_ID).map(toLedgerItem),
     netVariance,
     penetratedNodesCount: penetratedCount,
-    riskTier,
+    riskTier: assessRisk(penetratedCount, netVariance),
   };
 };
 
 export const buildAuditDossier = (node: DualBomNode, allNodes: DualBomNode[]): AuditDossier => {
   const rootCauses: RootCauseItem[] = [];
-  const delta = node.costDelta ?? (node.quantityDelta * (node.unitCost ?? 100));
+  const delta = node.costDelta ?? node.quantityDelta * (node.unitCost ?? 100);
 
   if (node.severity === 'major' || node.severity === 'moderate') {
     rootCauses.push({
@@ -526,8 +489,10 @@ export const buildAuditDossier = (node: DualBomNode, allNodes: DualBomNode[]): A
   return {
     selectedNode: node,
     rootCauses,
-    impactEchelon: node.severity === 'major' ? 'Tier-1 High Risk' : node.severity === 'moderate' ? 'Tier-2 Moderate' : 'Nominal',
-    leadTimeSlippage: node.severity === 'major' ? '+3.5 shifts' : node.severity === 'moderate' ? '+1.0 shifts' : 'On Schedule',
+    impactEchelon:
+      node.severity === 'major' ? 'Tier-1 High Risk' : node.severity === 'moderate' ? 'Tier-2 Moderate' : 'Nominal',
+    leadTimeSlippage:
+      node.severity === 'major' ? '+3.5 shifts' : node.severity === 'moderate' ? '+1.0 shifts' : 'On Schedule',
     affectedAssembliesCount: affectedCount,
     prescriptiveActions: [
       `Trigger ECN engineering review for ${node.id} fabrication tolerance.`,

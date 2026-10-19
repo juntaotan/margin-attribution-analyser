@@ -10,15 +10,14 @@ import dev.margintrace.margin_attribution_backend.investigation.knowledge.Knowle
 import dev.margintrace.margin_attribution_backend.investigation.knowledge.SourceType;
 import dev.margintrace.margin_attribution_backend.warehouse.model.InventoryUsage;
 import dev.margintrace.margin_attribution_backend.warehouse.repository.InventoryUsageRepository;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 /**
  * Builds the anomaly investigation report.
@@ -43,12 +42,14 @@ public class InvestigationService {
     private final AiErrorMapper aiErrorMapper;
     private final int windowDays;
 
-    public InvestigationService(RootCauseReportService rootCauseReportService,
-                                InventoryUsageRepository inventoryUsageRepository,
-                                HybridKnowledgeRetriever retriever, KnowledgeRepository knowledgeRepository,
-                                InvestigationAssistant assistant,
-                                AiErrorMapper aiErrorMapper,
-                                @Value("${margin.investigation.window-days:90}") int windowDays) {
+    public InvestigationService(
+            RootCauseReportService rootCauseReportService,
+            InventoryUsageRepository inventoryUsageRepository,
+            HybridKnowledgeRetriever retriever,
+            KnowledgeRepository knowledgeRepository,
+            InvestigationAssistant assistant,
+            AiErrorMapper aiErrorMapper,
+            @Value("${margin.investigation.window-days:90}") int windowDays) {
         if (windowDays < 0) throw new IllegalArgumentException("margin.investigation.window-days must not be negative");
         this.rootCauseReportService = rootCauseReportService;
         this.inventoryUsageRepository = inventoryUsageRepository;
@@ -66,14 +67,18 @@ public class InvestigationService {
     public InvestigationReport investigate(RootCauseReportRequest request) {
         RootCauseReportService.Diagnosis diagnosis = rootCauseReportService.diagnosis(request);
         String material = request.inventoryId();
-        Periods periods = new Periods(request.actualStartDate(), request.actualEndDate(),
-                request.comparableStartDate(), request.comparableEndDate());
+        Periods periods = new Periods(
+                request.actualStartDate(),
+                request.actualEndDate(),
+                request.comparableStartDate(),
+                request.comparableEndDate());
         List<String> messages = new ArrayList<>();
 
         List<Fact> facts = new ArrayList<>();
         for (String line : diagnosis.evidence()) facts.add(new Fact("F" + (facts.size() + 1), line));
         List<String> products = diagnosis.products().stream().sorted().toList();
-        List<Order> orders = new ArrayList<>(orders(material, products, periods.comparableStart(), periods.comparableEnd(), "COMPARISON"));
+        List<Order> orders = new ArrayList<>(
+                orders(material, products, periods.comparableStart(), periods.comparableEnd(), "COMPARISON"));
         orders.addAll(orders(material, products, periods.actualStart(), periods.actualEnd(), "ACTUAL"));
 
         Set<String> anchors = new LinkedHashSet<>(List.of(material));
@@ -83,26 +88,40 @@ public class InvestigationService {
         LocalDate to = max(periods.actualEnd(), periods.comparableEnd());
         Set<String> described = new LinkedHashSet<>(products);
         described.add(material);
-        var retrieval = retriever.retrieve(retrievalQuery(diagnosis.label(), material, products,
-                        knowledgeRepository.describe(described)),
-                anchors, from, to, SOURCES_PER_TYPE, HybridKnowledgeRetriever.Mode.HYBRID);
+        var retrieval = retriever.retrieve(
+                retrievalQuery(diagnosis.label(), material, products, knowledgeRepository.describe(described)),
+                anchors,
+                from,
+                to,
+                SOURCES_PER_TYPE,
+                HybridKnowledgeRetriever.Mode.HYBRID);
         messages.addAll(retrieval.messages());
 
         List<Source> sources = new ArrayList<>();
         retrieval.byType().forEach((type, chunks) -> {
-            if (chunks.isEmpty()) messages.add(type == SourceType.CASE ? "No similar historical cases found."
-                    : "No " + label(type) + " found between " + from + " and " + to + ".");
+            if (chunks.isEmpty())
+                messages.add(
+                        type == SourceType.CASE
+                                ? "No similar historical cases found."
+                                : "No " + label(type) + " found between " + from + " and " + to + ".");
             for (var found : chunks) {
                 var chunk = found.chunk();
                 String text = chunk.text();
-                sources.add(new Source("S" + (sources.size() + 1), chunk.documentId(), chunk.sourceType(), chunk.title(),
-                        chunk.effectiveDate(), text.length() > EXCERPT_CHARACTERS ? text.substring(0, EXCERPT_CHARACTERS) + "…" : text,
+                sources.add(new Source(
+                        "S" + (sources.size() + 1),
+                        chunk.documentId(),
+                        chunk.sourceType(),
+                        chunk.title(),
+                        chunk.effectiveDate(),
+                        text.length() > EXCERPT_CHARACTERS ? text.substring(0, EXCERPT_CHARACTERS) + "…" : text,
                         found.retrievedBy()));
             }
         });
 
         String anomaly = diagnosis.label() + " (" + diagnosis.certainty() + ") for material " + material;
-        String factText = String.join("\n", facts.stream().map(fact -> "[" + fact.id() + "] " + fact.text()).toList());
+        String factText = String.join(
+                "\n",
+                facts.stream().map(fact -> "[" + fact.id() + "] " + fact.text()).toList());
         List<ContextItem> context = List.of();
         List<Hypothesis> hypotheses = List.of();
         String summary = null;
@@ -121,11 +140,20 @@ public class InvestigationService {
             messages.add("AI-generated content incomplete: " + aiErrorMapper.message(exception));
         }
 
-        return new InvestigationReport(material, periods,
+        return new InvestigationReport(
+                material,
+                periods,
                 new Classification(diagnosis.category(), diagnosis.label(), diagnosis.certainty()),
-                summary, metrics(diagnosis.actualNode(), diagnosis.comparableNode()), facts,
-                new Scope(material, products, orders), timeline(sources, periods), context, hypotheses, sources,
-                messages, removed);
+                summary,
+                metrics(diagnosis.actualNode(), diagnosis.comparableNode()),
+                facts,
+                new Scope(material, products, orders),
+                timeline(sources, periods),
+                context,
+                hypotheses,
+                sources,
+                messages,
+                removed);
     }
 
     /**
@@ -133,14 +161,15 @@ public class InvestigationService {
      * Codes and figures are left out because exact retrieval handles identifiers, and in a sentence encoder they make
      * code-heavy documents look similar regardless of meaning. An item without a description falls back to its code.
      */
-    static String retrievalQuery(String label, String material, List<String> products, Map<String, String> descriptions) {
+    static String retrievalQuery(
+            String label, String material, List<String> products, Map<String, String> descriptions) {
         Function<String, String> named = code -> descriptions.getOrDefault(code, code);
         return label + ". Material: " + named.apply(material) + ". Used in: "
                 + String.join("; ", products.stream().map(named).toList()) + ".";
     }
 
     /** Validated findings and the number of generated items removed. */
-    record Validated(List<ContextItem> context, List<Hypothesis> hypotheses, int removed) { }
+    record Validated(List<ContextItem> context, List<Hypothesis> hypotheses, int removed) {}
 
     /**
      * Keeps context items citing only known IDs and at least one source, and hypotheses citing only known IDs with a
@@ -153,40 +182,61 @@ public class InvestigationService {
         facts.forEach(fact -> known.add(fact.id()));
         int removed = 0;
         List<ContextItem> context = new ArrayList<>();
-        for (var item : findings == null || findings.context() == null ? List.<InvestigationAssistant.Context>of() : findings.context()) {
+        for (var item : findings == null || findings.context() == null
+                ? List.<InvestigationAssistant.Context>of()
+                : findings.context()) {
             List<String> citations = normalise(item == null ? null : item.citations());
-            Optional<Source> cited = citations.stream().map(sourceById::get).filter(Objects::nonNull).findFirst();
-            if (item == null || blank(item.text()) || citations.isEmpty() || !known.containsAll(citations) || cited.isEmpty()) {
+            Optional<Source> cited = citations.stream()
+                    .map(sourceById::get)
+                    .filter(Objects::nonNull)
+                    .findFirst();
+            if (item == null
+                    || blank(item.text())
+                    || citations.isEmpty()
+                    || !known.containsAll(citations)
+                    || cited.isEmpty()) {
                 removed++;
                 continue;
             }
             context.add(new ContextItem(cited.get().sourceType(), item.text().strip(), citations));
         }
         List<Hypothesis> hypotheses = new ArrayList<>();
-        for (var item : findings == null || findings.hypotheses() == null ? List.<InvestigationAssistant.Hypothesis>of() : findings.hypotheses()) {
+        for (var item : findings == null || findings.hypotheses() == null
+                ? List.<InvestigationAssistant.Hypothesis>of()
+                : findings.hypotheses()) {
             List<String> citations = normalise(item == null ? null : item.citations());
-            if (item == null || blank(item.text()) || blank(item.nextCheck()) || citations.isEmpty() || !known.containsAll(citations)) {
+            if (item == null
+                    || blank(item.text())
+                    || blank(item.nextCheck())
+                    || citations.isEmpty()
+                    || !known.containsAll(citations)) {
                 removed++;
                 continue;
             }
-            hypotheses.add(new Hypothesis(item.text().strip(), citations, item.nextCheck().strip(), "Needs verification"));
+            hypotheses.add(new Hypothesis(
+                    item.text().strip(), citations, item.nextCheck().strip(), "Needs verification"));
         }
         return new Validated(context, hypotheses, removed);
     }
 
     private static List<String> normalise(List<String> citations) {
         if (citations == null) return List.of();
-        return citations.stream().filter(Objects::nonNull)
+        return citations.stream()
+                .filter(Objects::nonNull)
                 .map(citation -> citation.replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT))
-                .filter(citation -> !citation.isEmpty()).distinct().toList();
+                .filter(citation -> !citation.isEmpty())
+                .distinct()
+                .toList();
     }
 
     private List<Order> orders(String material, List<String> products, LocalDate start, LocalDate end, String period) {
         Map<String, Order> orders = new LinkedHashMap<>();
         for (String product : products) {
-            for (InventoryUsage usage : inventoryUsageRepository.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc(product, start, end)) {
+            for (InventoryUsage usage :
+                    inventoryUsageRepository.findAllByProductNoAndDateBetweenOrderByDateAscIdAsc(product, start, end)) {
                 if (material.equals(usage.getMaterialNo())) {
-                    orders.putIfAbsent(usage.getOrderNo(), new Order(usage.getOrderNo(), usage.getDate(), product, period));
+                    orders.putIfAbsent(
+                            usage.getOrderNo(), new Order(usage.getOrderNo(), usage.getDate(), product, period));
                 }
             }
         }
@@ -197,16 +247,28 @@ public class InvestigationService {
         List<Metric> metrics = new ArrayList<>();
         add(metrics, "Quantity", comparable, actual, Node::quantity);
         add(metrics, "Total cost", comparable, actual, Node::cost);
-        add(metrics, "Unit cost", comparable, actual, node -> node.cost() == null || node.quantity() == null
-                || node.quantity().signum() <= 0 ? null : node.cost().divide(node.quantity(), MathContext.DECIMAL64));
+        add(
+                metrics,
+                "Unit cost",
+                comparable,
+                actual,
+                node -> node.cost() == null
+                                || node.quantity() == null
+                                || node.quantity().signum() <= 0
+                        ? null
+                        : node.cost().divide(node.quantity(), MathContext.DECIMAL64));
         return metrics;
     }
 
-    private static void add(List<Metric> metrics, String label, Node comparable, Node actual, Function<Node, BigDecimal> value) {
+    private static void add(
+            List<Metric> metrics, String label, Node comparable, Node actual, Function<Node, BigDecimal> value) {
         BigDecimal before = comparable == null ? null : value.apply(comparable);
         BigDecimal after = actual == null ? null : value.apply(actual);
         if (before == null && after == null) return;
-        metrics.add(new Metric(label, plain(before), plain(after),
+        metrics.add(new Metric(
+                label,
+                plain(before),
+                plain(after),
                 before == null || after == null ? null : plain(after.subtract(before))));
     }
 
@@ -219,7 +281,11 @@ public class InvestigationService {
         List<TimelineEvent> events = new ArrayList<>();
         for (Source source : sources) {
             if (!seen.add(source.documentId())) continue;
-            events.add(new TimelineEvent(source.effectiveDate(), source.id(), source.sourceType(), source.title(),
+            events.add(new TimelineEvent(
+                    source.effectiveDate(),
+                    source.id(),
+                    source.sourceType(),
+                    source.title(),
                     position(source.effectiveDate(), periods)));
         }
         events.sort(Comparator.comparing(TimelineEvent::date));
@@ -238,18 +304,35 @@ public class InvestigationService {
         if (sources.isEmpty()) return "(none found)";
         StringBuilder text = new StringBuilder();
         for (Source source : sources) {
-            text.append('[').append(source.id()).append("] ").append(label(source.sourceType())).append(", ")
-                    .append(source.effectiveDate()).append(", \"").append(source.title()).append("\": ")
-                    .append(source.excerpt()).append("\n\n");
+            text.append('[')
+                    .append(source.id())
+                    .append("] ")
+                    .append(label(source.sourceType()))
+                    .append(", ")
+                    .append(source.effectiveDate())
+                    .append(", \"")
+                    .append(source.title())
+                    .append("\": ")
+                    .append(source.excerpt())
+                    .append("\n\n");
         }
         return text.toString().strip();
     }
 
     private static String findingText(List<ContextItem> context, List<Hypothesis> hypotheses) {
         StringBuilder text = new StringBuilder();
-        context.forEach(item -> text.append("Context: ").append(item.text()).append(' ').append(item.citations()).append('\n'));
-        hypotheses.forEach(item -> text.append("Hypothesis: ").append(item.text()).append(' ').append(item.citations())
-                .append("; next check: ").append(item.nextCheck()).append('\n'));
+        context.forEach(item -> text.append("Context: ")
+                .append(item.text())
+                .append(' ')
+                .append(item.citations())
+                .append('\n'));
+        hypotheses.forEach(item -> text.append("Hypothesis: ")
+                .append(item.text())
+                .append(' ')
+                .append(item.citations())
+                .append("; next check: ")
+                .append(item.nextCheck())
+                .append('\n'));
         return text.isEmpty() ? "(no validated findings)" : text.toString().strip();
     }
 

@@ -1,17 +1,16 @@
 package dev.margintrace.margin_attribution_backend.importation.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+
 import dev.margintrace.margin_attribution_backend.importation.context.ImportContext;
 import dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMappingPresetCatalog;
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
 import dev.margintrace.margin_attribution_backend.importation.model.DataType;
 import dev.margintrace.margin_attribution_backend.importation.model.TableStructure;
-import org.junit.jupiter.api.Test;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import org.junit.jupiter.api.Test;
 
 class SchemaMappingHandlerTests {
     private final SchemaMappingHandler handler = new SchemaMappingHandler(new SchemaMappingPresetCatalog());
@@ -30,10 +29,11 @@ class SchemaMappingHandlerTests {
 
     @Test
     void rejectsMissingRequiredWarehouseMappings() {
-        ImportContext context = context("sales_details", Map.of(
-                "Sales Order No", DataType.TEXT,
-                "Product No", DataType.TEXT
-        ));
+        ImportContext context = context(
+                "sales_details",
+                Map.of(
+                        "Sales Order No", DataType.TEXT,
+                        "Product No", DataType.TEXT));
 
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> handler.doImport(context))
@@ -79,7 +79,8 @@ class SchemaMappingHandlerTests {
     void rejectsUnconfirmedSelection() {
         ImportContext context = context("sales_details", Map.of("SKU", DataType.TEXT));
         context.setMappingResult(false);
-        assertThatIllegalArgumentException().isThrownBy(() -> handler.doImport(context))
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> handler.doImport(context))
                 .withMessageContaining("confirmed");
     }
 
@@ -87,7 +88,8 @@ class SchemaMappingHandlerTests {
     void doesNotFallBackToSheetNameWhenTargetIsMissing() {
         ImportContext context = context(null, Map.of("SKU", DataType.TEXT));
         context.setTableStructure(new TableStructure("sales_details", 0, 0, 0, 1, 1.0));
-        assertThatIllegalArgumentException().isThrownBy(() -> handler.doImport(context))
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> handler.doImport(context))
                 .withMessageContaining("Table name must not be blank");
     }
 }

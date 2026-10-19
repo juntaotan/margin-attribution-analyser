@@ -2,7 +2,6 @@ package dev.margintrace.margin_attribution_backend.analysis.dto;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -12,24 +11,23 @@ import java.util.List;
 import java.util.UUID;
 
 /** A CSR snapshot with IDs scoped to one analysis, graph, and array position. */
-public record StreamCsrGraph(List<StreamNode> nodes, int[] offset, int[] successors,
-                             List<UUID> edgeIds) {
-    public record StreamNode(UUID id, int position, String inventoryId,
-                             java.math.BigDecimal quantity, java.math.BigDecimal cost) { }
+public record StreamCsrGraph(List<StreamNode> nodes, int[] offset, int[] successors, List<UUID> edgeIds) {
+    public record StreamNode(
+            UUID id, int position, String inventoryId, java.math.BigDecimal quantity, java.math.BigDecimal cost) {}
 
     public static StreamCsrGraph from(CsrGraph graph, UUID analysisId, String role) {
         List<StreamNode> nodes = new ArrayList<>(graph.nodes().length);
         for (int position = 0; position < graph.nodes().length; position++) {
             Node node = graph.nodes()[position];
-            nodes.add(new StreamNode(nodeId(analysisId, role, position), position,
-                    node.inventoryId(), node.quantity(), node.cost()));
+            nodes.add(new StreamNode(
+                    nodeId(analysisId, role, position), position, node.inventoryId(), node.quantity(), node.cost()));
         }
         List<UUID> edgeIds = new ArrayList<>(graph.successors().length);
         for (int index = 0; index < graph.successors().length; index++) {
             edgeIds.add(edgeId(analysisId, role, index));
         }
-        return new StreamCsrGraph(List.copyOf(nodes), graph.offset().clone(),
-                graph.successors().clone(), List.copyOf(edgeIds));
+        return new StreamCsrGraph(
+                List.copyOf(nodes), graph.offset().clone(), graph.successors().clone(), List.copyOf(edgeIds));
     }
 
     public static UUID nodeId(UUID analysisId, String role, int position) {

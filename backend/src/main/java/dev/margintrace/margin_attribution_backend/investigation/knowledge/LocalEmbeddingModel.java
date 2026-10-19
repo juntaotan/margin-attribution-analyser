@@ -9,7 +9,6 @@ import dev.langchain4j.model.output.Response;
 import dev.margintrace.margin_attribution_backend.algorithm.embedding.EmbeddingSettings;
 import dev.margintrace.margin_attribution_backend.algorithm.port.EmbeddingProvider;
 import dev.margintrace.margin_attribution_backend.infrastructure.embedding.PythonEmbeddingProvider;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -45,7 +44,8 @@ public class LocalEmbeddingModel implements EmbeddingModel, TokenCountEstimator,
      */
     public static EmbeddingProvider startPython(String python, String model, String revision, long timeoutSeconds) {
         if (python.isBlank() || model.isBlank() || revision.isBlank()) {
-            throw new IllegalStateException("Configure margin.embedding.python/model/revision and install the embedding runtime");
+            throw new IllegalStateException(
+                    "Configure margin.embedding.python/model/revision and install the embedding runtime");
         }
         if (!Files.isExecutable(Path.of(python))) {
             throw new IllegalStateException("Embedding runtime is not installed; install it from Settings");
@@ -54,12 +54,17 @@ public class LocalEmbeddingModel implements EmbeddingModel, TokenCountEstimator,
         try (InputStream resource = LocalEmbeddingModel.class.getResourceAsStream("/embedding/sentence_encoder.py")) {
             script = Files.createTempFile("margin-encoder-", ".py");
             Files.copy(resource, script, StandardCopyOption.REPLACE_EXISTING);
-            return new PythonEmbeddingProvider(python, script.toString(), model, revision, EmbeddingSettings.cpu(), timeoutSeconds);
+            return new PythonEmbeddingProvider(
+                    python, script.toString(), model, revision, EmbeddingSettings.cpu(), timeoutSeconds);
         } catch (IOException error) {
             throw new IllegalStateException("Embedding runtime unavailable", error);
         } finally {
-            if (script != null) try { Files.deleteIfExists(script); }
-            catch (IOException ignored) { /* The provider owns its already-started process. */ }
+            if (script != null)
+                try {
+                    Files.deleteIfExists(script);
+                } catch (IOException ignored) {
+                    /* The provider owns its already-started process. */
+                }
         }
     }
 
@@ -71,7 +76,9 @@ public class LocalEmbeddingModel implements EmbeddingModel, TokenCountEstimator,
     @Override
     public synchronized Response<List<Embedding>> embedAll(List<TextSegment> segments) {
         List<EmbeddingProvider.Input> inputs = new ArrayList<>();
-        for (int i = 0; i < segments.size(); i++) inputs.add(new EmbeddingProvider.Input(Integer.toString(i), segments.get(i).text()));
+        for (int i = 0; i < segments.size(); i++)
+            inputs.add(new EmbeddingProvider.Input(
+                    Integer.toString(i), segments.get(i).text()));
         Map<String, double[]> vectors = call(() -> running().encode(inputs));
         List<Embedding> embeddings = new ArrayList<>();
         for (int i = 0; i < segments.size(); i++) {
@@ -124,7 +131,8 @@ public class LocalEmbeddingModel implements EmbeddingModel, TokenCountEstimator,
             return operation.get();
         } catch (RuntimeException error) {
             close();
-            throw error instanceof IllegalStateException state ? state
+            throw error instanceof IllegalStateException state
+                    ? state
                     : new IllegalStateException("Embedding runtime failed: " + error.getMessage(), error);
         }
     }

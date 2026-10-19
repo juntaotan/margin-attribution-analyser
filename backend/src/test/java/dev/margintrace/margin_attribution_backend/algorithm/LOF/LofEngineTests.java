@@ -1,11 +1,10 @@
 package dev.margintrace.margin_attribution_backend.algorithm.LOF;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Locale;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Locale;
+import org.junit.jupiter.api.Test;
 
 /** Checks the seven-point formula and one global 14,000-order LOF call. */
 public class LofEngineTests {
@@ -20,16 +19,15 @@ public class LofEngineTests {
 
         // A-G provide the fixed seven-point reference case.
         float[][] baseOrders = {
-                {7.0f, 2.0f, 1.0f, 1.0f},
-                {7.1f, 1.8f, 1.1f, 0.9f},
-                {6.9f, 2.2f, 0.9f, 1.1f},
-                {0.1f, 2.0f, 1.0f, 1.0f},
-                {0.2f, 1.8f, 1.1f, 0.9f},
-                {0.0f, 2.2f, 0.9f, 1.1f},
-                {0.5f, 0.5f, 0.5f, 0.5f}
+            {7.0f, 2.0f, 1.0f, 1.0f},
+            {7.1f, 1.8f, 1.1f, 0.9f},
+            {6.9f, 2.2f, 0.9f, 1.1f},
+            {0.1f, 2.0f, 1.0f, 1.0f},
+            {0.2f, 1.8f, 1.1f, 0.9f},
+            {0.0f, 2.2f, 0.9f, 1.1f},
+            {0.5f, 0.5f, 0.5f, 0.5f}
         };
-        float[] expected = {1.333333333f, 0.875f, 0.875f, 1.333333333f,
-                0.875f, 0.875f, 3.552414237f};
+        float[] expected = {1.333333333f, 0.875f, 0.875f, 1.333333333f, 0.875f, 0.875f, 3.552414237f};
 
         // Verify the formula before enlarging the shared neighbor population.
         float[] referenceScores = engine.run(baseOrders, k);
@@ -75,8 +73,12 @@ public class LofEngineTests {
         }
         System.out.printf(Locale.ROOT, "G  LOF=%.6f  max normal=%.6f  PASS%n", anomaly, maxNormal);
 
-        System.out.printf(Locale.ROOT,
+        System.out.printf(
+                Locale.ROOT,
                 "Java LOF global batch: %d points, 1 call, %.6f s, %.3f ms, %.2f points/s%n",
-                orderCount, seconds, seconds * 1000.0, orderCount / seconds);
+                orderCount,
+                seconds,
+                seconds * 1000.0,
+                orderCount / seconds);
     }
 }

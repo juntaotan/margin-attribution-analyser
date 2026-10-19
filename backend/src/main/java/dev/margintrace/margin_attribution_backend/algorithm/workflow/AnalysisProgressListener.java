@@ -6,5 +6,6 @@ import java.util.UUID;
 @FunctionalInterface
 public interface AnalysisProgressListener {
     void accept(Event event);
+
     record Event(UUID analysisId, long sequence, String type, Object data) {}
 }

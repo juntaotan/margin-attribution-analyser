@@ -1,6 +1,10 @@
 package dev.margintrace.margin_attribution_backend.investigation.knowledge;
 
 import dev.margintrace.margin_attribution_backend.investigation.InvestigationConfiguration;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -8,11 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /** Upload, list and delete knowledge documents (engineering changes, quality records and historical cases). */
 @RestController

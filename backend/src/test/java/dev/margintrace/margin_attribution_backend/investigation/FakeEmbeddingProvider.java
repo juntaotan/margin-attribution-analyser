@@ -1,7 +1,6 @@
 package dev.margintrace.margin_attribution_backend.investigation;
 
 import dev.margintrace.margin_attribution_backend.algorithm.port.EmbeddingProvider;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -12,19 +11,28 @@ import java.util.Map;
  * Texts sharing words are similar, which is enough to exercise dense retrieval without a model.
  */
 final class FakeEmbeddingProvider implements EmbeddingProvider {
-    static final Metadata METADATA = new Metadata("fake-bag-of-words", "1", "MEAN", "L2", "FP32", "CPU", "test", "cpu", null);
+    static final Metadata METADATA =
+            new Metadata("fake-bag-of-words", "1", "MEAN", "L2", "FP32", "CPU", "test", "cpu", null);
 
-    @Override public Metadata metadata() { return METADATA; }
+    @Override
+    public Metadata metadata() {
+        return METADATA;
+    }
 
     /** Words plus two special tokens, mirroring a tokenizer that counts [CLS] and [SEP]. */
-    @Override public int tokenCount(String text) {
+    @Override
+    public int tokenCount(String text) {
         String trimmed = text.trim();
         return (trimmed.isEmpty() ? 0 : trimmed.split("\\s+").length) + 2;
     }
 
-    @Override public int maximumTokens() { return 512; }
+    @Override
+    public int maximumTokens() {
+        return 512;
+    }
 
-    @Override public Map<String, double[]> encode(List<Input> inputs) {
+    @Override
+    public Map<String, double[]> encode(List<Input> inputs) {
         Map<String, double[]> vectors = new HashMap<>();
         for (Input input : inputs) {
             double[] vector = new double[384];

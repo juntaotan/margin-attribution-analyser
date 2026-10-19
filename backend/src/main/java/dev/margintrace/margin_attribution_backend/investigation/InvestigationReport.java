@@ -2,7 +2,6 @@ package dev.margintrace.margin_attribution_backend.investigation;
 
 import dev.margintrace.margin_attribution_backend.investigation.knowledge.HybridKnowledgeRetriever;
 import dev.margintrace.margin_attribution_backend.investigation.knowledge.SourceType;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -30,27 +29,35 @@ public record InvestigationReport(
         List<String> messages,
         int removedItemCount) {
 
-    public record Periods(LocalDate actualStart, LocalDate actualEnd, LocalDate comparableStart, LocalDate comparableEnd) { }
+    public record Periods(
+            LocalDate actualStart, LocalDate actualEnd, LocalDate comparableStart, LocalDate comparableEnd) {}
 
-    public record Classification(String category, String label, String certainty) { }
+    public record Classification(String category, String label, String certainty) {}
 
     /** A value is null when the material is absent from that period; {@code change} is actual minus comparison. */
-    public record Metric(String label, String comparison, String actual, String change) { }
+    public record Metric(String label, String comparison, String actual, String change) {}
 
-    public record Fact(String id, String text) { }
+    public record Fact(String id, String text) {}
 
-    public record Scope(String material, List<String> products, List<Order> orders) { }
+    public record Scope(String material, List<String> products, List<Order> orders) {}
 
     /** A production order that issued the material; {@code period} is ACTUAL or COMPARISON. */
-    public record Order(String orderNo, LocalDate date, String product, String period) { }
+    public record Order(String orderNo, LocalDate date, String product, String period) {}
 
     /** {@code position} is BEFORE, COMPARISON, BETWEEN, ACTUAL or AFTER relative to the two periods. */
-    public record TimelineEvent(LocalDate date, String sourceId, SourceType sourceType, String title, String position) { }
+    public record TimelineEvent(
+            LocalDate date, String sourceId, SourceType sourceType, String title, String position) {}
 
-    public record ContextItem(SourceType sourceType, String text, List<String> citations) { }
+    public record ContextItem(SourceType sourceType, String text, List<String> citations) {}
 
-    public record Hypothesis(String text, List<String> citations, String nextCheck, String certainty) { }
+    public record Hypothesis(String text, List<String> citations, String nextCheck, String certainty) {}
 
-    public record Source(String id, UUID documentId, SourceType sourceType, String title, LocalDate effectiveDate,
-                         String excerpt, HybridKnowledgeRetriever.Method retrievedBy) { }
+    public record Source(
+            String id,
+            UUID documentId,
+            SourceType sourceType,
+            String title,
+            LocalDate effectiveDate,
+            String excerpt,
+            HybridKnowledgeRetriever.Method retrievedBy) {}
 }

@@ -5,14 +5,12 @@ import dev.margintrace.margin_attribution_backend.importation.mapping.SchemaMapp
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.DataSetDefinition;
 import dev.margintrace.margin_attribution_backend.importation.mapping.model.TargetFieldDefinition;
 import dev.margintrace.margin_attribution_backend.importation.model.DataSetType;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -43,14 +41,13 @@ public class SchemaMappingHandler extends AbstractImportHandler {
             }
             if (!mappedTargetColumns.add(targetField.columnName())) {
                 throw new IllegalArgumentException(
-                        "Multiple source columns map to target column '" + targetField.columnName() + "'"
-                );
+                        "Multiple source columns map to target column '" + targetField.columnName() + "'");
             }
             mappings.put(sourceColumn, targetField);
         }
 
-        boolean materialUsage = dataSet.type() == DataSetType.INVENTORY_MOVEMENT
-                && mappedTargetColumns.contains("material_no");
+        boolean materialUsage =
+                dataSet.type() == DataSetType.INVENTORY_MOVEMENT && mappedTargetColumns.contains("material_no");
         Set<String> missingRequiredFields = new LinkedHashSet<>();
         for (TargetFieldDefinition field : dataSet.fields()) {
             if (field.required() && !mappedTargetColumns.contains(field.columnName())) {
@@ -58,19 +55,19 @@ public class SchemaMappingHandler extends AbstractImportHandler {
             }
         }
         if (materialUsage) {
-            for (String column : new String[]{"material_num", "material_total_cost"}) {
+            for (String column : new String[] {"material_num", "material_total_cost"}) {
                 if (!mappedTargetColumns.contains(column)) {
                     missingRequiredFields.add(dataSet.fields().stream()
                             .filter(field -> field.columnName().equals(column))
-                            .findFirst().orElseThrow().fieldKey());
+                            .findFirst()
+                            .orElseThrow()
+                            .fieldKey());
                 }
             }
         }
         if (!missingRequiredFields.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Missing required mappings for table '" + dataSet.tableName() + "': "
-                            + String.join(", ", missingRequiredFields)
-            );
+            throw new IllegalArgumentException("Missing required mappings for table '" + dataSet.tableName() + "': "
+                    + String.join(", ", missingRequiredFields));
         }
 
         context.setDataSetDefinition(dataSet);
@@ -91,8 +88,7 @@ public class SchemaMappingHandler extends AbstractImportHandler {
             }
             if (match != null) {
                 throw new IllegalArgumentException(
-                        "Ambiguous source column '" + sourceColumn + "' for table '" + dataSet.tableName() + "'"
-                );
+                        "Ambiguous source column '" + sourceColumn + "' for table '" + dataSet.tableName() + "'");
             }
             match = field;
         }
@@ -100,8 +96,6 @@ public class SchemaMappingHandler extends AbstractImportHandler {
     }
 
     private static String normalizeAlias(String value) {
-        return value == null
-                ? ""
-                : value.trim().toLowerCase().replaceAll("[\\s_\\-]+", "");
+        return value == null ? "" : value.trim().toLowerCase().replaceAll("[\\s_\\-]+", "");
     }
 }

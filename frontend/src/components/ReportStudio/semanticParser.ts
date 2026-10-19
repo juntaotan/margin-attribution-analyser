@@ -16,7 +16,7 @@ export function parseSemanticPrompt(
     actualEndDate?: string;
     comparableStartDate?: string;
     comparableEndDate?: string;
-  }
+  },
 ): SemanticExecutionPlan {
   const normalized = prompt.toLowerCase();
   const mat = context?.materialId || 'MTR-1029 (Stator Punching Lamination)';
@@ -58,8 +58,10 @@ export function parseSemanticPrompt(
           description: 'Accepted inventory receipt volume for weighted average unit price',
         },
       ],
-      formula: '((SUM(purchase_price * received_quantity) / SUM(received_quantity)) - baseline_standard_cost) / baseline_standard_cost * 100%',
-      formulaDescription: 'Purchase Price Variance Rate (PPV%) = (Weighted Avg PO Price - Baseline Cost) ÷ Baseline Cost × 100%',
+      formula:
+        '((SUM(purchase_price * received_quantity) / SUM(received_quantity)) - baseline_standard_cost) / baseline_standard_cost * 100%',
+      formulaDescription:
+        'Purchase Price Variance Rate (PPV%) = (Weighted Avg PO Price - Baseline Cost) ÷ Baseline Cost × 100%',
       format: 'percentage',
       explanation:
         'Retrieves all matched receipt lines from purchase_order_line for the active audit window, derives weighted effective unit price, and computes variance against frozen baseline standard cost.',
@@ -159,11 +161,7 @@ export function parseSemanticPrompt(
     return {
       sourceTable: 'bill_of_material',
       sourceTableLabel: 'bill_of_material (Engineering BOM Master)',
-      filterConditions: [
-        `parent_assembly_id = 'ASSY-MAIN-500'`,
-        `component_id = '${mat}'`,
-        `is_active = TRUE`,
-      ],
+      filterConditions: [`parent_assembly_id = 'ASSY-MAIN-500'`, `component_id = '${mat}'`, `is_active = TRUE`],
       inputFields: [
         {
           field: 'bom_unit_consumption',
@@ -188,10 +186,7 @@ export function parseSemanticPrompt(
   return {
     sourceTable: 'sales_details',
     sourceTableLabel: 'sales_details (Sales Revenue and Cost)',
-    filterConditions: [
-      `product_no = '${mat}'`,
-      `date BETWEEN '${actualPeriod}'`,
-    ],
+    filterConditions: [`product_no = '${mat}'`, `date BETWEEN '${actualPeriod}'`],
     inputFields: [
       {
         field: 'total_revenue',
@@ -207,8 +202,7 @@ export function parseSemanticPrompt(
     formula: 'SUM(total_revenue - total_cost)',
     formulaDescription: 'Gross Margin = SUM(total_revenue - total_cost)',
     format: 'currency',
-    explanation:
-      'Subtracts recorded product costs from sales revenue for the selected period.',
+    explanation: 'Subtracts recorded product costs from sales revenue for the selected period.',
   };
 }
 

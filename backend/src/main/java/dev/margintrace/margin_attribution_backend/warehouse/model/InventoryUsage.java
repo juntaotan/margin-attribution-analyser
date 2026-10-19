@@ -7,12 +7,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /** An inventory movement attributed to a product and source order number. */
 @Entity
@@ -61,8 +60,7 @@ public class InventoryUsage {
             String productNo,
             BigDecimal productNum,
             BigDecimal productTotalCost,
-            String orderNo
-    ) {
+            String orderNo) {
         InventoryUsage usage = new InventoryUsage();
         if (date == null) {
             throw new IllegalArgumentException("Date must not be null");

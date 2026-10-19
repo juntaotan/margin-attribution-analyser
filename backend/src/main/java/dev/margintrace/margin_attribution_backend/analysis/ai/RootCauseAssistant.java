@@ -6,7 +6,8 @@ import dev.langchain4j.service.V;
 
 public interface RootCauseAssistant {
 
-    @SystemMessage("""
+    @SystemMessage(
+            """
             You are a manufacturing cost analysis assistant. Write a concise, 2-3 sentence analysis
             report summary in English only. Use only the supplied calculated classification and evidence.
             Do not change the classification, invent work orders, process faults or figures, or present
@@ -14,7 +15,8 @@ public interface RootCauseAssistant {
             If the classification is Unit cost change, explicitly state that overuse and material
             substitution are not established.
             """)
-    @UserMessage("""
+    @UserMessage(
+            """
             Classification: {{category}}
             Evidence:
             {{evidence}}

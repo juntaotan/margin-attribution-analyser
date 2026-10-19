@@ -16,44 +16,61 @@ interface OnlyOfficeEditorPaneProps {
   reloadKey?: number;
 }
 
-export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
-  onDocumentChanged,
-  reloadKey = 0,
-}) => {
+/**
+ * Fetches the signed editor configuration.
+ *
+ * @throws Error when the request fails or the response lacks the Document Server URL or configuration.
+ */
+async function fetchEditorConfig(): Promise<OnlyOfficeEditorConfigResponse> {
+  const response = await fetch(CONFIG_ENDPOINT, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Configuration request failed (${response.status})`);
+  }
+  const payload = (await response.json()) as OnlyOfficeEditorConfigResponse;
+  if (!payload.documentServerUrl || !payload.config) {
+    throw new Error('The ONLYOFFICE configuration response is incomplete');
+  }
+  return payload;
+}
+
+/**
+ * Replaces the report document with an uploaded DOCX file.
+ *
+ * @throws Error with the backend detail when the upload is rejected.
+ */
+async function uploadDocument(file: File) {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await fetch(DOCUMENT_ENDPOINT, {
+    method: 'POST',
+    body,
+  });
+  if (!response.ok) {
+    const problem = (await response.json().catch(() => undefined)) as { detail?: string; message?: string } | undefined;
+    throw new Error(problem?.detail ?? problem?.message ?? `Document upload failed (${response.status})`);
+  }
+}
+
+/**
+ * Loads the editor configuration on mount and whenever `reloadKey` changes. Each successful load increments
+ * `editorRevision`, which is used to remount the editor with the new configuration.
+ */
+function useEditorConfig(reloadKey: number) {
   const [editorConfig, setEditorConfig] = useState<OnlyOfficeEditorConfigResponse>();
   const [editorRevision, setEditorRevision] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>();
-  const [uploadError, setUploadError] = useState<string>();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadConfig = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
-
     try {
-      const response = await fetch(CONFIG_ENDPOINT, {
-        headers: { Accept: 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Configuration request failed (${response.status})`);
-      }
-
-      const payload = (await response.json()) as OnlyOfficeEditorConfigResponse;
-      if (!payload.documentServerUrl || !payload.config) {
-        throw new Error('The ONLYOFFICE configuration response is incomplete');
-      }
-
-      setEditorConfig(payload);
+      setEditorConfig(await fetchEditorConfig());
       setEditorRevision((current) => current + 1);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : 'Unable to load the ONLYOFFICE configuration'
-      );
+      setError(requestError instanceof Error ? requestError.message : 'Unable to load the ONLYOFFICE configuration');
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +80,18 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
     void loadConfig();
   }, [loadConfig, reloadKey]);
 
+  return { editorConfig, editorRevision, isLoading, error, setError, loadConfig };
+}
+
+/**
+ * Embeds the ONLYOFFICE editor for the report document, with an action to replace the document by uploading a
+ * DOCX file. `onDocumentChanged` is called after a successful upload.
+ */
+export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({ onDocumentChanged, reloadKey = 0 }) => {
+  const { editorConfig, editorRevision, isLoading, error, setError, loadConfig } = useEditorConfig(reloadKey);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>();
+
   const handleDocumentSelected = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -70,107 +99,23 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
 
     setIsUploading(true);
     setUploadError(undefined);
-
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const response = await fetch(DOCUMENT_ENDPOINT, {
-        method: 'POST',
-        body,
-      });
-
-      if (!response.ok) {
-        const problem = (await response.json().catch(() => undefined)) as
-          | { detail?: string; message?: string }
-          | undefined;
-        throw new Error(
-          problem?.detail ?? problem?.message ?? `Document upload failed (${response.status})`
-        );
-      }
-
+      await uploadDocument(file);
       await loadConfig();
       onDocumentChanged?.();
     } catch (requestError) {
-      setUploadError(
-        requestError instanceof Error ? requestError.message : 'Unable to open the DOCX document'
-      );
+      setUploadError(requestError instanceof Error ? requestError.message : 'Unable to open the DOCX document');
     } finally {
       setIsUploading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center" style={{ backgroundColor: "#f3f3f3" }}>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <LoaderCircle className="h-5 w-5 animate-spin text-blue-600" />
-          <span>Loading ONLYOFFICE editor…</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !editorConfig) {
-    return (
-      <div className="flex h-full items-center justify-center p-8" style={{ backgroundColor: "#f3f3f3" }}>
-        <div className="w-full max-w-lg rounded-xl border border-amber-200 bg-white p-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <div className="space-y-3">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">ONLYOFFICE is not configured yet</h2>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                  The editor needs a signed configuration from <code>{CONFIG_ENDPOINT}</code>.
-                  The backend endpoint and Document Server will be connected in the next integration step.
-                </p>
-              </div>
-              {error && (
-                <p className="rounded-md bg-amber-50 px-2.5 py-2 font-mono text-[11px] text-amber-800">
-                  {error}
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => void loadConfig()}
-                className="inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Retry connection
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <EditorLoading />;
+  if (error || !editorConfig) return <EditorUnavailable error={error} onRetry={() => void loadConfig()} />;
 
   return (
-    <div className="flex h-full min-h-0 flex-col" style={{ backgroundColor: "#f3f3f3" }}>
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4" style={{ backgroundColor: "#f3f3f3" }}>
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            onChange={(event) => void handleDocumentSelected(event)}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-wait disabled:opacity-60"
-          >
-            {isUploading ? (
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Upload className="h-3.5 w-3.5" />
-            )}
-            {isUploading ? 'Opening…' : 'Open DOCX'}
-          </button>
-        </div>
-        <span className="text-[10px] font-mono text-emerald-700">Connected</span>
-      </div>
+    <div className="flex h-full min-h-0 flex-col" style={{ backgroundColor: '#f3f3f3' }}>
+      <EditorToolbar isUploading={isUploading} onDocumentSelected={(event) => void handleDocumentSelected(event)} />
       {uploadError && (
         <div className="flex shrink-0 items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[11px] text-amber-800">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -199,6 +144,76 @@ export const OnlyOfficeEditorPane: React.FC<OnlyOfficeEditorPaneProps> = ({
           }}
         />
       </div>
+    </div>
+  );
+};
+
+const EditorLoading: React.FC = () => (
+  <div className="flex h-full items-center justify-center" style={{ backgroundColor: '#f3f3f3' }}>
+    <div className="flex items-center gap-2 text-sm text-slate-500">
+      <LoaderCircle className="h-5 w-5 animate-spin text-blue-600" />
+      <span>Loading ONLYOFFICE editor…</span>
+    </div>
+  </div>
+);
+
+const EditorUnavailable: React.FC<{ error?: string; onRetry: () => void }> = ({ error, onRetry }) => (
+  <div className="flex h-full items-center justify-center p-8" style={{ backgroundColor: '#f3f3f3' }}>
+    <div className="w-full max-w-lg rounded-xl border border-amber-200 bg-white p-6 shadow-sm">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">ONLYOFFICE is not configured yet</h2>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              The editor needs a signed configuration from <code>{CONFIG_ENDPOINT}</code>. The backend endpoint and
+              Document Server will be connected in the next integration step.
+            </p>
+          </div>
+          {error && <p className="rounded-md bg-amber-50 px-2.5 py-2 font-mono text-[11px] text-amber-800">{error}</p>}
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Retry connection
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const EditorToolbar: React.FC<{
+  isUploading: boolean;
+  onDocumentSelected: (event: ChangeEvent<HTMLInputElement>) => void;
+}> = ({ isUploading, onDocumentSelected }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div
+      className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4"
+      style={{ backgroundColor: '#f3f3f3' }}
+    >
+      <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={onDocumentSelected}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-wait disabled:opacity-60"
+        >
+          {isUploading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {isUploading ? 'Opening…' : 'Open DOCX'}
+        </button>
+      </div>
+      <span className="text-[10px] font-mono text-emerald-700">Connected</span>
     </div>
   );
 };

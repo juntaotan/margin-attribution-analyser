@@ -8,6 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,17 +19,13 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
-import java.util.UUID;
-
 @Entity
 @Table(
         name = "report_placeholder_config",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_report_placeholder_config_doc_tag",
-                columnNames = {"document_id", "control_tag"}
-        )
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_report_placeholder_config_doc_tag",
+                        columnNames = {"document_id", "control_tag"}))
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

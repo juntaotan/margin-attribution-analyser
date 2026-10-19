@@ -1,13 +1,6 @@
 package dev.margintrace.margin_attribution_backend.report;
 
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprint;
-import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.ColumnMapRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,6 +9,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.ColumnMapRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,31 +23,66 @@ public class ReportQueryService {
     private static final int QUERY_TIMEOUT_SECONDS = 10;
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
     private static final Pattern STRING_LITERAL = Pattern.compile("'(?:[^']|'')*'");
-    private static final Pattern SAFE_CHARACTERS = Pattern.compile(
-            "[A-Za-z0-9_\\s'(),.+\\-*/%<>=!]*");
+    private static final Pattern SAFE_CHARACTERS = Pattern.compile("[A-Za-z0-9_\\s'(),.+\\-*/%<>=!]*");
 
     private static final Map<String, Set<String>> TABLE_COLUMNS = Map.of(
-            "material_master", Set.of(
-                    "material_no", "material_name", "material_type", "base_uom",
-                    "specification", "material_group", "status", "supplier", "source_kind", "unit_cost"),
-            "inventory_usage", Set.of(
-                    "id", "date", "movement_no", "product_no", "product_num",
-                    "product_total_cost", "order_no", "material_no", "material_num",
-                    "material_total_cost"),
-            "bill_of_material", Set.of(
-                    "id", "bom_no", "product_no", "material_no", "material_usage"),
-            "sales_details", Set.of(
-                    "id", "date", "movement_no", "product_no",
-                    "product_num", "total_revenue", "total_cost"),
-            "purchases", Set.of(
-                    "id", "purchase_order_no", "date", "product_no", "product_num",
-                    "product_total_price")
-    );
+            "material_master",
+                    Set.of(
+                            "material_no",
+                            "material_name",
+                            "material_type",
+                            "base_uom",
+                            "specification",
+                            "material_group",
+                            "status",
+                            "supplier",
+                            "source_kind",
+                            "unit_cost"),
+            "inventory_usage",
+                    Set.of(
+                            "id",
+                            "date",
+                            "movement_no",
+                            "product_no",
+                            "product_num",
+                            "product_total_cost",
+                            "order_no",
+                            "material_no",
+                            "material_num",
+                            "material_total_cost"),
+            "bill_of_material", Set.of("id", "bom_no", "product_no", "material_no", "material_usage"),
+            "sales_details",
+                    Set.of("id", "date", "movement_no", "product_no", "product_num", "total_revenue", "total_cost"),
+            "purchases", Set.of("id", "purchase_order_no", "date", "product_no", "product_num", "product_total_price"));
 
     private static final Set<String> SQL_WORDS = Set.of(
-            "sum", "avg", "min", "max", "count", "coalesce", "nullif", "round", "abs",
-            "distinct", "case", "when", "then", "else", "end", "and", "or", "not",
-            "between", "in", "is", "null", "true", "false", "like", "ilike", "date");
+            "sum",
+            "avg",
+            "min",
+            "max",
+            "count",
+            "coalesce",
+            "nullif",
+            "round",
+            "abs",
+            "distinct",
+            "case",
+            "when",
+            "then",
+            "else",
+            "end",
+            "and",
+            "or",
+            "not",
+            "between",
+            "in",
+            "is",
+            "null",
+            "true",
+            "false",
+            "like",
+            "ilike",
+            "date");
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -107,8 +141,8 @@ public class ReportQueryService {
         } catch (DataAccessException exception) {
             String detail = exception.getMostSpecificCause().getMessage();
             throw new IllegalArgumentException(
-                    "The generated query could not be executed" +
-                            (detail == null || detail.isBlank() ? "" : ": " + detail),
+                    "The generated query could not be executed"
+                            + (detail == null || detail.isBlank() ? "" : ": " + detail),
                     exception);
         }
     }
@@ -126,8 +160,11 @@ public class ReportQueryService {
             throw new IllegalArgumentException("The generated query has an empty " + fieldName);
         }
         String fragment = value.trim();
-        if (fragment.length() > 2_000 || !SAFE_CHARACTERS.matcher(fragment).matches()
-                || fragment.contains(";") || fragment.contains("--") || fragment.contains("/*")) {
+        if (fragment.length() > 2_000
+                || !SAFE_CHARACTERS.matcher(fragment).matches()
+                || fragment.contains(";")
+                || fragment.contains("--")
+                || fragment.contains("/*")) {
             throw new IllegalArgumentException("The generated query contains an unsafe " + fieldName);
         }
 
@@ -147,10 +184,5 @@ public class ReportQueryService {
         return fragment;
     }
 
-    public record QueryResult(
-            String sql,
-            List<String> columns,
-            List<Map<String, Object>> rows,
-            int rowCount) {
-    }
+    public record QueryResult(String sql, List<String> columns, List<Map<String, Object>> rows, int rowCount) {}
 }

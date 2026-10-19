@@ -8,8 +8,7 @@ public record ReconciliationResult(
         Map<GraphEdge, Integer> actualEdgeScores,
         Map<GraphEdge, Integer> comparableEdgeScores,
         List<Integer> materialLeafPositions,
-        List<PropagationPath> paths
-) {
+        List<PropagationPath> paths) {
     public ReconciliationResult {
         actualEdgeScores = Map.copyOf(actualEdgeScores);
         comparableEdgeScores = Map.copyOf(comparableEdgeScores);

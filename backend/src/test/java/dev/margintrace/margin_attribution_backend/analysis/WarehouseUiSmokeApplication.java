@@ -3,12 +3,12 @@ package dev.margintrace.margin_attribution_backend.analysis;
 import dev.margintrace.margin_attribution_backend.MarginAttributionBackendApplication;
 import dev.margintrace.margin_attribution_backend.datalake.model.StoredObject;
 import dev.margintrace.margin_attribution_backend.datalake.storage.*;
+import java.io.ByteArrayInputStream;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import java.io.ByteArrayInputStream;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Test-only browser smoke host. Start with explicit isolated H2 settings; real controllers,
@@ -18,20 +18,29 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class WarehouseUiSmokeApplication {
     private WarehouseUiSmokeApplication() {}
+
     public static void main(String[] args) {
-        var context = new SpringApplicationBuilder(MarginAttributionBackendApplication.class, IsolatedStorage.class).run(args);
+        var context = new SpringApplicationBuilder(MarginAttributionBackendApplication.class, IsolatedStorage.class)
+                .run(args);
         context.getBean(org.springframework.jdbc.core.JdbcTemplate.class).execute("CREATE SCHEMA IF NOT EXISTS raw");
     }
+
     @TestConfiguration
     public static class IsolatedStorage {
         private final ConcurrentHashMap<String, byte[]> objects = new ConcurrentHashMap<>();
-        @Bean @Primary RawFileStorage smokeStorage() {
+
+        @Bean
+        @Primary
+        RawFileStorage smokeStorage() {
             return (file, key) -> {
                 objects.put(key, file.getBytes());
                 return new StoredObject("isolated-browser-test", key, "test", file.getSize());
             };
         }
-        @Bean @Primary RawFileReader smokeReader() {
+
+        @Bean
+        @Primary
+        RawFileReader smokeReader() {
             return key -> new ByteArrayInputStream(objects.get(key));
         }
     }

@@ -3,12 +3,11 @@ package dev.margintrace.margin_attribution_backend.settings;
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiConnectionSettings;
 import dev.margintrace.margin_attribution_backend.analysis.ai.AiRuntimeManager;
 import jakarta.annotation.PostConstruct;
+import java.net.URI;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.net.URI;
-import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +17,8 @@ public class AiSettingsService {
 
     @PostConstruct
     void loadPersistedSettings() {
-        repository.findById(AiProviderSettingsEntity.SINGLETON_ID)
+        repository
+                .findById(AiProviderSettingsEntity.SINGLETON_ID)
                 .map(AiProviderSettingsEntity::toSettings)
                 .ifPresent(runtimeManager::reload);
     }
@@ -30,8 +30,7 @@ public class AiSettingsService {
     @Transactional
     public AiConnectionSettings update(String host, Integer port, String model) {
         AiConnectionSettings normalized = normalize(host, port, model, Instant.now());
-        AiProviderSettingsEntity saved =
-                repository.saveAndFlush(new AiProviderSettingsEntity(normalized));
+        AiProviderSettingsEntity saved = repository.saveAndFlush(new AiProviderSettingsEntity(normalized));
         AiConnectionSettings settings = saved.toSettings();
         runtimeManager.reload(settings);
         return settings;
@@ -41,11 +40,7 @@ public class AiSettingsService {
         return runtimeManager.testConnection(normalize(host, port, model, null));
     }
 
-    private AiConnectionSettings normalize(
-            String host,
-            Integer port,
-            String model,
-            Instant updatedAt) {
+    private AiConnectionSettings normalize(String host, Integer port, String model, Instant updatedAt) {
         String normalizedHost = host == null ? "" : host.trim();
         if (normalizedHost.startsWith("[") && normalizedHost.endsWith("]")) {
             normalizedHost = normalizedHost.substring(1, normalizedHost.length() - 1);
@@ -56,23 +51,21 @@ public class AiSettingsService {
                 || normalizedHost.contains("#")
                 || normalizedHost.contains("://")
                 || normalizedHost.chars().anyMatch(Character::isWhitespace)
-                || port == null || port < 1 || port > 65_535) {
-            throw new IllegalArgumentException(
-                    "Enter a valid llama.cpp IP address or hostname and port (1-65535)");
+                || port == null
+                || port < 1
+                || port > 65_535) {
+            throw new IllegalArgumentException("Enter a valid llama.cpp IP address or hostname and port (1-65535)");
         }
 
-        String authorityHost = normalizedHost.contains(":")
-                ? "[" + normalizedHost + "]" : normalizedHost;
+        String authorityHost = normalizedHost.contains(":") ? "[" + normalizedHost + "]" : normalizedHost;
         URI uri;
         try {
             uri = URI.create("http://" + authorityHost + ":" + port);
         } catch (RuntimeException exception) {
-            throw new IllegalArgumentException(
-                    "Enter a valid llama.cpp IP address or hostname", exception);
+            throw new IllegalArgumentException("Enter a valid llama.cpp IP address or hostname", exception);
         }
         if (uri.getHost() == null || !normalizedHost.equalsIgnoreCase(uri.getHost())) {
-            throw new IllegalArgumentException(
-                    "Enter a valid llama.cpp IP address or hostname");
+            throw new IllegalArgumentException("Enter a valid llama.cpp IP address or hostname");
         }
 
         String normalizedModel = model == null ? "" : model.trim();

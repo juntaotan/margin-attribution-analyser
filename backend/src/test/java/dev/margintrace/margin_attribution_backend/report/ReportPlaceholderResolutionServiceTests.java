@@ -1,10 +1,10 @@
 package dev.margintrace.margin_attribution_backend.report;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class ReportPlaceholderResolutionServiceTests {
 
@@ -13,7 +13,8 @@ class ReportPlaceholderResolutionServiceTests {
         JdbcDataSource source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:sales-placeholder-" + System.nanoTime() + ";DB_CLOSE_DELAY=-1");
         JdbcTemplate jdbc = new JdbcTemplate(source);
-        jdbc.execute("""
+        jdbc.execute(
+                """
                 CREATE TABLE sales_details (
                     date DATE NOT NULL,
                     total_revenue NUMERIC(18, 6) NOT NULL,

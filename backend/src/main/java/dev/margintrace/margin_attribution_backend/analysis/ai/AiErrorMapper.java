@@ -1,19 +1,17 @@
 package dev.margintrace.margin_attribution_backend.analysis.ai;
 
 import dev.langchain4j.exception.HttpException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AiErrorMapper {
     private final URI endpoint;
 
-    public AiErrorMapper(
-            @Value("${analysis.llama.base-url:http://127.0.0.1:8081}") String baseUrl) {
+    public AiErrorMapper(@Value("${analysis.llama.base-url:http://127.0.0.1:8081}") String baseUrl) {
         this.endpoint = URI.create(baseUrl.replaceAll("/+$", ""));
     }
 

@@ -28,9 +28,8 @@ public final class LofEngine {
         // Give each order one row of distances to every other order.
         for (int target = 0; target < count; target++) {
             for (int candidate = 0; candidate < count; candidate++) {
-                distances[target][candidate] = candidate == target
-                        ? Float.POSITIVE_INFINITY
-                        : distance(orders[target], orders[candidate]);
+                distances[target][candidate] =
+                        candidate == target ? Float.POSITIVE_INFINITY : distance(orders[target], orders[candidate]);
             }
         }
 
@@ -80,9 +79,7 @@ public final class LofEngine {
                 reachDistanceSum += Math.max(actualDistance, kDistances[neighbor]);
                 neighborCount++;
             }
-            lrd[target] = reachDistanceSum == 0.0
-                    ? Double.POSITIVE_INFINITY
-                    : neighborCount / reachDistanceSum;
+            lrd[target] = reachDistanceSum == 0.0 ? Double.POSITIVE_INFINITY : neighborCount / reachDistanceSum;
         }
 
         // Scores preserve the input order for the caller.

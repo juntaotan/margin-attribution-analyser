@@ -4,5 +4,6 @@ package dev.margintrace.margin_attribution_backend.algorithm.FGW;
 @FunctionalInterface
 public interface FgwComparator extends AutoCloseable {
     FgwEngine.Result compare(FgwEngine.Comparison input, FgwEngine.Config config);
+
     default void close() {}
 }

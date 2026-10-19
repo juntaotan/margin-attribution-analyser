@@ -1,14 +1,13 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class ReportContentControlScannerTest {
 
@@ -16,7 +15,8 @@ class ReportContentControlScannerTest {
 
     @Test
     void scansAliasesAndGroupsControlsWithTheSameTag() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -53,7 +53,8 @@ class ReportContentControlScannerTest {
 
     @Test
     void usesTheWordIdWhenAControlHasAnAliasButNoTag() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -80,7 +81,8 @@ class ReportContentControlScannerTest {
 
     @Test
     void extractsTheSentenceContainingTheRequestedTag() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -102,15 +104,15 @@ class ReportContentControlScannerTest {
                 """);
 
         assertThat(scanner.contextsForTag(document, "margintrace:revenue"))
-                .containsExactly(
-                        "For August 2026, revenue was "
-                                + "[[TARGET tag=\"margintrace:revenue\" alias=\"Revenue\" value=\"1,250,000\"]] "
-                                + "compared with July 2026.");
+                .containsExactly("For August 2026, revenue was "
+                        + "[[TARGET tag=\"margintrace:revenue\" alias=\"Revenue\" value=\"1,250,000\"]] "
+                        + "compared with July 2026.");
     }
 
     @Test
     void marksOnlyTheRequestedControlAsTheTargetWhenTwoTagsShareASentence() throws Exception {
-        byte[] document = docxWithDocumentXml("""
+        byte[] document = docxWithDocumentXml(
+                """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
                   <w:body>
@@ -151,7 +153,7 @@ class ReportContentControlScannerTest {
 
     private byte[] docxWithDocumentXml(String xml) throws Exception {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream();
-             ZipOutputStream archive = new ZipOutputStream(output)) {
+                ZipOutputStream archive = new ZipOutputStream(output)) {
             archive.putNextEntry(new ZipEntry("word/document.xml"));
             archive.write(xml.getBytes(StandardCharsets.UTF_8));
             archive.closeEntry();

@@ -1,7 +1,17 @@
 package dev.margintrace.margin_attribution_backend.report;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import dev.margintrace.margin_attribution_backend.report.ai.BlueprintInputField;
 import dev.margintrace.margin_attribution_backend.report.ai.ReportBlueprint;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,32 +19,24 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class ReportPlaceholderServiceTests {
 
     @Mock
     private ReportPlaceholderConfigRepository configRepository;
+
     @Mock
     private ReportQueryRunRepository runRepository;
+
     @Mock
     private ReportBlueprintService reportBlueprintService;
+
     @Mock
     private ReportQueryService reportQueryService;
+
     @Mock
     private ReportDocumentStore documentStore;
+
     @Mock
     private ReportContentControlUpdater contentControlUpdater;
 
@@ -58,8 +60,8 @@ class ReportPlaceholderServiceTests {
         String prompt = "Duration: January 2026\nCalculate total revenue";
         ReportBlueprint blueprint = sampleBlueprint("SUM(total_revenue)", "currency");
         String sql = "SELECT SUM(total_revenue) AS result FROM sales_details LIMIT 100";
-        ReportQueryService.QueryResult queryResult = new ReportQueryService.QueryResult(
-                sql, List.of("result"), List.of(Map.of("result", 1250000)), 1);
+        ReportQueryService.QueryResult queryResult =
+                new ReportQueryService.QueryResult(sql, List.of("result"), List.of(Map.of("result", 1250000)), 1);
 
         when(configRepository.findByDocumentIdAndControlTag("default", tag)).thenReturn(Optional.empty());
         when(reportBlueprintService.generate(prompt)).thenReturn(blueprint);
@@ -79,8 +81,8 @@ class ReportPlaceholderServiceTests {
             return entity;
         });
 
-        ReportPlaceholderService.GenerateResult result = service.generate(
-                new ReportPlaceholderService.GenerateRequest("default", tag, alias, prompt));
+        ReportPlaceholderService.GenerateResult result =
+                service.generate(new ReportPlaceholderService.GenerateRequest("default", tag, alias, prompt));
 
         assertThat(result.configId()).isNotNull();
         assertThat(result.runId()).isNotNull();
@@ -99,8 +101,7 @@ class ReportPlaceholderServiceTests {
         assertThat(savedConfig.getRevision()).isEqualTo(1L);
         assertThat(savedConfig.getFormat()).isEqualTo("currency");
 
-        ArgumentCaptor<ReportQueryRunEntity> runCaptor =
-                ArgumentCaptor.forClass(ReportQueryRunEntity.class);
+        ArgumentCaptor<ReportQueryRunEntity> runCaptor = ArgumentCaptor.forClass(ReportQueryRunEntity.class);
         verify(runRepository, org.mockito.Mockito.atLeastOnce()).save(runCaptor.capture());
         ReportQueryRunEntity savedRun = runCaptor.getValue();
         assertThat(savedRun.getConfigRevision()).isEqualTo(1L);
@@ -120,8 +121,8 @@ class ReportPlaceholderServiceTests {
         String newPrompt = "Duration: February 2026\nCalculate updated revenue";
         ReportBlueprint newBlueprint = sampleBlueprint("SUM(new_val)", "currency");
         String sql = "SELECT SUM(new_val) AS result FROM sales_details LIMIT 100";
-        ReportQueryService.QueryResult queryResult = new ReportQueryService.QueryResult(
-                sql, List.of("result"), List.of(Map.of("result", 900000)), 1);
+        ReportQueryService.QueryResult queryResult =
+                new ReportQueryService.QueryResult(sql, List.of("result"), List.of(Map.of("result", 900000)), 1);
 
         when(configRepository.findByDocumentIdAndControlTag("default", tag)).thenReturn(Optional.of(existingConfig));
         when(reportBlueprintService.generate(newPrompt)).thenReturn(newBlueprint);
@@ -134,8 +135,8 @@ class ReportPlaceholderServiceTests {
             return r;
         });
 
-        ReportPlaceholderService.GenerateResult result = service.generate(
-                new ReportPlaceholderService.GenerateRequest("default", tag, "New alias", newPrompt));
+        ReportPlaceholderService.GenerateResult result =
+                service.generate(new ReportPlaceholderService.GenerateRequest("default", tag, "New alias", newPrompt));
 
         assertThat(result.revision()).isEqualTo(2L);
         assertThat(existingConfig.getRevision()).isEqualTo(2L);
@@ -154,11 +155,11 @@ class ReportPlaceholderServiceTests {
 
         ReportQueryRunEntity run = new ReportQueryRunEntity(config, 2L, "prompt", blueprint, "SELECT");
         run.setId(runId);
-        run.markSucceeded(new ReportQueryService.QueryResult(
-                "SELECT", List.of("result"), List.of(Map.of("result", "24.5")), 1));
+        run.markSucceeded(
+                new ReportQueryService.QueryResult("SELECT", List.of("result"), List.of(Map.of("result", "24.5")), 1));
 
-        byte[] fakeDoc = new byte[]{1, 2, 3};
-        byte[] updatedDoc = new byte[]{4, 5, 6};
+        byte[] fakeDoc = new byte[] {1, 2, 3};
+        byte[] updatedDoc = new byte[] {4, 5, 6};
 
         when(runRepository.findById(runId)).thenReturn(Optional.of(run));
         when(documentStore.loadOrCreateDefaultDocument()).thenReturn(fakeDoc);
@@ -186,10 +187,11 @@ class ReportPlaceholderServiceTests {
         config.setId(UUID.randomUUID());
         config.setRevision(3L); // Config has revision 3 now
 
-        ReportQueryRunEntity run = new ReportQueryRunEntity(config, 2L, "old prompt", null, "SELECT"); // Run was on revision 2
+        ReportQueryRunEntity run =
+                new ReportQueryRunEntity(config, 2L, "old prompt", null, "SELECT"); // Run was on revision 2
         run.setId(runId);
-        run.markSucceeded(new ReportQueryService.QueryResult(
-                "SELECT", List.of("result"), List.of(Map.of("result", 100)), 1));
+        run.markSucceeded(
+                new ReportQueryService.QueryResult("SELECT", List.of("result"), List.of(Map.of("result", 100)), 1));
 
         when(runRepository.findById(runId)).thenReturn(Optional.of(run));
 
@@ -227,8 +229,7 @@ class ReportPlaceholderServiceTests {
         when(configRepository.findByDocumentId("default")).thenReturn(List.of(config));
 
         List<ReportPlaceholderService.PlaceholderConfigDto> dtos = service.syncPlaceholders(
-                "default",
-                List.of(new ReportPlaceholderService.PlaceholderSyncItem(tag, "Renamed alias in Word")));
+                "default", List.of(new ReportPlaceholderService.PlaceholderSyncItem(tag, "Renamed alias in Word")));
 
         assertThat(config.getControlAlias()).isEqualTo("Renamed alias in Word");
         assertThat(config.getRevision()).isEqualTo(1L); // Revision remains 1

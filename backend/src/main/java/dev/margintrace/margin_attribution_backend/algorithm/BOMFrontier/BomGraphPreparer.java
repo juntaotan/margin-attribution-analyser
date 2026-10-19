@@ -2,7 +2,6 @@ package dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier;
 
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.Node;
-
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,8 +17,7 @@ public final class BomGraphPreparer {
     static final int VALUE_SCALE = 6;
 
     /** The graph and encoded threshold consumed by the upward traversal. */
-    public record PreparedPruning(BomUpwardGraph graph, long threshold) {
-    }
+    public record PreparedPruning(BomUpwardGraph graph, long threshold) {}
 
     /**
      * Aligns costs by inventory ID, selects material-side leaves, and marks their ancestors.
@@ -32,10 +30,12 @@ public final class BomGraphPreparer {
      * @param stopThreshold minimum absolute difference for selecting an ancestor
      * @return traversal arrays and exact long micro-unit stop threshold
      */
-    public PreparedPruning prepare(CsrGraph actual, CsrGraph comparable,
-            BigDecimal leafThreshold, BigDecimal stopThreshold) {
-        validate(actual); validate(comparable);
-        validateThreshold(leafThreshold); validateThreshold(stopThreshold);
+    public PreparedPruning prepare(
+            CsrGraph actual, CsrGraph comparable, BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        validate(actual);
+        validate(comparable);
+        validateThreshold(leafThreshold);
+        validateThreshold(stopThreshold);
         Node[] actualNodes = actual.nodes();
         int nodeCount = actualNodes.length;
         Map<String, Node> comparableById = new HashMap<>();
@@ -90,8 +90,13 @@ public final class BomGraphPreparer {
             offsets[node + 1] += offsets[node];
         }
 
-        BomUpwardGraph graph = new BomUpwardGraph(offsets, actual.offset(), actual.successors(),
-                Arrays.copyOf(terminals, terminalCount), values, comparableFlags);
+        BomUpwardGraph graph = new BomUpwardGraph(
+                offsets,
+                actual.offset(),
+                actual.successors(),
+                Arrays.copyOf(terminals, terminalCount),
+                values,
+                comparableFlags);
         return new PreparedPruning(graph, microUnits(stopThreshold));
     }
 
@@ -123,7 +128,8 @@ public final class BomGraphPreparer {
         for (int i = 0; i < n; i++) if (degree[i] == 0) pending.add(i);
         int visited = 0;
         while (!pending.isEmpty()) {
-            int node = pending.remove(); visited++;
+            int node = pending.remove();
+            visited++;
             for (int edge = graph.offset()[node]; edge < graph.offset()[node + 1]; edge++)
                 if (--degree[graph.successors()[edge]] == 0) pending.add(graph.successors()[edge]);
         }
@@ -133,7 +139,10 @@ public final class BomGraphPreparer {
     /** Thresholds must be nonnegative, exactly six-decimal representable signed-long micro-units. */
     public static void validateThreshold(BigDecimal threshold) {
         if (threshold == null || threshold.signum() < 0) throw new IllegalArgumentException("Invalid threshold");
-        try { microUnits(threshold); }
-        catch (ArithmeticException error) { throw new IllegalArgumentException("Threshold precision or range", error); }
+        try {
+            microUnits(threshold);
+        } catch (ArithmeticException error) {
+            throw new IllegalArgumentException("Threshold precision or range", error);
+        }
     }
 }

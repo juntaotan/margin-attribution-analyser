@@ -1,10 +1,9 @@
 package dev.margintrace.margin_attribution_backend.report;
 
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.springframework.stereotype.Component;
-
 import java.io.ByteArrayInputStream;
 import java.util.Locale;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DocxDocumentValidator {

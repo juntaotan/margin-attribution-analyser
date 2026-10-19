@@ -3,7 +3,6 @@ package dev.margintrace.margin_attribution_backend.algorithm.BOMFrontier;
 import dev.margintrace.margin_attribution_backend.algorithm.model.CsrGraph;
 import dev.margintrace.margin_attribution_backend.algorithm.model.GraphEdge;
 import dev.margintrace.margin_attribution_backend.algorithm.model.PropagationPath;
-
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -15,18 +14,22 @@ public final class BomFrontierReconciler {
     private final BomGraphPreparer preparer = new BomGraphPreparer();
     private final FrontierEngine engine;
 
-    public BomFrontierReconciler() { this(new BomUpwardEngine()); }
-    public BomFrontierReconciler(FrontierEngine engine) { this.engine = engine; }
+    public BomFrontierReconciler() {
+        this(new BomUpwardEngine());
+    }
+
+    public BomFrontierReconciler(FrontierEngine engine) {
+        this.engine = engine;
+    }
 
     /**
      * Finds threshold boundary nodes and reconstructs material-to-boundary paths for display.
      * Path reconstruction stays outside the frontier engine so the serial and OpenCL cores
      * can share the same compact selected-node result.
      */
-    public List<PropagationPath> reconcile(CsrGraph actual, CsrGraph comparable,
-            BigDecimal leafThreshold, BigDecimal stopThreshold) {
-        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(
-                actual, comparable, leafThreshold, stopThreshold);
+    public List<PropagationPath> reconcile(
+            CsrGraph actual, CsrGraph comparable, BigDecimal leafThreshold, BigDecimal stopThreshold) {
+        BomGraphPreparer.PreparedPruning prepared = preparer.prepare(actual, comparable, leafThreshold, stopThreshold);
         int[] selectedNodes = engine.run(prepared.graph(), prepared.threshold());
         boolean[] selected = new boolean[actual.nodes().length];
         for (int node : selectedNodes) {
@@ -42,16 +45,16 @@ public final class BomFrontierReconciler {
         while (!pending.isEmpty()) {
             PathState state = pending.remove();
             int from = state.positions().getLast();
-            for (int edgeIndex = actual.offset()[from];
-                    edgeIndex < actual.offset()[from + 1]; edgeIndex++) {
+            for (int edgeIndex = actual.offset()[from]; edgeIndex < actual.offset()[from + 1]; edgeIndex++) {
                 int to = actual.successors()[edgeIndex];
                 List<Integer> positions = append(state.positions(), to);
                 List<GraphEdge> edges = append(state.edges(), new GraphEdge(from, to, edgeIndex));
                 if (selected[to]) {
                     BigDecimal difference = BigDecimal.valueOf(
-                            prepared.graph().nodeValues()[to], BomGraphPreparer.VALUE_SCALE).abs();
-                    paths.add(new PropagationPath(positions, edges,
-                            PropagationPath.EndReason.THRESHOLD_EXCEEDED, difference));
+                                    prepared.graph().nodeValues()[to], BomGraphPreparer.VALUE_SCALE)
+                            .abs();
+                    paths.add(new PropagationPath(
+                            positions, edges, PropagationPath.EndReason.THRESHOLD_EXCEEDED, difference));
                 } else {
                     pending.add(new PathState(positions, edges));
                 }
@@ -69,6 +72,5 @@ public final class BomFrontierReconciler {
     }
 
     /** One material-to-product path being reconstructed. */
-    private record PathState(List<Integer> positions, List<GraphEdge> edges) {
-    }
+    private record PathState(List<Integer> positions, List<GraphEdge> edges) {}
 }

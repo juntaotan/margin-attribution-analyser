@@ -10,17 +10,16 @@ import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportRe
 import dev.margintrace.margin_attribution_backend.analysis.dto.RootCauseReportResponse;
 import dev.margintrace.margin_attribution_backend.analysis.service.Analyser;
 import dev.margintrace.margin_attribution_backend.analysis.service.RootCauseReportService;
-import tools.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
-import java.util.UUID;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Map;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/v1/analysis")
@@ -45,9 +44,13 @@ public class AnalysisController {
         StreamingResponseBody body = output -> {
             try {
                 analyser.streamReconciliation(
-                        request.actualStartDate(), request.actualEndDate(),
-                        request.comparableStartDate(), request.comparableEndDate(),
-                        request.leafThreshold(), request.stopThreshold(), analysisId,
+                        request.actualStartDate(),
+                        request.actualEndDate(),
+                        request.comparableStartDate(),
+                        request.comparableEndDate(),
+                        request.leafThreshold(),
+                        request.stopThreshold(),
+                        analysisId,
                         event -> {
                             try {
                                 writeEvent(output, event);
@@ -58,11 +61,15 @@ public class AnalysisController {
             } catch (UncheckedIOException exception) {
                 throw exception.getCause();
             } catch (RuntimeException exception) {
-                writeEvent(output, ReconciliationStreamEvent.error(analysisId,
-                        exception.getMessage() == null ? "Analysis failed" : exception.getMessage()));
+                writeEvent(
+                        output,
+                        ReconciliationStreamEvent.error(
+                                analysisId,
+                                exception.getMessage() == null ? "Analysis failed" : exception.getMessage()));
             }
         };
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/x-ndjson"))
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/x-ndjson"))
                 .body(body);
     }
 
@@ -100,8 +107,7 @@ public class AnalysisController {
      */
     @PostMapping("/trace")
     public ResponseEntity<AnalysisResults> trace(@RequestBody AnalysisRequest request) {
-        AnalysisResults response = analyser.analyser(
-                request.getStartDate(), request.getEndDate());
+        AnalysisResults response = analyser.analyser(request.getStartDate(), request.getEndDate());
         return ResponseEntity.ok(response);
     }
 
@@ -113,8 +119,8 @@ public class AnalysisController {
      */
     @PostMapping("/bom")
     public ResponseEntity<AnalysisResults> traceBom(@RequestBody AnalysisRequest request) {
-        AnalysisResults response = analyser.traceBom(
-                request.getTargets(), request.getStartDate(), request.getEndDate());
+        AnalysisResults response =
+                analyser.traceBom(request.getTargets(), request.getStartDate(), request.getEndDate());
         return ResponseEntity.ok(response);
     }
 
@@ -127,8 +133,7 @@ public class AnalysisController {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleInvalidAnalysis(IllegalArgumentException exception) {
-        String message = exception.getMessage() == null
-                ? "Invalid analysis request" : exception.getMessage();
+        String message = exception.getMessage() == null ? "Invalid analysis request" : exception.getMessage();
         return ResponseEntity.badRequest().body(Map.of("message", message));
     }
 }
