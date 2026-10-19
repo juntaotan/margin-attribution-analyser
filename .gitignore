@@ -63,6 +63,7 @@ buildNumber.properties
 docs/tasks/
 docs/validation/
 !AGENTS.md
+!README.md
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
 !cuda/README.md

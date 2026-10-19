@@ -1,8 +1,6 @@
 # Single-host Docker deployment (demo)
 
-For a step-by-step explanation of the design and configuration, read the [deployment guide](DEPLOYMENT_GUIDE.md).
-
-This stack runs the web app, Java backend, PostgreSQL, and MinIO in Linux containers. On Ubuntu, install Docker Engine and the Docker Compose plugin. On macOS or Windows, use Docker Desktop in Linux container mode. The frontend and backend are compiled while their images are built, so Java, Maven, and Node.js do not need to be installed on the host.
+This stack runs the web app, Java backend, PostgreSQL, MinIO, and the ONLYOFFICE Document Server in Linux containers. On Ubuntu, install Docker Engine and the Docker Compose plugin. On macOS or Windows, use Docker Desktop in Linux container mode. The frontend and backend are compiled while their images are built, so Java, Maven, and Node.js do not need to be installed on the host.
 
 1. Copy the project to the host. From the project root, create the deployment environment file. In a Linux, macOS, or WSL shell:
 
@@ -13,7 +11,7 @@ This stack runs the web app, Java backend, PostgreSQL, and MinIO in Linux contai
 
    In Windows PowerShell, use `Copy-Item .env.deploy.example .env.deploy` instead. `chmod` is a Unix command and is not required for this PowerShell step.
 
-2. Edit `.env.deploy`. Set non-empty values for at least `DB_PASSWORD` and `MINIO_SECRET_KEY`. `APP_PORT` controls the host port for the web app and defaults to `18080`.
+2. Edit `.env.deploy`. Set non-empty values for at least `DB_PASSWORD`, `MINIO_SECRET_KEY`, and `ONLYOFFICE_JWT_SECRET`; Docker Compose refuses to start while any of them is empty. `MINIO_SECRET_KEY` is MinIO's root password and must be at least 8 characters long. `ONLYOFFICE_JWT_SECRET` is the shared key that the backend and the ONLYOFFICE Document Server use to sign Report Studio editor requests; any long random string works, for example the output of `openssl rand -hex 32`. `APP_PORT` controls the host port for the web app and defaults to `18080`, and `ONLYOFFICE_PORT` controls the Document Server's host port and defaults to `18082`.
 
 3. Start the stack:
 
