@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Cost Analysis Engine: from a cost change to the records behind it">
+  <defs>
+    <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1.3" fill="#D1D9E0"/></pattern>
+    <radialGradient id="fade" cx="1020" cy="162" r="320" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <mask id="fadeMask"><rect width="1280" height="320" fill="url(#fade)"/></mask>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect width="1280" height="320" rx="16" fill="#F6F8FA"/>
+  <rect x="660" width="620" height="320" fill="url(#dots)" mask="url(#fadeMask)"/>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="80" y="104" font-size="15" font-weight="600" letter-spacing="3" fill="#0F766E">MANUFACTURING MARGIN ATTRIBUTION</text>
+    <text x="77" y="172" font-size="54" font-weight="700" fill="#1F2328">Cost Analysis <tspan fill="#0F766E">Engine</tspan></text>
+    <text x="80" y="222" font-size="24" fill="#59636E">From a cost change to the records behind it</text>
+    <rect x="80" y="246" width="56" height="4" rx="2" fill="#D97706"/>
+  </g>
+  <g transform="translate(30 0)">
+  <g stroke="#C9D1D9" stroke-width="1" stroke-dasharray="2 6" opacity="0.8"><path d="M756 72 H1200"/><path d="M756 162 H1200"/><path d="M756 252 H1200"/></g>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="1.5" fill="#8C959F"><text x="742" y="76" text-anchor="end">PRODUCT</text><text x="742" y="166" text-anchor="end">ASSEMBLIES</text><text x="742" y="256" text-anchor="end">MATERIALS</text></g>
+  <g fill="none" stroke-linecap="round">
+    <g stroke="#C9D1D9" stroke-width="2.5">
+      <path d="M850 162 C850 211.5 790 202.5 790 252"/>
+      <path d="M850 162 C850 211.5 850 202.5 850 252"/>
+      <path d="M990 72 C990 121.5 990 112.5 990 162"/>
+      <path d="M990 162 C990 211.5 960 202.5 960 252"/>
+      <path d="M990 162 C990 211.5 1020 202.5 1020 252"/>
+      <path d="M990 72 C990 121.5 1130 112.5 1130 162"/>
+      <path d="M1130 162 C1130 211.5 1100 202.5 1100 252"/>
+      <path d="M1130 162 C1130 211.5 1160 202.5 1160 252"/>
+    </g>
+    <g stroke="#D97706" stroke-width="9" opacity="0.35" filter="url(#glow)">
+      <path d="M990 72 C990 121.5 850 112.5 850 162"/>
+      <path d="M850 162 C850 211.5 910 202.5 910 252"/>
+    </g>
+    <g stroke="#D97706" stroke-width="4">
+      <path d="M990 72 C990 121.5 850 112.5 850 162"/>
+      <path d="M850 162 C850 211.5 910 202.5 910 252"/>
+    </g>
+  </g>
+  <rect x="964" y="46" width="52" height="52" rx="14" fill="#D97706" opacity="0.16"/><rect x="974" y="56" width="32" height="32" rx="9" fill="#D97706"/>
+    <circle cx="850" cy="162" r="20" fill="#D97706" opacity="0.16"/><circle cx="850" cy="162" r="11" fill="#D97706"/>
+    <circle cx="790" cy="252" r="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="850" cy="252" r="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="910" cy="252" r="17" fill="#D97706" opacity="0.16"/><circle cx="910" cy="252" r="8" fill="#D97706"/>
+    <circle cx="990" cy="162" r="11" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="960" cy="252" r="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="1020" cy="252" r="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="1130" cy="162" r="11" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="1100" cy="252" r="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+    <circle cx="1160" cy="252" r="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="2.5"/>
+  </g>
+</svg>
