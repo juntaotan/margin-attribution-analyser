@@ -17,32 +17,68 @@
 ![Java 21](https://img.shields.io/badge/Java-21-0f766e?style=flat-square)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-backend-0f766e?style=flat-square)
 ![React](https://img.shields.io/badge/React%20%2B%20TypeScript-frontend-0f766e?style=flat-square)
-![GPU optional](https://img.shields.io/badge/CUDA%20%7C%20-optional-59636e?style=flat-square)
+![GPU optional](https://img.shields.io/badge/CUDA%20%7C%20OpenCL-optional-59636e?style=flat-square)
 [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-59636e?style=flat-square)](LICENSE)
 
-[**Quick start**](#-quick-start) &nbsp;·&nbsp; [**How it works**](#-how-it-works) &nbsp;·&nbsp; [**Worked example**](#-worked-example) &nbsp;·&nbsp; [**Status**](#-capability-status) &nbsp;·&nbsp; [**Docs**](#-documentation)
+[**Quick start**](#-quick-start) &nbsp;·&nbsp; [**How it works**](#-how-it-works) &nbsp;·&nbsp; [**Worked example**](#-worked-example)
 
 </div>
 
 <br>
 
-Cost Analysis Engine is a margin-attribution and variance-analysis application for financial and data analysts in manufacturing. It combines sales, purchasing, production, inventory-usage, cost and bill-of-materials (BOM) records, compares two periods, and shows the evidence behind every difference it reports.
+**Evidence-based cost variance analysis for multi-stage manufacturing: from a change in margin to the production records behind it.**
+
+Cost Analysis Engine is a margin-attribution and variance-analysis application for finance, audit and data analysts in manufacturing. It consolidates sales, purchasing, production, inventory-usage, cost and bill-of-materials (BOM) records, compares two periods, and links each reported difference to its supporting records.
+
+**GPU acceleration with CUDA.** Comparing production runs is a computationally intensive optimal-transport problem, because each pair of runs is matched at component level. The engine includes a native CUDA solver that performs the full calculation in FP64 on the GPU. It uses cuBLAS for matrix operations, an exact transportation simplex executed on the device, and persistent multi-stream sessions that compare many runs against a common baseline concurrently. Abnormal-branch discovery is also GPU-accelerated, and OpenCL supports non-NVIDIA devices. Where no supported GPU is available, all analysis runs on the CPU under the same specified numerical tolerances.
 
 <br>
 
-## 🔍 The problem it answers
+## 🔍 The problem Cost Analysis Engine solves
 
-Cost Analysis Engine automates cost variance investigation, eliminating the need to manually and tediously trace through every production tier to isolate the root cause of a final report variance.
+When a product's costs rise and its margin falls, identifying the underlying causes requires finance and audit professionals to trace production relationships from finished goods through sub-assemblies and components to raw materials. At each level they must examine production activity for anomalies and reconcile production orders, material issues and cost records along every branch.
 
-When a product's unit cost rises between periods, standard reports show that it rose. An analyst is then typically required to manually determine **why**:
+This work is labour-intensive and typically falls within the periods of greatest time pressure: month-end close, management reporting and audit. Three factors account for most of the effort:
 
-- **Where** is the difference? Which materials and sub-assemblies carry it?
+| Factor | Effect on the analysis |
+| :-- | :-- |
+| **Fragmented data** | Sales, purchasing, production, issue and cost data are held in separate system exports and must be consolidated before analysis can begin. |
+| **Shared materials** | A single raw material is consumed by many products, so one price change affects many branches, each of which must be examined. |
+| **Cross-batch relationships** | Production runs consume the output of earlier batches, so the relevant evidence spans multiple orders and periods. |
 
-- **What** changed? The price, the quantity consumed, or the material itself?
+In addition, actual material issues frequently differ from the planned BOM. Without component-level matching, a material substitution can appear as an unexplained reduction in one cost and an unrelated increase in another.
 
-- **Which** production runs behaved differently, and which issue, output and cost records support that conclusion?
+A standard report shows *that* unit cost has changed. It does not establish:
 
-The engine answers these questions directly from recorded data while keeping every figure traceable to its source records.
+- **Where** the difference arises: which materials and sub-assemblies carry it.
+- **What** changed: the price, the quantity consumed, or the material itself.
+- **Which** production runs differ, and which issue, output and cost records support that conclusion.
+
+<br>
+
+## 🎯 The solution
+
+Cost Analysis Engine automates this analytical workflow. It integrates the business records, identifies the branches in which costs differ, reconstructs the production structures actually recorded, and compares them run by run. Changes in aggregate figures are attributed to specific production orders, materials and source documents, so that each explanation is supported by verifiable evidence.
+
+| Manual approach | Cost Analysis Engine |
+| :-- | :-- |
+| System exports are consolidated by hand | ERP exports are imported once; columns are recognised and original files are archived for audit |
+| Each BOM level is reviewed to locate the change | Abnormal cost branches are identified against user-defined thresholds |
+| Production is assumed to follow the planned BOM | Each production run is reconstructed from the issue, output and allocation records actually recorded |
+| Substitutions are missed or treated as unrelated changes | Runs are matched at component level, so a replaced material is identified as a replacement |
+| Figures are transcribed into management reports | Report placeholders are populated through validated, read-only queries |
+
+**Key characteristics:**
+
+- **Traceability.** Every reported figure can be traced to the source records from which it was derived.
+- **Numerical precision.** Monetary values are calculated with exact decimal arithmetic. Missing or incomplete evidence is reported explicitly and never estimated.
+- **Evidence-based AI.** A local language model may summarise findings in plain language, but all figures are produced by the backend's calculations.
+- **Data residency.** Embeddings and AI explanations run on locally hosted models; no external cloud service is required.
+- **Flexible execution.** All analysis runs on the CPU, with optional CUDA or OpenCL acceleration on supported GPUs.
+
+> **The web interface is being redesigned.** Actual production trees become too large and interconnected to be read effectively as node-and-link diagrams. The next version will therefore present branches, production trees and run-to-run matches as structured, sortable data tables.
+>
+> Cost Analysis Engine is currently a **research prototype**. Its analysis follows documented specifications and validation reports, but it is not yet represented as production-ready.
 
 <br>
 
@@ -88,19 +124,100 @@ flowchart TB
 
 Each uploaded spreadsheet is validated and stored unchanged in **MinIO**, so the original file is kept for audit. A background job then reads it from MinIO, detects the table boundaries, infers column types, maps the columns to the warehouse schema, and writes the records to **PostgreSQL**. Every import is tracked as a job with a clear status, from validation through storage and transformation to writing.
 
+> **Production structure reconstructed from material-issue records alone.** In the current version, production material-issue records that carry a production order number are sufficient to reconstruct the material structure actually used in production. A maintained BOM, routing data and FIFO batch assumptions are not required. Labour and overhead allocations can be added when they are available. Without them, trees are still built and their totals are clearly marked as material-only.
+
 ### ② Analysis
 
-You choose two periods and two thresholds. The backend then runs five stages in order and reports progress as each one finishes:
+You choose two periods, $t \in \{0, 1\}$, and two thresholds. The backend then runs five stages in order and reports progress as each one finishes. All money is held as exact decimals; the optimisation runs in FP64.
 
-| Stage | What happens |
-| :-- | :-- |
-| **Period graphs** | Builds one graph per period from the sales and inventory-usage records, from sold products down to purchased materials, using exact decimal costs. Materials that appear in only one period or lack comparable costs are listed as diagnostics. |
-| **Abnormal branches** | Compares the two graphs. Material cost differences above the leaf threshold are followed upwards until they reach a product or assembly above the stop threshold. The result is a set of abnormal paths back to the original records. |
-| **Production trees** | For the products on those paths, rebuilds each production run (production ID) as a tree from the issue, output and processing-allocation records actually recorded. It does not rely on the planned BOM or on FIFO assumptions, and it reports incomplete evidence explicitly. |
-| **Component embeddings** | Describes every component by its code, name, specification, supplier, cost and neighbours in the tree, then converts that description into a 384-dimensional vector with a **local** embedding model. |
-| **FGW comparison** | Compares every pair of production runs of the same product with balanced Fused Gromov-Wasserstein optimal transport. Components are matched by *what they are* (embeddings) and *where they sit* (tree structure), so a substituted material appears as a correspondence rather than as an unexplained gap. |
+#### 1 · Period graphs
 
-Branch discovery and FGW comparison run on the CPU by default and can use CUDA or OpenCL when a supported GPU is available. If no supported GPU is available, the backend falls back to the CPU and reports that it did.
+For each period, the sales and inventory-usage records are folded into a directed graph $G_t = (V_t, E_t)$ whose edges point from material to product. It is stored in **compressed sparse row (CSR)** form, so each traversal is a single $O(|V| + |E|)$ pass over two flat arrays. Each node $v$ carries its recorded cost $c_t(v)$. Materials that appear in only one period, or that lack comparable costs, are listed as diagnostics rather than dropped.
+
+#### 2 · Abnormal branches: thresholded upward frontier
+
+For each node present in both periods, the difference is encoded exactly in signed micro-units:
+
+```math
+\Delta(v) = c_1(v) - c_0(v), \qquad \Delta(v) \in 10^{-6}\,\mathbb{Z}
+```
+
+Leaves whose $|\Delta(\ell)| \ge \tau_{\text{leaf}}$ seed a frontier that propagates upwards. An ancestor becomes eligible once all of its participating children have arrived. It is **selected** as a branch boundary when $|\Delta(v)| \ge \tau_{\text{stop}}$; otherwise propagation continues. A selected node blocks its own ancestors, and child differences are never re-summed, so each reported path $\ell \to \dots \to v^\ast$ points to the lowest level at which the change becomes material.
+
+#### 3 · Production trees: two-pass reconstruction from issue records
+
+Every production order on an abnormal path, identified by the production order number on its issue records, is rebuilt as its own tree:
+
+1. **Top-down scope.** Walk from the product root to every terminal material and record the permitted nodes $S$, relationships $E$ and root-to-leaf paths.
+2. **Bottom-up evidence.** Query the actual issue records for those terminals and trace receivers upwards. A receiver is accepted only if it lies in $S$ through an edge in $E$. Anything else is kept as visible *excluded* evidence instead of being silently dropped.
+
+Node totals are then computed from what was recorded, never from the planned BOM:
+
+```math
+\operatorname{cost}(v) \;=\; \sum_{\text{issues} \to v} \text{material amount} \;+\; \sum_{(u,v)} \bigl(\text{labour}_{uv} + \text{overhead}_{uv}\bigr)
+```
+
+> [!WARNING]
+> **Current assumption: no cross-period work in progress.** Today every production order is assumed to be started and completed within the selected periods. Orders that are still in progress at a period boundary are not yet handled. The planned extension treats each minimal branch as its own window $w$ and closes it with the standard work-in-progress roll-forward:
+>
+> ```math
+> \text{completed}_w \;=\; \text{opening WIP}_w \;+\; \text{issued in period}_w \;-\; \text{closing WIP}_w
+> ```
+
+#### 4 · Component embeddings: context-aware semantics
+
+Each occurrence $v$ is described by a twelve-field canonical template $T(v)$: code, name, specification, supplier, category and unit cost, plus the codes, names and specifications of its direct upstream and downstream neighbours. The text is then encoded by a **local** sentence model:
+
+```math
+x_v = f_\theta\bigl(T(v)\bigr) \in \mathbb{R}^{384}
+```
+
+Identical inputs are deduplicated and cached, with the model revision, template version and a hash of the content as the key. Thousands of pairwise comparisons therefore reuse a small set of inference calls.
+
+#### 5 · FGW comparison: matching by attributes and structural position
+
+Two runs of the same product, with trees of $N$ and $M$ nodes, are compared with balanced **Fused Gromov–Wasserstein** optimal transport. The engine builds three inputs: an attribute cost $M_{ij} = \lVert x_i - y_j \rVert_2^2$, all-pairs shortest-path matrices $D_1$ and $D_2$ on the undirected trees, and uniform marginals $p = \tfrac{1}{N}\mathbf{1}$ and $q = \tfrac{1}{M}\mathbf{1}$. It then solves
+
+```math
+\min_{P \in \Pi(p,q)} \;(1-\alpha)\,\langle M, P\rangle \;+\; \alpha \sum_{i,k,j,l} \bigl(D_1[i,k] - D_2[j,l]\bigr)^2 P_{ij} P_{kl},
+\qquad
+\Pi(p,q) = \{P \ge 0 : P\mathbf{1} = p,\; P^{\top}\mathbf{1} = q\}
+```
+
+with $\alpha = 0.8$ by default. The quartic sum is never formed. For symmetric $D_1$ and $D_2$ it reduces to matrix products:
+
+```math
+H(P) = (D_1^{\odot 2}\, p)\,\mathbf{1}^{\top} + \mathbf{1}\,(D_2^{\odot 2}\, q)^{\top} - 2\, D_1 P D_2^{\top},
+\qquad
+\text{structure cost} = \langle H(P), P\rangle
+```
+
+**Frank–Wolfe** then iterates from $P_0 = pq^\top$:
+
+```math
+G = (1-\alpha) M + 2\alpha H(P), \qquad
+S = \arg\min_{S \in \Pi(p,q)} \langle G, S\rangle, \qquad
+P \leftarrow P + \gamma^\ast (S - P)
+```
+
+The linear step is solved **exactly** with a transportation simplex, with no entropic Sinkhorn smoothing and no forced one-to-one assignment, so that a substitution can be represented as a partial correspondence. Because the objective is quadratic along the search direction, $F(P + \gamma\Delta) = F(P) + b\gamma + a\gamma^2$, the optimal step $\gamma^\ast \in [0, 1]$ has a closed form. Iteration stops on a certified first-order condition:
+
+```math
+\text{gap} = \langle G, P - S\rangle \;\le\; \varepsilon_{\text{abs}} + \varepsilon_{\text{rel}} \max\bigl(|F(P)|, \varepsilon_{\text{floor}}\bigr)
+```
+
+The result is a soft correspondence between components. A substituted material, such as a standard topcoat replaced by a corrosion-resistant one, shows up as a **match** rather than as one unexplained loss and one unexplained gain. Each result also reports its material cost, structure cost, gap, iteration count and termination status separately.
+
+#### Execution paths
+
+| | CPU | CUDA (NVIDIA) | OpenCL |
+| :-- | :-- | :-- | :-- |
+| Abnormal branches | Java frontier | Native frontier kernel | Native frontier kernel |
+| FGW | Serial Java, FP64 | FP64 + cuBLAS batched GEMM, on-device exact simplex ( $N+M \le 320$ ), persistent multi-stream sessions | FP64, device simplex with persistent queues and buffers |
+
+The caller chooses the engine family, and the backend reports which backend actually ran each stage. CUDA never silently falls back to OpenCL, or vice versa, and any CPU fallback is reported with its reason. GPU execution has been tested on a single NVIDIA GPU, with both CUDA and the NVIDIA OpenCL runtime; AMD and Intel devices and Windows/WSL2 have not been tested yet.
+
+#### Explanations
 
 For a selected material, the backend first classifies the change from the evidence, for example as a unit-cost change. A **local** llama.cpp model can then write a short explanation of that classification. The model only explains; it never produces the numbers.
 
@@ -112,7 +229,7 @@ The analysis passes its reporting period to **Report Studio**. A DOCX report tem
 
 ## 🧪 Worked example
 
-This is the shared fixture used by the analysis acceptance tests ([fixture](docs/algorithms/Analysis_Fixture.md) · [acceptance requirements](docs/algorithms/Analysis_Workflow_Test_Case.md)). An industrial control enclosure, product **A**, is made from a steel assembly (**S1**) and a finishing assembly (**S2**). Ten units are produced in each period.
+The following example traces a single product end to end, using the shared fixture used by the analysis acceptance tests ([fixture](docs/algorithms/Analysis_Fixture.md) · [acceptance requirements](docs/algorithms/Analysis_Workflow_Test_Case.md)). An industrial control enclosure, product **A**, is made from a steel assembly (**S1**) and a finishing assembly (**S2**). Ten units are produced in each period.
 
 ```text
  August run (P0)                   September run (P1)
@@ -146,9 +263,6 @@ Each stage contributes part of this picture:
 | ② Production trees | Both runs rebuilt from issue, output and allocation records, with complete totals of 240 and 270 |
 | ③ FGW comparison | A component-by-component match; the test reports it against the expected pairing, including **R4 ⇄ R5**, so the topcoat change appears as a replacement |
 
-> [!IMPORTANT]
-> The engine reports these as **recorded differences**. It does not claim that the replacement was approved or that a price change was the cause.
-
 <br>
 
 ## 🧭 Main workflows
@@ -160,26 +274,6 @@ Each stage contributes part of this picture:
 | 🌳 | **Dual-BOM analysis** | Choose two periods and thresholds, find abnormal cost branches, and inspect the paths, production trees, comparisons and supporting records. |
 | 📝 | **Report Studio** | Fill management-report placeholders from validated, read-only queries and edit the document in ONLYOFFICE. |
 | ⚙️ | **Settings** | Configure the local llama.cpp connection, the report template, GPU preferences and the embedding model. |
-
-<br>
-
-## 📊 Capability status
-
-| Capability | CPU | GPU <sub>(optional)</sub> | Validation |
-| :-- | :-: | :-: | :-- |
-| Import, warehouse loading and raw-file storage | ✅ | — | Backend tests |
-| Period graphs and abnormal-branch discovery | ✅ | CUDA · OpenCL | [Branch tests](docs/algorithms/Abnormal_Branches_Test_Case.md), native device tests |
-| Production-tree reconstruction | ✅ | — | [20 / 20 requirements passed](docs/validation/production-tree-two-pass-2026-10-11/validation.md) |
-| Component embeddings | ✅ | CUDA | Numerical checks; semantic thresholds not yet calibrated |
-| FGW comparison <sub>(FP64)</sub> | ✅ | CUDA · OpenCL | [Independent CPU and POT checks](docs/validation/production-tree-two-pass-2026-10-11/fgw-validation.md) |
-| AI explanations | ◐ | — | Optional llama.cpp server; analysis runs without it |
-| Report Studio | ✅ | — | Backend tests |
-| Anomaly investigation assistant | 🧪 | — | Prototype API, disabled by default ([design](docs/algorithms/Anomaly_Investigation_RAG_Design.md)) |
-
-<sub>✅ available &nbsp;·&nbsp; ◐ needs an optional external service &nbsp;·&nbsp; 🧪 experimental &nbsp;·&nbsp; — not applicable</sub>
-
-> [!CAUTION]
-> GPU execution has been tested on a single NVIDIA GPU, using both CUDA and the NVIDIA OpenCL runtime. AMD and Intel OpenCL devices, and GPU execution under Windows or WSL2, have not been tested. Without a usable device, the backend reports acceleration as unavailable and runs on the CPU.
 
 <br>
 
@@ -203,20 +297,6 @@ Then open **<http://localhost:18080>**. The first build downloads images and dep
 | GPU acceleration | A supported device; see [DEPLOYMENT.md](DEPLOYMENT.md). All analysis runs on the CPU without it |
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the full deployment instructions, including the optional NVIDIA CUDA backend and the anomaly investigation assistant.
-
-<br>
-
-## 📚 Documentation
-
-| Topic | Documents |
-| :-- | :-- |
-| Analysis workflow | [Main analysis design](docs/algorithms/Main_Analysis_Design.md) |
-| FGW comparison | [Algorithm design](docs/algorithms/FGW_Algorithm_Design.md) · [Five-step implementation](docs/algorithms/FGW_Implementation_Five_Steps.md) · [Numerical test case](docs/algorithms/FGW_Test_Case.md) |
-| Production trees | [Construction rules](docs/algorithms/FGW_Build_Production_Trees.md) · [Test case](docs/algorithms/FGW_Build_Production_Trees_Test_Case.md) |
-| Validation reports | [Production trees](docs/validation/production-tree-two-pass-2026-10-11/validation.md) · [FGW numerics](docs/validation/production-tree-two-pass-2026-10-11/fgw-validation.md) |
-| Local AI explanations | [Local AI report](docs/LOCAL_AI_REPORT.md) |
-| Optional GPU libraries | [Native accelerator bindings](backend/src/main/resources/native/README.md) |
-| Deployment | [DEPLOYMENT.md](DEPLOYMENT.md) |
 
 <br>
 
@@ -262,7 +342,8 @@ Frontend unit tests run with Node.js 22 from `frontend/`, after `npm ci`: `node 
 
 ## 🗺️ Roadmap
 
-- [ ] Redesign the web interface. Screenshots will be added once it is complete.
+- [ ] Redesign the web interface around data tables for branches, production trees and run matches. Screenshots will be added once it is complete.
+- [ ] Support work in progress that spans periods by treating each minimal branch as a window: completed = opening WIP + issued in period − closing WIP.
 - [ ] Calibrate model-specific thresholds for the semantic quality of embedding-based matching.
 - [ ] Integrate the standalone CUDA graph-construction library (`cuda/`) with the backend.
 - [ ] Test acceleration on more devices and platforms.
