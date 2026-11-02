@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="432" viewBox="0 0 1200 432" role="img" aria-label="FGW correspondence between production runs P0 and P1: each component matches its counterpart, and the standard topcoat R4 matches the corrosion-resistant topcoat R5">
+<rect width="1200" height="432" rx="16" fill="#F6F8FA"/>
+<g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<rect x="28" y="14" width="344" height="404" rx="12" fill="#FFFFFF" stroke="#D1D9E0" stroke-width="1.5"/>
+<text x="46" y="40" font-size="15" font-weight="700" fill="#1F2328">P0 · August</text>
+<rect x="418" y="14" width="344" height="404" rx="12" fill="#FFFFFF" stroke="#D1D9E0" stroke-width="1.5"/>
+<text x="436" y="40" font-size="15" font-weight="700" fill="#1F2328">P1 · September</text>
+<path d="M136.0 208 C145.0 208 145.0 118 154.0 118" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M136.0 208 C145.0 208 145.0 298 154.0 298" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M246.0 118 C255.0 118 255.0 83 264.0 83" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M246.0 118 C255.0 118 255.0 153 264.0 153" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M246.0 298 C255.0 298 255.0 263 264.0 263" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M246.0 298 C255.0 298 255.0 333 264.0 333" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M654.0 208 C645.0 208 645.0 118 636.0 118" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M654.0 208 C645.0 208 645.0 298 636.0 298" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M544.0 118 C535.0 118 535.0 83 526.0 83" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M544.0 118 C535.0 118 535.0 153 526.0 153" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M544.0 298 C535.0 298 535.0 263 526.0 263" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M544.0 298 C535.0 298 535.0 333 526.0 333" fill="none" stroke="#D1D9E0" stroke-width="2"/>
+<path d="M136.0 208 H654.0" stroke="#8C959F" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M246.0 118 H544.0" stroke="#8C959F" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M246.0 298 H544.0" stroke="#8C959F" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M356.0 83 H434.0" stroke="#8C959F" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M356.0 153 H434.0" stroke="#8C959F" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M356.0 263 H434.0" stroke="#8C959F" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M356.0 333 H434.0" stroke="#D97706" stroke-width="2.5"/>
+<rect x="44.0" y="188.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="90" y="205" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">A</text>
+<text x="90" y="220" font-size="10.5" text-anchor="middle" fill="#59636E">Enclosure</text>
+<rect x="154.0" y="98.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="200" y="115" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">S1</text>
+<text x="200" y="130" font-size="10.5" text-anchor="middle" fill="#59636E">Steel assy</text>
+<rect x="154.0" y="278.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="200" y="295" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">S2</text>
+<text x="200" y="310" font-size="10.5" text-anchor="middle" fill="#59636E">Finishing</text>
+<rect x="264.0" y="63.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="310" y="80" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R1</text>
+<text x="310" y="95" font-size="10.5" text-anchor="middle" fill="#59636E">Steel sheet</text>
+<rect x="264.0" y="133.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="310" y="150" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R2</text>
+<text x="310" y="165" font-size="10.5" text-anchor="middle" fill="#59636E">Hex bolt</text>
+<rect x="264.0" y="243.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="310" y="260" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R3</text>
+<text x="310" y="275" font-size="10.5" text-anchor="middle" fill="#59636E">Primer</text>
+<rect x="264.0" y="313.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#D97706" stroke-width="1.5"/>
+<text x="310" y="330" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R4</text>
+<text x="310" y="345" font-size="10.5" text-anchor="middle" fill="#59636E">Std topcoat</text>
+<rect x="654.0" y="188.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="700" y="205" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">A</text>
+<text x="700" y="220" font-size="10.5" text-anchor="middle" fill="#59636E">Enclosure</text>
+<rect x="544.0" y="98.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="590" y="115" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">S1</text>
+<text x="590" y="130" font-size="10.5" text-anchor="middle" fill="#59636E">Steel assy</text>
+<rect x="544.0" y="278.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="590" y="295" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">S2</text>
+<text x="590" y="310" font-size="10.5" text-anchor="middle" fill="#59636E">Finishing</text>
+<rect x="434.0" y="63.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="480" y="80" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R1</text>
+<text x="480" y="95" font-size="10.5" text-anchor="middle" fill="#59636E">Steel sheet</text>
+<rect x="434.0" y="133.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="480" y="150" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R2</text>
+<text x="480" y="165" font-size="10.5" text-anchor="middle" fill="#59636E">Hex bolt</text>
+<rect x="434.0" y="243.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#8C959F" stroke-width="1.5"/>
+<text x="480" y="260" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R3</text>
+<text x="480" y="275" font-size="10.5" text-anchor="middle" fill="#59636E">Primer</text>
+<rect x="434.0" y="313.0" width="92" height="40" rx="8" fill="#F6F8FA" stroke="#D97706" stroke-width="1.5"/>
+<text x="480" y="330" font-size="13" font-weight="700" text-anchor="middle" fill="#1F2328">R5</text>
+<text x="480" y="345" font-size="10.5" text-anchor="middle" fill="#59636E">CR topcoat</text>
+<text x="1001.0" y="30" font-size="12" font-weight="700" text-anchor="middle" fill="#1F2328">P1 · September</text>
+<text x="796" y="223.0" font-size="12" font-weight="700" text-anchor="middle" fill="#1F2328" transform="rotate(-90 796 223.0)">P0 · August</text>
+<text x="863.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">A</text>
+<text x="909.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">S1</text>
+<text x="955.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">S2</text>
+<text x="1001.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">R1</text>
+<text x="1047.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">R2</text>
+<text x="1093.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">R3</text>
+<text x="1139.0" y="52" font-size="12" font-weight="600" text-anchor="middle" fill="#59636E">R5</text>
+<text x="828" y="89.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">A</text>
+<rect x="841" y="63" width="44" height="44" rx="4" fill="#ECF7F5"/>
+<circle cx="863.0" cy="79.0" r="5" fill="#1F2328"/>
+<text x="863.0" y="98.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.001</text>
+<rect x="887" y="63" width="44" height="44" rx="4" fill="#A6CECB"/>
+<rect x="933" y="63" width="44" height="44" rx="4" fill="#96C5C1"/>
+<rect x="979" y="63" width="44" height="44" rx="4" fill="#91C2BE"/>
+<rect x="1025" y="63" width="44" height="44" rx="4" fill="#65A8A2"/>
+<rect x="1071" y="63" width="44" height="44" rx="4" fill="#65A8A3"/>
+<rect x="1117" y="63" width="44" height="44" rx="4" fill="#5CA39D"/>
+<text x="828" y="135.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">S1</text>
+<rect x="841" y="109" width="44" height="44" rx="4" fill="#A6CECA"/>
+<rect x="887" y="109" width="44" height="44" rx="4" fill="#ECF7F5"/>
+<circle cx="909.0" cy="125.0" r="5" fill="#1F2328"/>
+<text x="909.0" y="144.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.000</text>
+<rect x="933" y="109" width="44" height="44" rx="4" fill="#5CA39D"/>
+<rect x="979" y="109" width="44" height="44" rx="4" fill="#A7CFCB"/>
+<rect x="1025" y="109" width="44" height="44" rx="4" fill="#B0D4D0"/>
+<rect x="1071" y="109" width="44" height="44" rx="4" fill="#157972"/>
+<rect x="1117" y="109" width="44" height="44" rx="4" fill="#208078"/>
+<text x="828" y="181.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">S2</text>
+<rect x="841" y="155" width="44" height="44" rx="4" fill="#A5CECA"/>
+<rect x="887" y="155" width="44" height="44" rx="4" fill="#57A09A"/>
+<rect x="933" y="155" width="44" height="44" rx="4" fill="#DBEDEA"/>
+<circle cx="955.0" cy="171.0" r="5" fill="#1F2328"/>
+<text x="955.0" y="190.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.053</text>
+<rect x="979" y="155" width="44" height="44" rx="4" fill="#3F928B"/>
+<rect x="1025" y="155" width="44" height="44" rx="4" fill="#157972"/>
+<rect x="1071" y="155" width="44" height="44" rx="4" fill="#AFD4D0"/>
+<rect x="1117" y="155" width="44" height="44" rx="4" fill="#92C2BE"/>
+<text x="828" y="227.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">R1</text>
+<rect x="841" y="201" width="44" height="44" rx="4" fill="#91C2BD"/>
+<rect x="887" y="201" width="44" height="44" rx="4" fill="#A8CFCB"/>
+<rect x="933" y="201" width="44" height="44" rx="4" fill="#338B84"/>
+<rect x="979" y="201" width="44" height="44" rx="4" fill="#ECF7F5"/>
+<circle cx="1001.0" cy="217.0" r="5" fill="#1F2328"/>
+<text x="1001.0" y="236.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.001</text>
+<rect x="1025" y="201" width="44" height="44" rx="4" fill="#85BBB6"/>
+<rect x="1071" y="201" width="44" height="44" rx="4" fill="#2D8780"/>
+<rect x="1117" y="201" width="44" height="44" rx="4" fill="#308982"/>
+<text x="828" y="273.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">R2</text>
+<rect x="841" y="247" width="44" height="44" rx="4" fill="#63A7A1"/>
+<rect x="887" y="247" width="44" height="44" rx="4" fill="#AFD4D0"/>
+<rect x="933" y="247" width="44" height="44" rx="4" fill="#0F766E"/>
+<rect x="979" y="247" width="44" height="44" rx="4" fill="#86BCB7"/>
+<rect x="1025" y="247" width="44" height="44" rx="4" fill="#ECF7F5"/>
+<circle cx="1047.0" cy="263.0" r="5" fill="#1F2328"/>
+<text x="1047.0" y="282.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.000</text>
+<rect x="1071" y="247" width="44" height="44" rx="4" fill="#10766E"/>
+<rect x="1117" y="247" width="44" height="44" rx="4" fill="#167A72"/>
+<text x="828" y="319.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">R3</text>
+<rect x="841" y="293" width="44" height="44" rx="4" fill="#65A8A3"/>
+<rect x="887" y="293" width="44" height="44" rx="4" fill="#167A72"/>
+<rect x="933" y="293" width="44" height="44" rx="4" fill="#91C2BD"/>
+<rect x="979" y="293" width="44" height="44" rx="4" fill="#2C877F"/>
+<rect x="1025" y="293" width="44" height="44" rx="4" fill="#10766E"/>
+<rect x="1071" y="293" width="44" height="44" rx="4" fill="#ECF7F5"/>
+<circle cx="1093.0" cy="309.0" r="5" fill="#1F2328"/>
+<text x="1093.0" y="328.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.000</text>
+<rect x="1117" y="293" width="44" height="44" rx="4" fill="#67A9A4"/>
+<text x="828" y="365.0" font-size="12" font-weight="600" text-anchor="end" fill="#59636E">R4</text>
+<rect x="841" y="339" width="44" height="44" rx="4" fill="#76B2AD"/>
+<rect x="887" y="339" width="44" height="44" rx="4" fill="#23827A"/>
+<rect x="933" y="339" width="44" height="44" rx="4" fill="#92C3BE"/>
+<rect x="979" y="339" width="44" height="44" rx="4" fill="#43948E"/>
+<rect x="1025" y="339" width="44" height="44" rx="4" fill="#177B73"/>
+<rect x="1071" y="339" width="44" height="44" rx="4" fill="#88BDB8"/>
+<rect x="1117" y="339" width="44" height="44" rx="4" fill="#C9E3E0"/>
+<circle cx="1139.0" cy="355.0" r="5" fill="#1F2328"/>
+<text x="1139.0" y="374.0" font-size="10.5" text-anchor="middle" fill="#1F2328">0.107</text>
+<rect x="1117" y="339" width="44" height="44" rx="4" fill="none" stroke="#D97706" stroke-width="2.5"/>
+<defs><linearGradient id="seq" x1="0" x2="1"><stop offset="0.0" stop-color="#ECF7F5"/><stop offset="0.25" stop-color="#B5D7D3"/><stop offset="0.5" stop-color="#7EB6B2"/><stop offset="0.75" stop-color="#469690"/><stop offset="1.0" stop-color="#0F766E"/></linearGradient></defs>
+<text x="840" y="415" font-size="11" fill="#59636E">0</text><rect x="852" y="406" width="110" height="10" rx="3" fill="url(#seq)"/><text x="968" y="415" font-size="11" fill="#59636E">0.67  attribute distance</text><circle cx="1108" cy="411" r="5" fill="#1F2328"/><text x="1119" y="415" font-size="11" fill="#59636E">mass 1/7</text>
+</g></svg>

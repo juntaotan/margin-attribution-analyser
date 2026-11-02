@@ -32,6 +32,13 @@ Cost Analysis Engine is a margin-attribution and variance-analysis application f
 
 **GPU acceleration with CUDA.** Comparing production runs is a computationally intensive optimal-transport problem, because each pair of runs is matched at component level. The engine includes a native CUDA solver that performs the full calculation in FP64 on the GPU. It uses cuBLAS for matrix operations, an exact transportation simplex executed on the device, and persistent multi-stream sessions that compare many runs against a common baseline concurrently. Abnormal-branch discovery is also GPU-accelerated, and OpenCL supports non-NVIDIA devices. Where no supported GPU is available, all analysis runs on the CPU under the same specified numerical tolerances.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cuda-benchmark-dark.svg">
+  <img src="docs/images/cuda-benchmark-light.svg" alt="CUDA versus serial Java CPU elapsed time for abnormal-branch propagation and FGW comparison" width="100%">
+</picture>
+
+<sub>Serial Java CPU vs CUDA, synthetic workloads on one workstation (Ryzen 7 9700X, RTX 5070 Ti): branch propagation over 10 million issue records; FGW over 79,800 all-pairs and 200,000 fixed-baseline comparisons. Gains depend on problem size.</sub>
+
 <br>
 
 ## 🔍 The problem Cost Analysis Engine solves
@@ -208,6 +215,13 @@ The linear step is solved **exactly** with a transportation simplex, with no ent
 
 The result is a soft correspondence between components. A substituted material, such as a standard topcoat replaced by a corrosion-resistant one, shows up as a **match** rather than as one unexplained loss and one unexplained gain. Each result also reports its material cost, structure cost, gap, iteration count and termination status separately.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/fgw-correspondence-dark.svg">
+  <img src="docs/images/fgw-correspondence-light.svg" alt="FGW correspondence between production runs P0 and P1, with the transport plan overlaid on the attribute-cost matrix" width="100%">
+</picture>
+
+<sub>Recorded result for the <a href="#-worked-example">worked example</a>: the transport plan P (dots) over the attribute-cost matrix M (shading). R4 is matched to R5.</sub>
+
 #### Execution paths
 
 | | CPU | CUDA (NVIDIA) | OpenCL |
@@ -342,11 +356,9 @@ Frontend unit tests run with Node.js 22 from `frontend/`, after `npm ci`: `node 
 
 ## 🗺️ Roadmap
 
-- [ ] Redesign the web interface around data tables for branches, production trees and run matches. Screenshots will be added once it is complete.
 - [ ] Support work in progress that spans periods by treating each minimal branch as a window: completed = opening WIP + issued in period − closing WIP.
-- [ ] Calibrate model-specific thresholds for the semantic quality of embedding-based matching.
-- [ ] Integrate the standalone CUDA graph-construction library (`cuda/`) with the backend.
-- [ ] Test acceleration on more devices and platforms.
+- [ ] Redesign the user interface. Large production trees become unreadable as graph drawings, so abnormal branches, production trees and run-to-run matches will be presented as structured, sortable data tables.
+- [ ] Develop the local AI investigation assistant. A locally hosted model will combine the backend's computed evidence with engineering change notices, quality records and past cases to produce cited investigation reports. Verified facts will be kept separate from hypotheses, and all data will stay on premises.
 
 <!-- Screenshot: add after the frontend redesign -->
 

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="270" viewBox="0 0 1200 270" role="img" aria-label="CUDA versus serial Java CPU elapsed time: branch propagation 15.3 ms versus 79.3 ms; all-pairs FGW 37.6 s versus 64.2 s; fixed-baseline FGW 69.9 s versus 159.8 s">
+<rect width="1200" height="270" rx="16" fill="#161B22"/>
+<g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<rect x="248" y="30" width="12" height="12" rx="3" fill="#484F58"/><text x="268" y="40" font-size="13" fill="#9198A1">Java CPU</text><rect x="358" y="30" width="12" height="12" rx="3" fill="#14B8A6"/><text x="378" y="40" font-size="13" fill="#9198A1">CUDA</text>
+<text x="236" y="96" font-size="15" font-weight="600" text-anchor="end" fill="#E6EDF3">Branch propagation</text>
+<path d="M248 70 H1004.0 Q1008.0 70 1008.0 74 V86 Q1008.0 90 1004.0 90 H248 Z" fill="#484F58"/>
+<text x="1016.0" y="85" font-size="12.5" fill="#9198A1">79.3 ms</text>
+<path d="M248 92 H390.2102541464337 Q394.2102541464337 92 394.2102541464337 96 V108 Q394.2102541464337 112 390.2102541464337 112 H248 Z" fill="#14B8A6"/>
+<text x="402.2102541464337" y="107" font-size="12.5" fill="#9198A1">15.3 ms</text>
+<text x="1160" y="99" font-size="24" font-weight="700" text-anchor="end" fill="#E6EDF3">5.2×</text>
+<text x="236" y="160" font-size="15" font-weight="600" text-anchor="end" fill="#E6EDF3">FGW, all pairs</text>
+<path d="M248 134 H1004.0 Q1008.0 134 1008.0 138 V150 Q1008.0 154 1004.0 154 H248 Z" fill="#484F58"/>
+<text x="1016.0" y="149" font-size="12.5" fill="#9198A1">64.2 s</text>
+<path d="M248 156 H688.7940448195849 Q692.7940448195849 156 692.7940448195849 160 V172 Q692.7940448195849 176 688.7940448195849 176 H248 Z" fill="#14B8A6"/>
+<text x="700.7940448195849" y="171" font-size="12.5" fill="#9198A1">37.6 s</text>
+<text x="1160" y="163" font-size="24" font-weight="700" text-anchor="end" fill="#E6EDF3">1.7×</text>
+<text x="236" y="224" font-size="15" font-weight="600" text-anchor="end" fill="#E6EDF3">FGW, fixed baseline</text>
+<path d="M248 198 H1004.0 Q1008.0 198 1008.0 202 V214 Q1008.0 218 1004.0 218 H248 Z" fill="#484F58"/>
+<text x="1016.0" y="213" font-size="12.5" fill="#9198A1">159.8 s</text>
+<path d="M248 220 H576.5145649902065 Q580.5145649902065 220 580.5145649902065 224 V236 Q580.5145649902065 240 576.5145649902065 240 H248 Z" fill="#14B8A6"/>
+<text x="588.5145649902065" y="235" font-size="12.5" fill="#9198A1">69.9 s</text>
+<text x="1160" y="227" font-size="24" font-weight="700" text-anchor="end" fill="#E6EDF3">2.3×</text>
+</g></svg>

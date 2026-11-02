@@ -32,6 +32,13 @@ Cost Analysis Engine 是一款面向制造业财务、审计和数据分析人�
 
 **基于 CUDA 的 GPU 加速。** 生产批次比较是一个计算密集型的最优传输问题，因为每一对批次都需要在组件层面进行匹配。本引擎内置原生 CUDA 求解器，以 FP64 精度在 GPU 上完成全部计算：矩阵运算使用 cuBLAS，精确运输单纯形法在设备端执行，持久化多流会话可将大量批次与同一基准批次并发比较。异常分支发现同样支持 GPU 加速，非 NVIDIA 设备可使用 OpenCL。在没有受支持 GPU 的环境中，所有分析均可在 CPU 上运行，并遵循相同的数值容差规定。
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cuda-benchmark-dark.svg">
+  <img src="docs/images/cuda-benchmark-light.svg" alt="CUDA 与串行 Java CPU 在异常分支传播和 FGW 比较上的耗时对比" width="100%">
+</picture>
+
+<sub>串行 Java CPU 与 CUDA 对比，单台工作站（Ryzen 7 9700X、RTX 5070 Ti）上的合成负载：分支传播覆盖 1,000 万条领料记录；FGW 分别为 79,800 次两两比较和 200,000 次固定基准比较。加速效果取决于问题规模。</sub>
+
 <br>
 
 ## 🔍 本项目解决的问题
@@ -205,6 +212,13 @@ P \leftarrow P + \gamma^\ast (S - P)
 
 结果是组件之间的软对应关系。被替代的物料（例如普通面漆换成耐腐蚀面漆）会显示为一个**匹配**，而不是一项无法解释的减少加一项无法解释的增加。每个结果还会分别报告材料代价、结构代价、Frank–Wolfe 间隙、迭代次数和终止状态。
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/fgw-correspondence-dark.svg">
+  <img src="docs/images/fgw-correspondence-light.svg" alt="生产批次 P0 与 P1 之间的 FGW 对应关系，以及叠加在属性代价矩阵上的运输计划" width="100%">
+</picture>
+
+<sub><a href="#-示例分析">示例分析</a>的实际运行结果：圆点为运输计划 P，底色为属性代价矩阵 M。R4 与 R5 相互匹配。</sub>
+
 #### 执行路径
 
 | | CPU | CUDA（NVIDIA） | OpenCL |
@@ -339,11 +353,9 @@ docker build --target build -t margin-frontend-check -f frontend/Dockerfile fron
 
 ## 🗺️ 路线图
 
-- [ ] 围绕数据表重新设计网页界面，用于展示异常分支、生产树和批次匹配结果。完成后将补充截图。
 - [ ] 支持跨期在产品：将每一个最小分支视为一个窗口，按“本期完工 = 期初在产品 + 本期领料 − 期末在产品”进行平衡。
-- [ ] 为基于嵌入向量的匹配校准与模型相关的语义质量阈值。
-- [ ] 将独立的 CUDA 图构建库（`cuda/`）集成到后端。
-- [ ] 在更多设备和平台上测试加速功能。
+- [ ] 重塑用户界面设计。规模较大的生产树以图形方式展示时难以阅读，因此将改用结构化、可排序的数据表展示异常分支、生产树和批次间的匹配结果。
+- [ ] 开发本地 AI 调查助手。本地部署的模型将结合后端计算得出的证据与工程变更通知、质量记录和历史案例，生成附带引用来源的调查报告。已核实的事实与推测性假设将严格区分，所有数据均保留在本地。
 
 <!-- Screenshot: add after the frontend redesign -->
 
