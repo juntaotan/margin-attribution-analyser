@@ -36,58 +36,69 @@ try {
   await page.goto(process.env.MARGINTRACE_FRONTEND_URL || 'http://127.0.0.1:5173');
   await page.locator('summary').filter({ hasText: 'Data interpretation' }).click();
   await page.getByLabel('Warehouse currency').fill('NZD'); await page.getByLabel('Warehouse cost scope').fill('Recorded valuation');
-  const actual = page.locator('[aria-label^="Actual "][aria-label$=" graph"]');
-  const comparable = page.locator('[aria-label^="Comparable "][aria-label$=" graph"]');
-  const ready = () => page.getByText('Preparing bounded graph…', { exact: true }).waitFor({ state: 'hidden' });
-  const keys = pane => pane.locator('.react-flow__node:not([data-id^="column:"])').evaluateAll(nodes => nodes.map(node => node.dataset.id).sort());
-  const transforms = pane => pane.locator('.react-flow__node').evaluateAll(nodes => Object.fromEntries(nodes.map(node => [node.dataset.id, node.style.transform])));
-  const activate = async (pane, id) => {
-    const node = pane.locator(`[data-id="${id}"]`); await node.waitFor({ state: 'visible' }); await node.focus();
-    await page.waitForFunction(expected => document.activeElement?.getAttribute('data-id') === expected, id);
-    await page.keyboard.press('Enter'); await ready();
-  };
-  const expectKeys = async expected => { for (const pane of [actual, comparable]) assert.deepEqual(await keys(pane), [...expected].sort()); };
-  const aligned = async () => assert.deepEqual(await transforms(actual), await transforms(comparable));
-  const initial = ['cogs', 'cogs/A', 'cogs/A#bridge', 'cogs/A#bridge/C', 'cogs/A#bridge/C/D', 'cogs/A#bridge/C/D/E', 'cogs/A#bridge/C/D/E/F', 'cogs/A#bridge/C#rest', 'cogs#abnormal', 'cogs#normal'];
+  const table = page.getByRole('treegrid', { name: 'Dual-BOM comparison table' });
+  const ready = () => page.getByText('Preparing bounded table…', { exact: true }).waitFor({ state: 'hidden' });
+  const rows = () => table.locator('tbody tr').evaluateAll(list => list.map(row => row.dataset.key));
+  const row = key => table.locator(`tbody tr[data-key="${key}"]`);
+  const cells = async key => (await row(key).locator('td').allInnerTexts()).map(text => text.trim().replace(/\s+/g, ' '));
+  const press = async (key, button) => { await row(key).focus(); await page.keyboard.press(button); await ready(); };
+  const initial = ['cogs', 'cogs/A', 'cogs#abnormal', 'cogs#normal'];
+  const openedA = ['cogs', 'cogs/A', 'cogs/A#bridge', 'cogs/A#bridge/C', 'cogs/A#bridge/C/D', 'cogs/A#bridge/C/D/E', 'cogs/A#bridge/C/D/E/F', 'cogs/A#bridge/C#rest', 'cogs#abnormal', 'cogs#normal'];
 
-  await page.getByRole('button', { name: /Run Analysis/i }).click(); await ready();
-  await actual.locator('[data-id="cogs/A"]').waitFor();
-  await expectKeys(initial); await aligned();
-  // Columns: COGS, product, fold, abnormal C, D, E; F aligns in the material-terminal column.
-  const x = async id => Number((await actual.locator(`[data-id="${id}"]`).evaluate(node => node.style.transform)).match(/translate\(([-\d.]+)px/)[1]);
-  assert.ok(await x('cogs') < await x('cogs/A') && await x('cogs/A') < await x('cogs/A#bridge/C'));
-  assert.equal(await x('cogs/A#bridge/C/D'), await x('cogs/A#bridge/C#rest') - (230 - 170) / 2, 'folds are centred in the same column');
-  for (const label of ['Cost of Goods Sold', 'Products', 'Material terminals']) await actual.locator('.react-flow__node[data-id^="column:"]').getByText(label, { exact: true }).waitFor();
+  await page.getByRole('button', { name: /Run Analysis/i }).click(); await ready(); await row('cogs/A').waitFor();
+  // Default view: every product row is closed; column groups read comparable, actual, difference.
+  assert.deepEqual(await rows(), initial);
+  assert.equal(await row('cogs/A').getAttribute('aria-expanded'), 'false');
+  assert.deepEqual((await table.locator('thead tr').first().locator('th').allInnerTexts()).map(text => text.trim()),
+    ['Item', 'Comparable 2026-01-01 to 2026-01-31', 'Actual 2026-01-01 to 2026-01-31', 'Difference (actual − comparable)']);
+  assert.deepEqual(await cells('cogs/A'), ['A', '1', '300', '300', '1', '900', '900', '600', '600']);
   await page.getByText('1 of 2 products · cover 600 of 610 NZD (98.3%) · ΔCOGS 610', { exact: true }).waitFor();
   if (process.env.DISPLAY_SCREENSHOT) await page.screenshot({ path: process.env.DISPLAY_SCREENSHOT.replace('.png', '-initial.png') });
 
-  // The bridge expands in place in both panes; each period exposes its own intermediate node.
-  await activate(comparable, 'cogs/A#bridge');
-  await expectKeys(['cogs', 'cogs/A', 'cogs/A/B', 'cogs/A/X', 'cogs/A/B/C', 'cogs/A/B/C/D', 'cogs/A/B/C/D/E', 'cogs/A/B/C/D/E/F', 'cogs/A/B/C#rest',
-    'cogs/A/X/C', 'cogs/A/X/C/D', 'cogs/A/X/C/D/E', 'cogs/A/X/C/D/E/F', 'cogs/A/X/C#rest', 'cogs#abnormal', 'cogs#normal']);
-  await aligned();
-  await actual.locator('[data-id="cogs/A/X"]').getByText('Not recorded in this period', { exact: true }).waitFor();
-  await comparable.locator('[data-id="cogs/A/B"]').getByText('Not recorded in this period', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Undo expansion', exact: true }).click(); await ready(); await expectKeys(initial);
+  // Opening a product shows its compressed children in tree order, indented by level.
+  await press('cogs/A', 'ArrowRight');
+  assert.deepEqual(await rows(), openedA);
+  assert.equal(await row('cogs/A#bridge/C/D/E/F').getAttribute('aria-level'), '7');
+  assert.match((await cells('cogs/A#bridge/C/D'))[7], /^0 in parent 30$/);
+  if (process.env.DISPLAY_SCREENSHOT) await page.screenshot({ path: process.env.DISPLAY_SCREENSHOT.replace('.png', '-opened.png') });
+  // The bridge expands in place; each period's intermediate node has its own row, unrecorded in the other period.
+  await press('cogs/A#bridge', 'Enter');
+  assert.deepEqual((await rows()).slice(0, 4), ['cogs', 'cogs/A', 'cogs/A/B', 'cogs/A/B/C']);
+  assert.ok((await rows()).includes('cogs/A/X'));
+  assert.deepEqual((await cells('cogs/A/B')).slice(1, 3), ['Not recorded in this period', '1']);
+  assert.deepEqual((await cells('cogs/A/X')).slice(1, 5), ['1', '10', '10', 'Not recorded in this period']);
+  await page.getByRole('button', { name: 'Undo expansion', exact: true }).click(); await ready(); assert.deepEqual(await rows(), openedA);
+  await press('cogs/A#bridge/C#rest', 'Enter'); assert.ok((await rows()).includes('cogs/A#bridge/C/G'));
+  await press('cogs/A', 'ArrowLeft'); assert.deepEqual(await rows(), initial);
 
-  // Remainder folds and the Normal box expand in place; selection does not move nodes.
-  await activate(actual, 'cogs/A#bridge/C#rest');
-  assert.ok((await keys(actual)).includes('cogs/A#bridge/C/G'));
-  await activate(actual, 'cogs#normal'); assert.ok((await keys(comparable)).includes('cogs/J'));
-  const before = await transforms(actual); await activate(actual, 'cogs/A'); assert.deepEqual(await transforms(actual), before);
-  await page.getByRole('button', { name: 'Production evidence: A', exact: true }).waitFor();
-  // Panes share one viewport.
-  await actual.locator('.react-flow__controls-zoomin').click();
-  const viewport = pane => pane.locator('.react-flow__viewport').evaluate(node => node.style.transform);
-  await page.waitForFunction(() => { const [a, b] = document.querySelectorAll('.react-flow__viewport'); return a.style.transform === b.style.transform; });
-  assert.equal(await viewport(actual), await viewport(comparable));
-  await page.getByRole('button', { name: 'Collapse all', exact: true }).click(); await ready(); await expectKeys(initial);
+  // Clicking a product opens its aligned tree graphs, rooted at the product.
+  await row('cogs/A').click();
+  const dialog = page.getByRole('dialog', { name: 'Product tree · A' }); await dialog.waitFor();
+  const actual = dialog.locator('[aria-label^="Actual "][aria-label$=" graph"]');
+  const comparable = dialog.locator('[aria-label^="Comparable "][aria-label$=" graph"]');
+  const graphReady = () => dialog.getByText('Preparing product tree…', { exact: true }).waitFor({ state: 'hidden' });
+  const keys = pane => pane.locator('.react-flow__node:not([data-id^="column:"])').evaluateAll(nodes => nodes.map(node => node.dataset.id).sort());
+  const transforms = pane => pane.locator('.react-flow__node').evaluateAll(nodes => Object.fromEntries(nodes.map(node => [node.dataset.id, node.style.transform])));
+  await graphReady(); await actual.locator('[data-id="cogs/A"]').waitFor();
+  const tree = openedA.filter(key => key.startsWith('cogs/A')).sort();
+  for (const pane of [actual, comparable]) assert.deepEqual(await keys(pane), tree);
+  assert.deepEqual(await transforms(actual), await transforms(comparable));
+  for (const label of ['Products', 'Material terminals']) await actual.locator('.react-flow__node[data-id^="column:"]').getByText(label, { exact: true }).waitFor();
+  const bridge = actual.locator('[data-id="cogs/A#bridge"]'); await bridge.focus(); await page.keyboard.press('Enter'); await graphReady();
+  assert.ok((await keys(comparable)).includes('cogs/A/X') && (await keys(actual)).includes('cogs/A/B'));
+  assert.deepEqual(await transforms(actual), await transforms(comparable));
+  await dialog.getByRole('button', { name: 'Production evidence: A', exact: true }).waitFor();
+  // Let the 180 ms modal entrance animation finish before capturing.
+  if (process.env.DISPLAY_SCREENSHOT) { await page.waitForTimeout(400); await page.screenshot({ path: process.env.DISPLAY_SCREENSHOT.replace('.png', '-product.png') }); }
+  await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'detached' });
+  assert.deepEqual(await rows(), initial, 'the table keeps its state while the tree is shown');
+
   assert.deepEqual(await page.getByLabel('Initial COGS difference coverage').locator('option').allTextContents(), ['20%', '40%', '50%', '60%', '80%', '100%']);
   assert.equal(await page.getByLabel('Initial COGS difference coverage').inputValue(), '50');
   await page.getByLabel('Initial COGS difference coverage').selectOption('100'); await ready();
-  assert.ok((await keys(actual)).includes('cogs/J'));
+  assert.ok((await rows()).includes('cogs/J'));
   await page.getByRole('button', { name: 'Settings & Parameters' }).click(); await page.getByRole('button', { name: /Dual-BOM Analysis/ }).click();
-  assert.ok((await keys(actual)).includes('cogs/J')); assert.equal(requests, 1);
+  assert.ok((await rows()).includes('cogs/J')); assert.equal(requests, 1);
 
   // 25,000 materials under one product: bounded rendering and paged remainder.
   const count = 25_000; const large = ['__COGS__', 'P', ...Array.from({ length: count }, (_, i) => `M${i}`)];
@@ -95,12 +106,13 @@ try {
   outcome.actual = snapshot(large, largeUses, [['P', '20']]); outcome.comparable = snapshot(large, largeUses, [['P', '10']]);
   outcome.branches = Array.from({ length: count }, (_, i) => ({ positions: [i + 2, 1], edges: [], endReason: 'THRESHOLD_EXCEEDED', endingCostDifference: `${i + 1}.000001` }));
   const start = performance.now(); await page.getByRole('button', { name: /Run Analysis/i }).click();
-  await page.locator('section[data-analysis-id="tree-fixture-2"]').waitFor(); await ready(); await actual.locator('[data-id="cogs/P"]').waitFor();
+  await page.locator('section[data-analysis-id="tree-fixture-2"]').waitFor(); await ready(); await row('cogs/P').waitFor();
   const renderMs = performance.now() - start;
-  assert.ok((await keys(actual)).length <= 12, 'COGS, product, five anomalies, one remainder and two boxes');
-  const fold = actual.locator('[data-id="cogs/P#rest"]'); await fold.getByText(`+${count - 5}`, { exact: true }).waitFor();
-  await activate(actual, 'cogs/P#rest'); await fold.getByText(`+${count - 5 - 20}`, { exact: true }).waitFor(); await aligned();
+  await press('cogs/P', 'ArrowRight');
+  assert.ok((await rows()).length <= 10, 'COGS, product, five anomalies, one remainder and two boxes');
+  await row('cogs/P#rest').getByText(`+${count - 5}`, { exact: true }).waitFor();
+  await press('cogs/P#rest', 'Enter'); await row('cogs/P#rest').getByText(`+${count - 5 - 20}`, { exact: true }).waitFor();
   assert.equal(requests, 2); assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ status: 'PASS', initialCompression: 'PASS', columnsAndRowsAligned: 'PASS', inPlaceExpansion: 'PASS', periodIntermediates: 'PASS',
-    sharedViewport: 'PASS', coverage: 'PASS', residentNavigation: 'PASS', largeFixtureNodes: count + 2, renderMs: Math.round(renderMs), requests, pageErrors: errors.length }));
+  console.log(JSON.stringify({ status: 'PASS', productsClosedByDefault: 'PASS', columnGroups: 'PASS', totalAndUnitDifference: 'PASS', inPlaceExpansion: 'PASS',
+    periodIntermediates: 'PASS', productTreeGraph: 'PASS', coverage: 'PASS', residentNavigation: 'PASS', largeFixtureNodes: count + 2, renderMs: Math.round(renderMs), requests, pageErrors: errors.length }));
 } finally { await browser.close(); }

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { AnalysisHeader } from './AnalysisHeader';
 import { ScopeControlsBar } from './ScopeControlsBar';
-import { DualBomTreeCanvas } from './DualBomTreeCanvas';
+import { DualBomTreeTable } from './DualBomTreeTable';
 import { AuditSidebar } from './AuditSidebar';
 import { ProductComparisonModal } from './ProductComparisonModal';
 import { AnalysisProgressBar } from './AnalysisProgressBar';
@@ -123,7 +123,7 @@ export const DualBomAnalysisPage: React.FC<{ active?: boolean; onStatusChange?: 
   const scope = `${periodFrom}|${periodTo}|${comparablePeriodFrom}|${comparablePeriodTo}|${leafThreshold}|${threshold}`;
   const options = `${interpretation.currency}|${interpretation.costScope}|${interpretation.complete}|${interpretation.repeated}`;
 
-  // Defer new canvas creation until visible; existing canvases retain their viewport while hidden.
+  // Defer new table creation until visible; an existing table retains its expansion state while hidden.
   useEffect(() => {
     if (active) setVisibleOutcome(display);
   }, [active, display]);
@@ -206,7 +206,7 @@ export const DualBomAnalysisPage: React.FC<{ active?: boolean; onStatusChange?: 
       <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col lg:flex-row">
         <div className="flex-1 min-w-0 min-h-[400px] lg:min-h-0 flex flex-col result-enter relative">
           {visibleOutcome ? (
-            <DualBomTreeCanvas
+            <DualBomTreeTable
               key={visibleOutcome.analysisId}
               outcome={visibleOutcome}
               comparisonAvailable={!!outcome}
@@ -289,7 +289,7 @@ const EvidenceInspectorButton: React.FC<{ inventoryId?: string; onOpen: () => vo
   <button
     type="button"
     onClick={onOpen}
-    className="absolute right-0 top-12 z-20 flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-l-md border-l border-t border-b border-slate-300 shadow-md transition-all hover:pr-3.5 group cursor-pointer"
+    className="absolute right-0 bottom-6 z-20 flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-l-md border-l border-t border-b border-slate-300 shadow-md transition-all hover:pr-3.5 group cursor-pointer"
     title="Open Evidence Inspector drawer"
     aria-label="Open Evidence Inspector drawer"
   >

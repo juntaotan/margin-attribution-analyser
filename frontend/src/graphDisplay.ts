@@ -22,11 +22,17 @@ export interface DisplayInput {
 }
 /** Which period a pane shows. */
 export type Period = 'actual' | 'comparable';
-/** Recorded values of one display node in one period; `linked` is false when the drawn parent relationship is not recorded there. */
+/**
+ * Values of one display node in one period; `linked` is false when the drawn parent relationship is not recorded
+ * there. Products carry their summed sales quantity and cost, the basis of ΔCOGS; other nodes carry their recorded
+ * CSR quantity and cost. `unitCost` is cost divided by quantity, rounded half away from zero to six decimal places,
+ * and is null when either value is unavailable, the quantity is zero, or the node is the COGS root.
+ */
 export interface PeriodValue {
   position: number;
-  quantity: string;
+  quantity: string | null;
   cost: string | null;
+  unitCost: string | null;
   linked: boolean;
 }
 /**
@@ -45,6 +51,8 @@ export interface DisplayItem {
   boundary?: { difference: string; count: number };
   /** Actual minus comparable: sales cost for COGS and products, recorded node cost for other items. */
   delta?: string | null;
+  /** Actual minus comparable unit cost, from the rounded unit costs of both periods. */
+  unitDelta?: string | null;
   /** Actual minus comparable issue amount consumed by the drawn parent. */
   parentDelta?: string | null;
   shared?: number;
@@ -52,7 +60,12 @@ export interface DisplayItem {
   comparable?: PeriodValue;
   column: number;
   row: number;
+  /** Display depth below the root, in tree order; unlike `column`, terminals are not moved to the last column. */
+  depth: number;
+  /** Key that expands this fold or, for a product row in the full view, opens its children. */
   expandKey?: string;
+  /** Whether a product row's children are open; absent for rows that cannot be opened. */
+  open?: boolean;
 }
 /** A display edge, and whether it is recorded in each period. */
 export interface DisplayEdge {
@@ -63,10 +76,15 @@ export interface DisplayEdge {
   actual: boolean;
   comparable: boolean;
 }
-/** `expanded` maps a fold key to its opened page count; a bridge opens with one page. */
+/**
+ * `expanded` maps a fold key to its opened page count; a bridge opens with one page, and a product's `#open` key
+ * shows its children. With `product`, the projection is rooted at that product with its children open, and the
+ * coverage selection and product groups are omitted.
+ */
 export interface DisplayQuery {
   coverage: number;
   expanded: Record<string, number>;
+  product?: string;
 }
 /** Coverage, size and warnings of one projection; decimal amounts are exact text. */
 export interface DisplayStats {
@@ -84,7 +102,7 @@ export interface DisplayStats {
   budgetReached: boolean;
   diagnostics: string[];
 }
-/** A laid-out projection of the display tree. */
+/** A laid-out projection of the display tree; `items` are in tree order, each parent before its children. */
 export interface DisplayResult {
   items: DisplayItem[];
   edges: DisplayEdge[];
@@ -123,6 +141,15 @@ export function formatMicro(value: bigint): string {
   return `${sign}${magnitude / 1_000_000n}${fraction ? `.${fraction}` : ''}`;
 }
 const abs = (value: bigint) => (value < 0n ? -value : value);
+/** Divides exact micro-unit amounts, rounding half away from zero to six decimal places; null for a zero divisor. */
+export function unitMicro(cost: bigint, quantity: bigint): bigint | null {
+  if (quantity === 0n) return null;
+  const numerator = cost * 1_000_000n;
+  const quotient = numerator / quantity;
+  const remainder = abs(numerator % quantity);
+  if (2n * remainder < abs(quantity)) return quotient;
+  return (numerator < 0n) === (quantity < 0n) ? quotient + 1n : quotient - 1n;
+}
 /** Sum recorded amounts by key; one unavailable amount makes that key unavailable rather than zero. */
 function sumBy<T>(rows: T[], key: (row: T) => string | null, amount: (row: T) => string | null, diagnostics: string[]) {
   const sums = new Map<string, bigint | null>();
@@ -175,7 +202,7 @@ const fold = (
   abnormal: boolean,
   expandKey?: string,
 ): Tree => ({
-  item: { key, kind, label, note, abnormal, expandKey, column: 0, row: 0 },
+  item: { key, kind, label, note, abnormal, expandKey, column: 0, row: 0, depth: 0 },
   children: [],
   folded: true,
 });
@@ -233,6 +260,7 @@ function layoutTree(root: Tree) {
   let depth = 0;
   const place = (tree: Tree, column: number): number => {
     tree.item.column = column;
+    tree.item.depth = column;
     depth = Math.max(depth, column);
     items.push(tree.item);
     if (!tree.children.length) return (tree.item.row = rows++);
@@ -275,6 +303,8 @@ export class GraphDisplayIndex {
   /** Largest supplied abnormal amount on the node or below it; -1 means no evidence. */
   private score: bigint[];
   private productDelta = new Map<number, bigint | null>();
+  /** Summed sales cost and quantity by product ID in each period; null means unavailable. */
+  private sales!: Record<Period, { cost: Map<string, bigint | null>; quantity: Map<string, bigint | null> }>;
   private issueDelta: (parent: number, child: number) => bigint | null;
   private nodeDelta: (bigint | null)[];
   private cogs?: number;
@@ -392,17 +422,19 @@ export class GraphDisplayIndex {
       .reduce((sum, [, evidence]) => sum + evidence.count, 0);
   }
 
-  /** Records each product's sales-cost difference and returns the total COGS difference. */
+  /** Records each product's sales cost and quantity, and its cost difference; returns the total COGS difference. */
   private recordSalesDeltas(input: DisplayInput): bigint | null {
-    const sales = (snapshot: DisplaySnapshot) =>
-      sumBy(
-        snapshot.records.sales,
-        (sale) => sale.productId,
-        (sale) => sale.cost,
-        this.diagnostics,
-      );
-    const actualSales = sales(input.actual);
-    const comparableSales = sales(input.comparable);
+    const sales = (snapshot: DisplaySnapshot, amount: (sale: DisplaySnapshot['records']['sales'][number]) => string) =>
+      sumBy(snapshot.records.sales, (sale) => sale.productId, amount, this.diagnostics);
+    this.sales = {
+      actual: { cost: sales(input.actual, (sale) => sale.cost), quantity: sales(input.actual, (sale) => sale.quantity) },
+      comparable: {
+        cost: sales(input.comparable, (sale) => sale.cost),
+        quantity: sales(input.comparable, (sale) => sale.quantity),
+      },
+    };
+    const actualSales = this.sales.actual.cost;
+    const comparableSales = this.sales.comparable.cost;
     for (const product of this.products())
       this.productDelta.set(product, difference(actualSales, comparableSales, this.ids[product]));
     const total = (sums: Map<string, bigint | null>) =>
@@ -446,15 +478,42 @@ export class GraphDisplayIndex {
   private products() {
     return this.cogs == null ? [] : this.children[this.cogs];
   }
+  /** Parses a recorded decimal, reporting an unparseable value as a diagnostic and returning null. */
+  private parse(value: string | null): bigint | null {
+    if (value == null) return null;
+    try {
+      return microUnits(value);
+    } catch (error) {
+      // Queries repeat this parsing; record each message once.
+      const message = (error as Error).message;
+      if (!this.diagnostics.includes(message)) this.diagnostics.push(message);
+      return null;
+    }
+  }
   private value(period: Period, node: number, parent?: number): PeriodValue | undefined {
     const { position, snapshot, edges } = this.periods[period];
     const at = position[node];
     if (at < 0) return undefined;
     const recorded = snapshot.graph.nodes[at];
+    let quantity: string | null = recorded.quantity;
+    let cost = recorded.cost;
+    if (parent != null && parent === this.cogs) {
+      // A product absent from this period's sales contributes zero, as in ΔCOGS.
+      const sum = (sums: Map<string, bigint | null>) => {
+        const value = sums.get(this.ids[node]);
+        return value === null ? null : formatMicro(value ?? 0n);
+      };
+      quantity = sum(this.sales[period].quantity);
+      cost = sum(this.sales[period].cost);
+    }
+    const costMicro = node === this.cogs ? null : this.parse(cost);
+    const quantityMicro = costMicro == null ? null : this.parse(quantity);
+    const unit = costMicro == null || quantityMicro == null ? null : unitMicro(costMicro, quantityMicro);
     return {
       position: at,
-      quantity: recorded.quantity,
-      cost: recorded.cost,
+      quantity,
+      cost,
+      unitCost: unit == null ? null : formatMicro(unit),
       linked: parent == null || edges.has(parent * this.ids.length + node),
     };
   }
@@ -483,14 +542,23 @@ export class GraphDisplayIndex {
       .sort((a, b) => byMagnitude(a.delta, b.delta) || this.ids[a.product].localeCompare(this.ids[b.product]));
     const { selected, total, covered } = selectCoverage(ranked, query.coverage);
 
-    const root = this.rootTree();
     const path = new Set(this.cogs == null ? [] : [this.cogs]);
-    for (const product of selected)
-      if (this.take(projection))
-        root.children.push(
-          this.render(projection, product, childKey('cogs', this.ids[product]), path, this.cogs, false),
-        );
-    this.addProductGroups(projection, root, ranked, path);
+    let root: Tree;
+    if (query.product != null) {
+      const product = this.index.get(query.product);
+      if (product == null || !this.products().includes(product))
+        throw new Error(`Product ${query.product} is not recorded under Cost of Goods Sold.`);
+      this.take(projection);
+      root = this.render(projection, product, childKey('cogs', query.product), path, this.cogs, false);
+    } else {
+      root = this.rootTree();
+      for (const product of selected)
+        if (this.take(projection))
+          root.children.push(
+            this.render(projection, product, childKey('cogs', this.ids[product]), path, this.cogs, false),
+          );
+      this.addProductGroups(projection, root, ranked, path);
+    }
 
     const diagnostics = [...new Set(this.diagnostics)];
     return {
@@ -525,6 +593,12 @@ export class GraphDisplayIndex {
   }
 
   private nodeItem(node: number, key: string, parent?: number): DisplayItem {
+    const actual = this.value('actual', node, parent);
+    const comparable = this.value('comparable', node, parent);
+    const unitDelta =
+      actual?.unitCost == null || comparable?.unitCost == null
+        ? null
+        : formatMicro(microUnits(actual.unitCost) - microUnits(comparable.unitCost));
     return {
       key,
       kind: 'node',
@@ -538,11 +612,13 @@ export class GraphDisplayIndex {
       ),
       parentDelta: parent == null || parent === this.cogs ? undefined : formatOptional(this.issueDelta(parent, node)),
       shared: this.parents[node].length > 1 ? this.parents[node].length : undefined,
+      unitDelta,
       product: parent != null && parent === this.cogs,
-      actual: this.value('actual', node, parent),
-      comparable: this.value('comparable', node, parent),
+      actual,
+      comparable,
       column: 0,
       row: 0,
+      depth: 0,
     };
   }
 
@@ -563,13 +639,17 @@ export class GraphDisplayIndex {
         abnormal: false,
         column: 0,
         row: 0,
+        depth: 0,
       },
       children: [],
       folded: false,
     };
   }
 
-  /** Render one recorded node: abnormal children stay explicit, normal spans to deeper anomalies become a bridge, the rest folds. */
+  /**
+   * Render one recorded node: abnormal children stay explicit, normal spans to deeper anomalies become a bridge, the
+   * rest folds. In the full view a product's children stay closed until its `#open` key is expanded.
+   */
   private render(
     projection: Projection,
     node: number,
@@ -583,6 +663,12 @@ export class GraphDisplayIndex {
       this.children[node].filter((child) => !path.has(child)),
       node,
     );
+    if (tree.item.product && projection.query.product == null && kids.length) {
+      const openKey = `${key}#open`;
+      tree.item.expandKey = openKey;
+      tree.item.open = Boolean(projection.query.expanded[openKey]);
+      if (!tree.item.open) return tree;
+    }
     const inner = new Set(path).add(node);
     const direct = kids.filter((child) => this.abnormal[child] || (open && this.score[child] >= 0));
     const carriers = open ? [] : kids.filter((child) => !this.abnormal[child] && this.score[child] >= 0);

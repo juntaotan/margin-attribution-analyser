@@ -19,7 +19,7 @@ This is the central design for the computational sequence, common invariants and
 
 All six step test documents now contain confirmed specifications or the existing FGW regression. Acceptance requirements are linked from their implementation documents; no empty placeholder waives validation and no documentation edit establishes a runtime pass.
 
-[Dual BOM graph display design](../frontend/Dual_BOM_Graph_Display_Design.md) defines bounded frontend presentation: COGS-difference coverage, in-place folding and aligned period trees. It does not change the computational acceptance requirements.
+[Dual BOM display design](../frontend/Dual_BOM_Graph_Display_Design.md) defines bounded frontend presentation: COGS-difference coverage, in-place folding, the comparable/actual double table with total and unit differences, and per-product aligned tree graphs. It does not change the computational acceptance requirements.
 
 ## Existing entry points and modules
 
@@ -40,7 +40,7 @@ Java paths below are relative to `backend/src/main/java/dev/margintrace/margin_a
 | Pairwise material/structure comparison | `algorithm/FGW/FgwEngine.java` | Serial Java FP64 balanced FGW, currently invoked by `/api/v1/analysis/production-trees/compare`. |
 | Optional statistical scoring | `algorithm/LOF/LofEngine.java` | Four-feature LOF calculation; no caller in current Java business code or frontend. Tests still exercise it. |
 
-The frontend entry in `frontend/src/components/DualBom/DualBomAnalysisPage.tsx` calls `/api/v1/analysis/reconcile-periods/stream` with four dates and two thresholds. It receives `graph` and `diff` events. It does not invoke production-tree comparison.
+The frontend entry in `frontend/src/components/DualBom/DualBomAnalysisPage.tsx` calls `/api/v1/analysis/run/stream` with four dates, two thresholds, the execution and embedding preferences, and the comparison settings (data interpretation and α). It receives NDJSON workflow events: `stage` markers, then `graph`, `branches`, `production-trees`, `embeddings` and `comparison` results, and finally `completed` with the full outcome, or `error`. The run therefore includes production-tree selection and FGW comparison when abnormal branches are found.
 
 `AnalysisRequest` also contains `company` and `targets`, but `/trace` derives its targets from sales rather than this field; `company` is not passed into its workflow. These fields must not be represented as existing warehouse filters.
 

@@ -14,7 +14,7 @@ const tabId = (tab: Tab) => `comparison-tab-${tab.replace(/ /g, '-')}`;
  * stops the page from scrolling. Focus returns to the previously focused element afterwards, if still visible.
  * The dialog is set up again whenever a value in `content` changes.
  */
-function useModalFocus(
+export function useModalFocus(
   dialog: React.RefObject<HTMLDivElement>,
   open: boolean,
   onClose: () => void,

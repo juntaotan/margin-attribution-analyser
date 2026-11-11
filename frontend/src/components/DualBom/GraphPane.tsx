@@ -24,14 +24,17 @@ const place = (item: DisplayItem) => ({
   x: item.column * COLUMN + (NODE.width - size(item).width) / 2,
   y: HEADER + item.row * ROW + (NODE.height - size(item).height) / 2,
 });
-const columnLabel = (result: DisplayResult, column: number) =>
-  column === 0
-    ? 'Cost of Goods Sold'
-    : column === 1
-      ? 'Products'
-      : result.terminalColumn && column === result.columns - 1
-        ? 'Material terminals'
-        : `Level ${column}`;
+/** Column titles; a single-product projection starts at the product column. */
+const columnLabel = (result: DisplayResult, column: number) => {
+  const level = result.items[0]?.product ? column + 1 : column;
+  return result.terminalColumn && column === result.columns - 1
+    ? 'Material terminals'
+    : level === 0
+      ? 'Cost of Goods Sold'
+      : level === 1
+        ? 'Products'
+        : `Level ${level}`;
+};
 
 /** Non-interactive column title nodes along the top of the pane. */
 const columnHeaderNodes = (result: DisplayResult): Node[] =>
@@ -87,7 +90,9 @@ const NodeCard: React.FC<{ item: DisplayItem; period: Period }> = ({ item, perio
         <>
           <div className="font-mono mt-1 truncate" title={value.cost ?? 'Unavailable'}>
             {value.cost ?? 'Cost unavailable'}
-            {item.inventoryId !== '__COGS__' && <span className="text-slate-500"> · Qty {value.quantity}</span>}
+            {item.inventoryId !== '__COGS__' && (
+              <span className="text-slate-500"> · Qty {value.quantity ?? 'unavailable'}</span>
+            )}
           </div>
           {!value.linked && <div className="text-[10px] text-amber-700">Relationship to parent not recorded</div>}
         </>

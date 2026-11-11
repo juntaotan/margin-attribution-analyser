@@ -10,6 +10,7 @@ import {
   decimalMagnitude,
   formatMicro,
   microUnits,
+  unitMicro,
   type DisplayInput,
   type DisplayResult,
   type DisplaySnapshot,
@@ -81,6 +82,10 @@ const open = (_from: DisplayResult, ...keys: string[]) => ({
   ...INITIAL_QUERY,
   expanded: Object.fromEntries(keys.map((key) => [key, 1])),
 });
+/** Key that opens a product row's children in the full view. */
+const opened = (...products: string[]) => products.map((product) => `cogs/${product}#open`);
+/** The initial view with the given products' children open. */
+const withProducts = (...products: string[]) => open(null as unknown as DisplayResult, ...opened(...products));
 /** Structural invariants: unique keys, real edge endpoints, fixed columns and non-overlapping rows. */
 function layout(result: DisplayResult) {
   const keys = new Set(result.items.map((entry) => entry.key));
@@ -95,6 +100,8 @@ function layout(result: DisplayResult) {
   for (const edge of result.edges) {
     const source = item(result, edge.source);
     const target = item(result, edge.target);
+    assert.equal(target.depth, source.depth + 1, `${edge.id} skips a depth`);
+    assert.ok(result.items.indexOf(source) < result.items.indexOf(target), `${edge.id} breaks tree order`);
     assert.ok(
       target.terminal ? target.column >= source.column + 1 : target.column === source.column + 1,
       `${edge.id} skips a column`,
@@ -244,9 +251,135 @@ test('coverage selects the shortest |ΔCOGS| prefix, with stable ties, unavailab
   );
 });
 
-test('initial view: COGS -> product -> … -> complete abnormal branch, with other children folded', () => {
+test('default view: every product row starts closed and opens to its own compressed children', () => {
   const index = new GraphDisplayIndex(chain());
-  const result = index.query(INITIAL_QUERY);
+  const initial = index.query(INITIAL_QUERY);
+  layout(initial);
+  assert.deepEqual(labels(initial), ['Cost of Goods Sold', 'A', 'Abnormal products (0)', 'Normal products (1)']);
+  const a = item(initial, 'cogs/A');
+  assert.equal(a.expandKey, 'cogs/A#open');
+  assert.equal(a.open, false);
+  assert.equal(children(initial, 'cogs/A').length, 0);
+  assert.equal(initial.stats.businessNodes, 1);
+  const normal = index.query(open(initial, 'cogs#normal'));
+  assert.equal(item(normal, 'cogs/J').open, false);
+  assert.equal(children(normal, 'cogs/J').length, 0);
+  const both = index.query(open(initial, 'cogs#normal', ...opened('A', 'J')));
+  assert.equal(item(both, 'cogs/A').open, true);
+  assert.deepEqual(
+    children(both, 'cogs/J').map((entry) => entry.label),
+    ['+1'],
+  );
+  // Tree order with depth: each opened product's rows follow it, and a group row follows its revealed members.
+  assert.deepEqual(
+    both.items.map((entry) => `${entry.depth}:${entry.label}`),
+    [
+      '0:Cost of Goods Sold',
+      '1:A',
+      '2:…',
+      '3:C',
+      '4:D',
+      '5:E',
+      '6:F',
+      '4:+1',
+      '1:Abnormal products (0)',
+      '1:J',
+      '2:+1',
+      '1:Normal products (1)',
+    ],
+  );
+  assert.equal(item(both, 'cogs/A#bridge/C/D/E/F').depth, 6);
+  assert.equal(item(both, 'cogs/A#bridge/C/D/E/F').column, both.columns - 1);
+});
+
+test('product projection: the clicked product is the root with its children open', () => {
+  const index = new GraphDisplayIndex(chain());
+  const tree = index.query({ ...INITIAL_QUERY, product: 'A' });
+  layout(tree);
+  assert.equal(tree.items[0].key, 'cogs/A');
+  assert.ok(tree.items[0].product);
+  assert.equal(tree.items[0].expandKey, undefined);
+  assert.equal(tree.items[0].open, undefined);
+  assert.ok(!labels(tree).some((label) => label === 'Cost of Goods Sold' || label.includes('products')));
+  // The same rows as the opened product in the full view, one level shallower.
+  const full = index.query(withProducts('A'));
+  const below = (result: DisplayResult) =>
+    result.items.filter((entry) => entry.key.startsWith('cogs/A')).map((entry) => [entry.key, entry.label]);
+  assert.deepEqual(below(tree), below(full));
+  assert.deepEqual(
+    tree.items.map((entry) => entry.depth),
+    full.items.filter((entry) => entry.key.startsWith('cogs/A')).map((entry) => entry.depth - 1),
+  );
+  const bridged = index.query({ ...INITIAL_QUERY, product: 'A', expanded: { 'cogs/A#bridge': 1 } });
+  assert.deepEqual(
+    children(bridged, 'cogs/A').map((entry) => entry.label),
+    ['B'],
+  );
+  assert.throws(() => index.query({ ...INITIAL_QUERY, product: 'C' }), /not recorded under Cost of Goods Sold/);
+});
+
+test('unit costs: exact division rounded half away from zero, sales basis for products, none for COGS', () => {
+  assert.equal(unitMicro(10_000_000n, 3_000_000n), 3_333_333n);
+  assert.equal(unitMicro(20_000_000n, 3_000_000n), 6_666_667n);
+  assert.equal(unitMicro(-20_000_000n, 3_000_000n), -6_666_667n);
+  assert.equal(unitMicro(1n, 2_000_000n), 1n, 'half a micro-unit rounds away from zero');
+  assert.equal(unitMicro(-1n, 2_000_000n), -1n);
+  assert.equal(unitMicro(5n, 0n), null);
+  const ids = ['__COGS__', 'P', 'M', 'Z', 'N'];
+  const uses: [string, string][] = [
+    ['P', '__COGS__'],
+    ['M', 'P'],
+    ['Z', 'P'],
+    ['N', 'P'],
+  ];
+  const period = (
+    sales: [string, string, string][],
+    values: Record<string, [string, string | null]>,
+  ): DisplaySnapshot => {
+    const base = snapshot(ids, uses);
+    base.graph.nodes = base.graph.nodes.map((node) =>
+      values[node.inventoryId]
+        ? { ...node, quantity: values[node.inventoryId][0], cost: values[node.inventoryId][1] }
+        : node,
+    );
+    base.records.sales = sales.map(([productId, quantity, cost], i) => ({
+      sourceId: `s${i}`,
+      date: '2026-01-01',
+      productId,
+      quantity,
+      cost,
+    }));
+    return base;
+  };
+  const actual = period(
+    [
+      ['P', '2', '30'],
+      ['P', '1', '0.000001'],
+    ],
+    { M: ['3', '10'], Z: ['0', '5'], N: ['2', null] },
+  );
+  const comparable = period([['P', '4', '40']], { M: ['4', '12'], Z: ['1', '5'], N: ['2', '4'] });
+  const index = new GraphDisplayIndex({ actual, comparable, branches: [] });
+  const result = index.query({ ...INITIAL_QUERY, coverage: 100, expanded: { 'cogs/P#open': 1, 'cogs/P#rest': 1 } });
+  layout(result);
+  const p = item(result, 'cogs/P');
+  assert.deepEqual([p.actual!.quantity, p.actual!.cost, p.actual!.unitCost], ['3', '30.000001', '10']);
+  assert.deepEqual([p.comparable!.quantity, p.comparable!.cost, p.comparable!.unitCost], ['4', '40', '10']);
+  assert.equal(p.delta, '-9.999999');
+  assert.equal(p.unitDelta, '0');
+  const m = item(result, 'cogs/P/M');
+  assert.deepEqual([m.actual!.unitCost, m.comparable!.unitCost, m.unitDelta], ['3.333333', '3', '0.333333']);
+  const z = item(result, 'cogs/P/Z');
+  assert.deepEqual([z.actual!.unitCost, z.comparable!.unitCost, z.unitDelta], [null, '5', null]);
+  const n = item(result, 'cogs/P/N');
+  assert.deepEqual([n.actual!.unitCost, n.comparable!.unitCost, n.unitDelta, n.delta], [null, '2', null, null]);
+  const cogs = item(result, 'cogs');
+  assert.deepEqual([cogs.actual!.unitCost, cogs.unitDelta], [null, null]);
+});
+
+test('opened product: COGS -> product -> … -> complete abnormal branch, with other children folded', () => {
+  const index = new GraphDisplayIndex(chain());
+  const result = index.query(withProducts('A'));
   layout(result);
   assert.deepEqual(
     children(result, 'cogs').map((entry) => entry.label),
@@ -281,8 +414,8 @@ test('initial view: COGS -> product -> … -> complete abnormal branch, with oth
 
 test('folds expand in place: bridge spans fully, remainders by page, other folds unchanged', () => {
   const index = new GraphDisplayIndex(chain());
-  const base = index.query(INITIAL_QUERY);
-  const bridged = index.query(open(base, 'cogs/A#bridge'));
+  const base = index.query(withProducts('A'));
+  const bridged = index.query(open(base, ...opened('A'), 'cogs/A#bridge'));
   layout(bridged);
   assert.deepEqual(
     children(bridged, 'cogs/A').map((entry) => entry.label),
@@ -297,7 +430,7 @@ test('folds expand in place: bridge spans fully, remainders by page, other folds
     ['D', '+1'],
     'C remainder stays folded',
   );
-  const rest = index.query(open(base, 'cogs/A#bridge/C#rest'));
+  const rest = index.query(open(base, ...opened('A'), 'cogs/A#bridge/C#rest'));
   assert.deepEqual(
     children(rest, 'cogs/A#bridge/C').map((entry) => entry.label),
     ['D', 'G'],
@@ -312,7 +445,7 @@ test('folds expand in place: bridge spans fully, remainders by page, other folds
 test('abnormal nodes inside folded children: … -> abnormal -> … -> abnormal -> …', () => {
   const input = chain();
   input.branches.push(branch(input.actual, ['H'], '30'));
-  const result = new GraphDisplayIndex(input).query(INITIAL_QUERY);
+  const result = new GraphDisplayIndex(input).query(withProducts('A'));
   layout(result);
   const c = 'cogs/A#bridge/C';
   assert.deepEqual(
@@ -356,7 +489,7 @@ test('both periods share one layout; each pane keeps its own recorded nodes and 
     (id) => (id === 'D' ? null : '10'),
   );
   const index = new GraphDisplayIndex(input);
-  const result = index.query(open(index.query(INITIAL_QUERY), 'cogs/A#bridge'));
+  const result = index.query(open(index.query(INITIAL_QUERY), ...opened('A'), 'cogs/A#bridge'));
   layout(result);
   const middle = children(result, 'cogs/A');
   assert.deepEqual(middle.map((entry) => entry.label).sort(), ['B', 'X']);
@@ -380,7 +513,7 @@ test('wide and deep graphs stay within budget, paginate remainders and keep anom
   const comparable = snapshot(ids, uses, [['P', '1']]);
   const branches = ids.slice(2, 12).map((id, i) => branch(actual, [id], String(100 + i)));
   const index = new GraphDisplayIndex({ actual, comparable, branches });
-  const result = index.query(INITIAL_QUERY);
+  const result = index.query(withProducts('P'));
   layout(result);
   const shown = children(result, 'cogs/P');
   assert.deepEqual(
@@ -389,10 +522,10 @@ test('wide and deep graphs stay within budget, paginate remainders and keep anom
   );
   assert.equal(shown.at(-1)!.label, `+${count - SIGNAL_LIMIT}`);
   assert.ok(shown.at(-1)!.abnormal);
-  const page = index.query({ ...INITIAL_QUERY, expanded: { 'cogs/P#rest': 2 } });
+  const page = index.query({ ...INITIAL_QUERY, expanded: { 'cogs/P#open': 1, 'cogs/P#rest': 2 } });
   layout(page);
   assert.equal(children(page, 'cogs/P').at(-1)!.label, `+${count - SIGNAL_LIMIT - 2 * PAGE_SIZE}`);
-  const all = index.query({ ...INITIAL_QUERY, expanded: { 'cogs/P#rest': 100 } });
+  const all = index.query({ ...INITIAL_QUERY, expanded: { 'cogs/P#open': 1, 'cogs/P#rest': 100 } });
   layout(all);
   assert.ok(all.stats.budgetReached);
   assert.equal(all.stats.businessNodes, BUSINESS_LIMIT);
@@ -404,7 +537,7 @@ test('wide and deep graphs stay within budget, paginate remainders and keep anom
     actual: deepActual,
     comparable: snapshot(['__COGS__'], []),
     branches: [branch(deepActual, ['D1999'], '7')],
-  }).query(INITIAL_QUERY);
+  }).query(withProducts('Q'));
   layout(deepResult);
   assert.deepEqual(labels(deepResult).slice(0, 4), ['Cost of Goods Sold', 'Q', '…', 'D1999']);
   assert.match(item(deepResult, 'cogs/Q#bridge').note!, /1999 normal nodes hidden/);
@@ -436,7 +569,7 @@ test('missing COGS, unlinked anomalies, shared materials and cycles are explicit
     actual: shared,
     comparable: snapshot(['__COGS__'], []),
     branches: [branch(shared, ['S'], '9')],
-  }).query({ coverage: 100, expanded: {} });
+  }).query({ coverage: 100, expanded: { 'cogs/P1#open': 1, 'cogs/P2#open': 1 } });
   layout(sharedResult);
   assert.equal(item(sharedResult, 'cogs/P1/S').shared, 2);
   assert.equal(item(sharedResult, 'cogs/P2/S').shared, 2);
@@ -463,7 +596,7 @@ test('missing COGS, unlinked anomalies, shared materials and cycles are explicit
   layout(
     new GraphDisplayIndex({ actual: left, comparable: right, branches: [] }).query({
       ...INITIAL_QUERY,
-      expanded: { 'cogs/P#rest': 1, 'cogs/P/A#rest': 1, 'cogs/P/A/B#rest': 1 },
+      expanded: { 'cogs/P#open': 1, 'cogs/P#rest': 1, 'cogs/P/A#rest': 1, 'cogs/P/A/B#rest': 1 },
     }),
   );
 });
@@ -500,6 +633,9 @@ test('large CSR input yields a bounded projection', () => {
   const projected = performance.now() - started;
   layout(result);
   assert.ok(result.items.length < 200, `${result.items.length} display items`);
+  const product = index.query({ ...INITIAL_QUERY, product: 'P1999' });
+  layout(product);
+  assert.ok(product.items.length <= SIGNAL_LIMIT + 2, `${product.items.length} product tree items`);
   console.log(
     `large fixture: ${ids.length} nodes, fixture ${built.toFixed(1)} ms, index ${indexed.toFixed(1)} ms, projection ${projected.toFixed(1)} ms, ${result.items.length} items, ${result.stats.selectedProducts} products`,
   );
