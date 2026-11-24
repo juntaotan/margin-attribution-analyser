@@ -1,9 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
-  <img src="docs/images/banner-light.svg" alt="Cost Analysis Engine：从成本变化追溯到背后的记录" width="100%">
-</picture>
+<img src="docs/images/banner.svg" alt="Cost Analysis Engine：定位异常，并通过材料属性解释异常" width="100%">
 
 [English](README.md) &nbsp;·&nbsp; **简体中文**
 

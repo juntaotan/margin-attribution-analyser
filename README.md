@@ -1,9 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
-  <img src="docs/images/banner-light.svg" alt="Cost Analysis Engine: from a cost change to the records behind it" width="100%">
-</picture>
+<img src="docs/images/banner.svg" alt="Cost Analysis Engine: find the anomaly and explain it through material attributes" width="100%">
 
 **English** &nbsp;·&nbsp; [简体中文](README.zh-CN.md)
 
@@ -34,7 +31,7 @@ Cost Analysis Engine is a margin-attribution and variance-analysis application f
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/analysis-overview.svg">
-  <img src="docs/images/analysis-overview.svg" alt="CUDA versus serial Java CPU elapsed time for abnormal-branch propagation and FGW comparison" width="100%">
+  <img src="docs/images/analysis-overview.svg" alt="Analysis overview: period CSR graph, abnormal-branch frontier pruning to the minimal anomaly subgraph, and FGW comparison" width="100%">
 </picture>
 
 <sub>Serial Java CPU vs CUDA, synthetic workloads on one workstation (Ryzen 7 9700X, RTX 5070 Ti): branch propagation over 10 million issue records; FGW over 79,800 all-pairs and 200,000 fixed-baseline comparisons. Gains depend on problem size.</sub>

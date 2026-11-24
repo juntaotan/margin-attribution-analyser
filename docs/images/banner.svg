@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Cost Analysis Engine: find the anomaly and explain it through material attributes" font-family="'Times New Roman', 'Liberation Serif', Times, serif">
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3F6FB"/><stop offset="1" stop-color="#F6F4FA"/></linearGradient>
+    <linearGradient id="link" x1="0" x2="1"><stop offset="0" stop-color="#8D78BA"/><stop offset="0.5" stop-color="#5B4A8B"/><stop offset="1" stop-color="#8D78BA"/></linearGradient>
+  </defs>
+
+  <!-- card -->
+  <rect x="3" y="4" width="1274" height="314" rx="14" fill="#000" fill-opacity="0.06"/>
+  <rect x="0.5" y="0.5" width="1274" height="314" rx="14" fill="#FFFFFF" stroke="#C3CBD6"/>
+
+  <!-- text -->
+  <rect x="80" y="92" width="6" height="134" rx="3" fill="#2F4A7A"/>
+  <text x="108" y="150" font-size="55" font-weight="bold" fill="#1F2A37">Cost Analysis <tspan fill="#2F4A7A">Engine</tspan></text>
+  <text x="110" y="196" font-size="23" font-style="italic" fill="#6B7685">Find the anomaly. Explain it through material attributes.</text>
+  <g transform="translate(110 218)"><rect width="34" height="5" rx="2.5" fill="#2F4A7A"/><rect x="40" width="34" height="5" rx="2.5" fill="#5B4A8B"/><rect x="80" width="34" height="5" rx="2.5" fill="#8C6418"/></g>
+
+  <!-- graphic panel -->
+  <rect x="680" y="22" width="572" height="270" rx="12" fill="url(#panel)" stroke="#DCE3EE" stroke-width="1.2"/>
+
+  <!-- pruned branches: many faint nodes suggest the full period graph -->
+  <g stroke="#D5DBE3" stroke-width="1.6">
+    <path d="M790 58 L728 132 M790 58 L790 132 M728 132 L712 210 M728 132 L744 210 M790 132 L776 210 M790 132 L804 210"/>
+    <path d="M1142 58 L1204 132 M1142 58 L1142 132 M1204 132 L1188 210 M1204 132 L1220 210 M1142 132 L1128 210 M1142 132 L1156 210"/>
+  </g>
+  <g fill="#FFFFFF" stroke="#D0D7E1" stroke-width="1.4">
+    <rect x="717" y="125" width="22" height="14" rx="4"/><rect x="779" y="125" width="22" height="14" rx="4"/>
+    <rect x="1193" y="125" width="22" height="14" rx="4"/><rect x="1131" y="125" width="22" height="14" rx="4"/>
+    <rect x="704" y="204" width="16" height="12" rx="3"/><rect x="736" y="204" width="16" height="12" rx="3"/><rect x="768" y="204" width="16" height="12" rx="3"/><rect x="796" y="204" width="16" height="12" rx="3"/>
+    <rect x="1180" y="204" width="16" height="12" rx="3"/><rect x="1212" y="204" width="16" height="12" rx="3"/><rect x="1120" y="204" width="16" height="12" rx="3"/><rect x="1148" y="204" width="16" height="12" rx="3"/>
+  </g>
+
+  <!-- minimal anomaly subgraphs -->
+  <g fill="#FBEDEA" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="6 4">
+    <rect x="826" y="110" width="124" height="128" rx="12"/><rect x="982" y="110" width="124" height="128" rx="12"/>
+  </g>
+  <g stroke="#A98B55" stroke-width="2">
+    <path d="M790 58 L888 132 M888 132 L858 206 M888 132 L918 206"/>
+    <path d="M1142 58 L1044 132 M1044 132 L1014 206 M1044 132 L1074 206"/>
+  </g>
+
+  <!-- FGW transport: band width ~ transported mass -->
+  <g fill="none" stroke="url(#link)" stroke-linecap="round" stroke-opacity="0.55">
+    <path d="M902 132 C960 120 972 120 1030 132" stroke-width="5"/>
+    <path d="M938 210 C960 214 972 214 994 210" stroke-width="4"/>
+    <path d="M858 224 C858 290 1074 290 1074 224" stroke-width="3.5"/>
+  </g>
+
+  <!-- roots and assemblies -->
+  <g fill="#8C6418"><rect x="772" y="46" width="36" height="24" rx="6"/><rect x="1124" y="46" width="36" height="24" rx="6"/></g>
+  <g fill="#F1DDAE" stroke="#A98B55" stroke-width="1.5"><rect x="872" y="123" width="32" height="18" rx="5"/><rect x="1028" y="123" width="32" height="18" rx="5"/></g>
+
+  <!-- material cards: three attribute cells each -->
+  <g stroke="#A98B55" stroke-width="1.5" fill="#FFFFFF">
+    <rect x="838" y="194" width="40" height="28" rx="6"/><rect x="898" y="194" width="40" height="28" rx="6"/><rect x="994" y="194" width="40" height="28" rx="6"/>
+  </g>
+  <rect x="1054" y="194" width="40" height="28" rx="6" fill="#FFFFFF" stroke="#C0392B" stroke-width="2"/>
+  <g>
+    <rect x="844" y="200" width="9" height="16" rx="1.5" fill="#3E6A9E"/><rect x="854" y="200" width="9" height="16" rx="1.5" fill="#3E6A9E"/><rect x="864" y="200" width="9" height="16" rx="1.5" fill="#D3DFEC"/>
+    <rect x="904" y="200" width="9" height="16" rx="1.5" fill="#C0644A"/><rect x="914" y="200" width="9" height="16" rx="1.5" fill="#F2D9D0"/><rect x="924" y="200" width="9" height="16" rx="1.5" fill="#C0644A"/>
+    <rect x="1000" y="200" width="9" height="16" rx="1.5" fill="#C0644A"/><rect x="1010" y="200" width="9" height="16" rx="1.5" fill="#F2D9D0"/><rect x="1020" y="200" width="9" height="16" rx="1.5" fill="#C0644A"/>
+    <rect x="1060" y="200" width="9" height="16" rx="1.5" fill="#3E6A9E"/><rect x="1070" y="200" width="9" height="16" rx="1.5" fill="#C0392B"/><rect x="1080" y="200" width="9" height="16" rx="1.5" fill="#D3DFEC"/>
+  </g>
+</svg>
