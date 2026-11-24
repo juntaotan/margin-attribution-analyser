@@ -1,0 +1,235 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1530" height="550" viewBox="0 0 1530 550" font-family="'Times New Roman', 'Liberation Serif', Times, serif">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1F2A37"/></marker><marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6B7685"/></marker></defs>
+<rect width="1530" height="550" fill="#FFFFFF"/>
+<rect x="10" y="9" width="605" height="226" rx="12" fill="#000" fill-opacity="0.06"/>
+<rect x="8" y="6" width="605" height="226" rx="12" fill="#F3F6FB" stroke="#5C77A8" stroke-width="1.3" />
+<path d="M8,40 V18 Q8,6 20,6 H601 Q613,6 613,18 V40 Z" fill="#2F4A7A"/>
+<text x="26" y="24" font-size="19" fill="#FFFFFF" font-weight="bold" font-style="normal" text-anchor="start" dy="0.33em">Period CSR Graph</text>
+<text x="64" y="68" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">root</text>
+<text x="64" y="134" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">product</text>
+<text x="64" y="203" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">material</text>
+<line x1="112" y1="216" x2="112" y2="56" stroke="#5C77A8" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#ahg)"/>
+<rect x="137" y="52" width="418" height="32" rx="5" fill="#2F4A7A" stroke="#2F4A7A" stroke-width="1.2" />
+<text x="346" y="69" font-size="17" fill="#FFFFFF" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Cost of Goods Sold</text>
+<text x="346" y="101" font-size="15" fill="#6B7685" font-weight="normal" font-style="italic" text-anchor="middle" dy="0.33em">TREE built by sales records</text>
+<rect x="137.0" y="120.0" width="128" height="28" rx="5" fill="#C7D5EA" stroke="#5C77A8" stroke-width="1.1" />
+<text x="201" y="135" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Product A</text>
+<rect x="281.0" y="120.0" width="128" height="28" rx="5" fill="#C7D5EA" stroke="#5C77A8" stroke-width="1.1" />
+<text x="345" y="135" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Product B</text>
+<rect x="453.0" y="120.0" width="128" height="28" rx="5" fill="#C7D5EA" stroke="#5C77A8" stroke-width="1.1" />
+<text x="517" y="135" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Product ?</text>
+<text x="431" y="132" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">· · ·</text>
+<text x="346" y="167" font-size="15" fill="#6B7685" font-weight="normal" font-style="italic" text-anchor="middle" dy="0.33em">TREE built by inventory usage</text>
+<rect x="137.0" y="189.0" width="62" height="28" rx="5" fill="#EAF0F8" stroke="#5C77A8" stroke-width="1.1" />
+<text x="168" y="204" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M1</text>
+<rect x="217.0" y="189.0" width="62" height="28" rx="5" fill="#EAF0F8" stroke="#5C77A8" stroke-width="1.1" />
+<text x="248" y="204" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M2</text>
+<rect x="297.0" y="189.0" width="62" height="28" rx="5" fill="#EAF0F8" stroke="#5C77A8" stroke-width="1.1" />
+<text x="328" y="204" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M3</text>
+<rect x="377.0" y="189.0" width="62" height="28" rx="5" fill="#EAF0F8" stroke="#5C77A8" stroke-width="1.1" />
+<text x="408" y="204" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<rect x="515.0" y="189.0" width="62" height="28" rx="5" fill="#EAF0F8" stroke="#5C77A8" stroke-width="1.1" />
+<text x="546" y="204" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M6</text>
+<text x="477" y="201" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">· · ·</text>
+<rect x="10" y="258" width="605" height="280" rx="12" fill="#000" fill-opacity="0.06"/>
+<rect x="8" y="255" width="605" height="280" rx="12" fill="#F6F4FA" stroke="#8676B3" stroke-width="1.3" />
+<path d="M8,289 V267 Q8,255 20,255 H601 Q613,255 613,267 V289 Z" fill="#5B4A8B"/>
+<text x="26" y="273" font-size="19" fill="#FFFFFF" font-weight="bold" font-style="normal" text-anchor="start" dy="0.33em">Fused Gromov-Wasserstein (FGW)</text>
+<rect x="22" y="294" width="226" height="200" rx="6" fill="#FFFFFF" stroke="#DCD5EA" stroke-width="1.3" />
+<rect x="22" y="294" width="226" height="28" rx="6" fill="#D9D1EA" stroke="#DCD5EA" stroke-width="1.3" />
+<text x="135" y="309" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Attribute Cost</text>
+<rect x="43" y="346" width="46" height="36" rx="0" fill="#3E6A9E" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="89" y="346" width="46" height="36" rx="0" fill="#3E6A9E" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="135" y="346" width="46" height="36" rx="0" fill="#D3DFEC" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="181" y="346" width="46" height="36" rx="0" fill="#3E6A9E" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="43" y="418" width="46" height="36" rx="0" fill="#C0644A" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="89" y="418" width="46" height="36" rx="0" fill="#C0644A" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="135" y="418" width="46" height="36" rx="0" fill="#F2D9D0" stroke="#FFFFFF" stroke-width="1.5" />
+<rect x="181" y="418" width="46" height="36" rx="0" fill="#C0644A" stroke="#FFFFFF" stroke-width="1.5" />
+<text x="260" y="396" font-size="30" fill="#1F2A37" font-weight="bold" font-style="normal" text-anchor="middle" dy="0.33em">+</text>
+<rect x="274" y="294" width="190" height="200" rx="6" fill="#FFFFFF" stroke="#DCD5EA" stroke-width="1.3" />
+<rect x="274" y="294" width="190" height="28" rx="6" fill="#D9D1EA" stroke="#DCD5EA" stroke-width="1.3" />
+<text x="369" y="309" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Structural Cost</text>
+<line x1="322" y1="345" x2="402" y2="345" stroke="#3E6A9E" stroke-width="1.5"/>
+<line x1="322" y1="345" x2="360" y2="384" stroke="#3E6A9E" stroke-width="1.5"/>
+<circle cx="322" cy="345" r="13" fill="#3E6A9E" fill-opacity="0.85" stroke="#2C5080" stroke-width="1.2"/>
+<circle cx="402" cy="345" r="13" fill="#3E6A9E" fill-opacity="0.85" stroke="#2C5080" stroke-width="1.2"/>
+<circle cx="360" cy="384" r="13" fill="#3E6A9E" fill-opacity="0.85" stroke="#2C5080" stroke-width="1.2"/>
+<line x1="318" y1="437" x2="360" y2="460" stroke="#C0644A" stroke-width="1.5"/>
+<line x1="360" y1="460" x2="406" y2="436" stroke="#C0644A" stroke-width="1.5"/>
+<line x1="360" y1="460" x2="408" y2="476" stroke="#C0644A" stroke-width="1.5"/>
+<circle cx="318" cy="437" r="13" fill="#C0644A" fill-opacity="0.85" stroke="#9A4A34" stroke-width="1.2"/>
+<circle cx="360" cy="460" r="13" fill="#C0644A" fill-opacity="0.85" stroke="#9A4A34" stroke-width="1.2"/>
+<circle cx="406" cy="436" r="13" fill="#C0644A" fill-opacity="0.85" stroke="#9A4A34" stroke-width="1.2"/>
+<circle cx="408" cy="476" r="13" fill="#C0644A" fill-opacity="0.85" stroke="#9A4A34" stroke-width="1.2"/>
+<line x1="468" y1="394" x2="500" y2="394" stroke="#1F2A37" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="544" y="330" font-size="26" fill="#1F2A37" font-weight="bold" font-style="italic" text-anchor="middle" dy="0.33em">P*</text>
+<rect x="501" y="349" width="82.0" height="82.0" rx="3" fill="#FFFFFF" stroke="#C3CBD6" stroke-width="1" />
+<rect x="504.0" y="352.0" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="513.5" y="352.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="523.0" y="352.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="532.5" y="352.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="542.0" y="352.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="551.5" y="352.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="561.0" y="352.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="570.5" y="352.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="504.0" y="361.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="513.5" y="361.5" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="523.0" y="361.5" width="9.5" height="9.5" fill="#B3A2D3"/>
+<rect x="532.5" y="361.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="542.0" y="361.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="551.5" y="361.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="561.0" y="361.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="570.5" y="361.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="504.0" y="371.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="513.5" y="371.0" width="9.5" height="9.5" fill="#B3A2D3"/>
+<rect x="523.0" y="371.0" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="532.5" y="371.0" width="9.5" height="9.5" fill="#8D78BA"/>
+<rect x="542.0" y="371.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="551.5" y="371.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="561.0" y="371.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="570.5" y="371.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="504.0" y="380.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="513.5" y="380.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="523.0" y="380.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="532.5" y="380.5" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="542.0" y="380.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="551.5" y="380.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="561.0" y="380.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="570.5" y="380.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="504.0" y="390.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="513.5" y="390.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="523.0" y="390.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="532.5" y="390.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="542.0" y="390.0" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="551.5" y="390.0" width="9.5" height="9.5" fill="#B3A2D3"/>
+<rect x="561.0" y="390.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="570.5" y="390.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="504.0" y="399.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="513.5" y="399.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="523.0" y="399.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="532.5" y="399.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="542.0" y="399.5" width="9.5" height="9.5" fill="#8D78BA"/>
+<rect x="551.5" y="399.5" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="561.0" y="399.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="570.5" y="399.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="504.0" y="409.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="513.5" y="409.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="523.0" y="409.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="532.5" y="409.0" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="542.0" y="409.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="551.5" y="409.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="561.0" y="409.0" width="9.5" height="9.5" fill="#5B4A8B"/>
+<rect x="570.5" y="409.0" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="504.0" y="418.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="513.5" y="418.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="523.0" y="418.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="532.5" y="418.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="542.0" y="418.5" width="9.5" height="9.5" fill="#FAF8FC"/>
+<rect x="551.5" y="418.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="561.0" y="418.5" width="9.5" height="9.5" fill="#ECE6F4"/>
+<rect x="570.5" y="418.5" width="9.5" height="9.5" fill="#5B4A8B"/>
+<text x="44" y="515" xml:space="preserve" font-size="17" fill="#1F2A37" font-style="italic"><tspan font-style="normal">min</tspan><tspan font-size="10" dx="-26" dy="11">P∈Π(p,q)</tspan><tspan dx="10" dy="-11" font-style="normal">(1 − </tspan>α<tspan font-style="normal">)</tspan><tspan dx="8" font-style="normal" font-size="20">∑</tspan><tspan font-size="10" dx="-12" dy="11">i,j</tspan><tspan dx="8" dy="-11">M</tspan><tspan font-size="10" dy="4">ij</tspan><tspan dy="-4">P</tspan><tspan font-size="10" dy="4">ij</tspan><tspan dy="-4" dx="4" font-style="normal">+ </tspan>α<tspan dx="6" font-style="normal" font-size="20">∑</tspan><tspan font-size="10" dx="-18" dy="11">i,j,k,l</tspan><tspan dx="6" dy="-11" font-style="normal">(</tspan>C<tspan font-size="10" dy="-7" font-style="normal">1</tspan><tspan font-size="10" dx="-5" dy="11">ik</tspan><tspan dy="-4" dx="3" font-style="normal">− </tspan>C<tspan font-size="10" dy="-7" font-style="normal">2</tspan><tspan font-size="10" dx="-5" dy="11">jl</tspan><tspan dy="-4" font-style="normal">)</tspan><tspan font-size="10" dy="-7" font-style="normal">2</tspan><tspan dy="7">P</tspan><tspan font-size="10" dy="4">ij</tspan><tspan dy="-4">P</tspan><tspan font-size="10" dy="4">kl</tspan></text>
+<polygon points="618,126 632,126 632,119 644,132 632,145 632,138 618,138" fill="#8E99A8"/>
+<polygon points="644,397 630,397 630,390 618,403 630,416 630,409 644,409" fill="#8E99A8"/>
+<rect x="647" y="8" width="875" height="537" rx="12" fill="#000" fill-opacity="0.06"/>
+<rect x="645" y="5" width="875" height="537" rx="12" fill="#FDF9F0" stroke="#C49A45" stroke-width="1.3" />
+<path d="M645,39 V17 Q645,5 657,5 H1508 Q1520,5 1520,17 V39 Z" fill="#8C6418"/>
+<text x="665" y="23" font-size="19" fill="#FFFFFF" font-weight="bold" font-style="normal" text-anchor="start" dy="0.33em">Abnormal-Branch Frontier Pruning</text>
+<rect x="665" y="64" width="383" height="236" rx="10" fill="#FFFFFF" stroke="#EAD9B3" stroke-width="1.3" />
+<text x="856" y="89" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Situation A: Deletion</text>
+<rect x="813.0" y="110.0" width="86" height="28" rx="5" fill="#8C6418" stroke="#8C6418" stroke-width="1.1" />
+<text x="856" y="125" font-size="16" fill="#FFFFFF" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">P1</text>
+<rect x="737.0" y="166.0" width="80" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="777" y="181" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP1</text>
+<rect x="910.0" y="166.0" width="80" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="950" y="181" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP2</text>
+<rect x="862" y="216" width="90" height="66" rx="4" fill="#F8E1DE" stroke="#C0392B" stroke-width="1.4" stroke-dasharray="6,4" />
+<rect x="697.0" y="238.0" width="76" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="735" y="253" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M1</text>
+<rect x="780.0" y="238.0" width="76" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="818" y="253" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M2</text>
+<rect x="869.0" y="238.0" width="76" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="907" y="253" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M3</text>
+<rect x="954.0" y="238.0" width="76" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="992" y="253" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<line x1="856" y1="138.0" x2="777" y2="166.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="856" y1="138.0" x2="950" y2="166.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="777" y1="194.0" x2="735" y2="238.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="777" y1="194.0" x2="818" y2="238.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="950" y1="194.0" x2="907" y2="238.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="950" y1="194.0" x2="992" y2="238.0" stroke="#A98B55" stroke-width="1.3" stroke-dasharray="4,3"/>
+<line x1="880" y1="194" x2="880" y2="216" stroke="#C0392B" stroke-width="1.4"/>
+<text x="880" y="182" font-size="15" fill="#C0392B" font-weight="bold" font-style="normal" text-anchor="middle" dy="0.33em">Delete</text>
+<rect x="1068" y="64" width="440" height="236" rx="10" fill="#FFFFFF" stroke="#EAD9B3" stroke-width="1.3" />
+<text x="1288" y="89" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Situation B: Addition</text>
+<rect x="1245.0" y="110.0" width="86" height="28" rx="5" fill="#8C6418" stroke="#8C6418" stroke-width="1.1" />
+<text x="1288" y="125" font-size="16" fill="#FFFFFF" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">P1</text>
+<rect x="1145.0" y="172.0" width="80" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="1185" y="187" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP1</text>
+<rect x="1345.0" y="172.0" width="80" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="1385" y="187" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP2</text>
+<rect x="1433" y="238" width="70" height="50" rx="4" fill="#F8E1DE" stroke="#C0392B" stroke-width="1.4" stroke-dasharray="6,4" />
+<rect x="1096.0" y="249.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1132" y="264" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M1</text>
+<rect x="1179.0" y="249.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1215" y="264" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M2</text>
+<rect x="1266.0" y="249.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1302" y="264" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M3</text>
+<rect x="1349.0" y="249.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1385" y="264" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<rect x="1439.0" y="249.0" width="58" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1468" y="264" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M5</text>
+<line x1="1288" y1="138.0" x2="1185" y2="172.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="1288" y1="138.0" x2="1385" y2="172.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="1185" y1="200.0" x2="1132" y2="249.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="1185" y1="200.0" x2="1215" y2="249.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="1385" y1="200.0" x2="1302" y2="249.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="1385" y1="200.0" x2="1385" y2="249.0" stroke="#A98B55" stroke-width="1.3"/>
+<line x1="1385" y1="200.0" x2="1468" y2="249.0" stroke="#A98B55" stroke-width="1.3" stroke-dasharray="4,3"/>
+<text x="1468" y="222" font-size="15" fill="#C0392B" font-weight="bold" font-style="normal" text-anchor="middle" dy="0.33em">Add</text>
+<line x1="930" y1="300" x2="1104" y2="338" stroke="#1F2A37" stroke-width="1.6" marker-end="url(#ah)"/>
+<line x1="1290" y1="300" x2="1108" y2="337" stroke="#1F2A37" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="1106" y="314" font-size="14" fill="#1F2A37" font-weight="normal" font-style="italic" text-anchor="middle" dy="0.33em">Adaptive Pruning</text>
+<text x="1106" y="352" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Find out Minimal Anomaly Subgraph</text>
+<rect x="665" y="366" width="383" height="160" rx="10" fill="#FFFFFF" stroke="#EAD9B3" stroke-width="1.3" />
+<rect x="751.0" y="380.0" width="78" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="790" y="395" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP2</text>
+<rect x="709.0" y="450.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="745" y="465" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M3</text>
+<line x1="790" y1="408.0" x2="745" y2="450.0" stroke="#A98B55" stroke-width="1.3"/>
+<rect x="794.0" y="450.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="830" y="465" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<line x1="790" y1="408.0" x2="830" y2="450.0" stroke="#A98B55" stroke-width="1.3"/>
+<text x="892" y="428" font-size="18" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">VS</text>
+<rect x="926.0" y="380.0" width="78" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="965" y="395" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP2</text>
+<rect x="929.0" y="444.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="965" y="459" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<line x1="965" y1="408.0" x2="965" y2="444.0" stroke="#A98B55" stroke-width="1.3"/>
+<text x="788" y="505" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Baseline MAS</text>
+<text x="965" y="505" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Actual MAS</text>
+<rect x="1068" y="366" width="440" height="160" rx="10" fill="#FFFFFF" stroke="#EAD9B3" stroke-width="1.3" />
+<rect x="1141.0" y="380.0" width="78" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="1180" y="395" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP2</text>
+<rect x="1101.0" y="450.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1137" y="465" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M3</text>
+<line x1="1180" y1="408.0" x2="1137" y2="450.0" stroke="#A98B55" stroke-width="1.3"/>
+<rect x="1186.0" y="450.0" width="72" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1222" y="465" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<line x1="1180" y1="408.0" x2="1222" y2="450.0" stroke="#A98B55" stroke-width="1.3"/>
+<text x="1287" y="428" font-size="18" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">VS</text>
+<rect x="1356.0" y="380.0" width="78" height="28" rx="5" fill="#F1DDAE" stroke="#C49A45" stroke-width="1.1" />
+<text x="1395" y="395" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">SP2</text>
+<rect x="1288.0" y="448.0" width="64" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1320" y="463" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<line x1="1395" y1="408.0" x2="1320" y2="448.0" stroke="#A98B55" stroke-width="1.3"/>
+<rect x="1363.0" y="448.0" width="64" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1395" y="463" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M3</text>
+<line x1="1395" y1="408.0" x2="1395" y2="448.0" stroke="#A98B55" stroke-width="1.3"/>
+<rect x="1438.0" y="448.0" width="64" height="28" rx="5" fill="#FBF3E1" stroke="#C49A45" stroke-width="1.1" />
+<text x="1470" y="463" font-size="16" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">M4</text>
+<line x1="1395" y1="408.0" x2="1470" y2="448.0" stroke="#A98B55" stroke-width="1.3"/>
+<text x="1180" y="505" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Baseline MAS</text>
+<text x="1395" y="505" font-size="17" fill="#1F2A37" font-weight="normal" font-style="normal" text-anchor="middle" dy="0.33em">Actual MAS</text>
+</svg>

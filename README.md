@@ -33,8 +33,8 @@ Cost Analysis Engine is a margin-attribution and variance-analysis application f
 **GPU acceleration with CUDA.** Comparing production runs is a computationally intensive optimal-transport problem, because each pair of runs is matched at component level. The engine includes a native CUDA solver that performs the full calculation in FP64 on the GPU. It uses cuBLAS for matrix operations, an exact transportation simplex executed on the device, and persistent multi-stream sessions that compare many runs against a common baseline concurrently. Abnormal-branch discovery is also GPU-accelerated, and OpenCL supports non-NVIDIA devices. Where no supported GPU is available, all analysis runs on the CPU under the same specified numerical tolerances.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/cuda-benchmark-dark.svg">
-  <img src="docs/images/cuda-benchmark-light.svg" alt="CUDA versus serial Java CPU elapsed time for abnormal-branch propagation and FGW comparison" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/analysis-overview.svg">
+  <img src="docs/images/analysis-overview.svg" alt="CUDA versus serial Java CPU elapsed time for abnormal-branch propagation and FGW comparison" width="100%">
 </picture>
 
 <sub>Serial Java CPU vs CUDA, synthetic workloads on one workstation (Ryzen 7 9700X, RTX 5070 Ti): branch propagation over 10 million issue records; FGW over 79,800 all-pairs and 200,000 fixed-baseline comparisons. Gains depend on problem size.</sub>
