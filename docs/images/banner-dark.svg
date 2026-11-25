@@ -1,12 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Cost Analysis Engine: find the anomaly and explain it through material attributes" font-family="'Times New Roman', 'Liberation Serif', Times, serif">
   <defs>
-    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0F141C"/><stop offset="1" stop-color="#13111C"/></linearGradient>
     <linearGradient id="link" x1="0" x2="1"><stop offset="0" stop-color="#7A68B0"/><stop offset="0.5" stop-color="#B9A8EC"/><stop offset="1" stop-color="#7A68B0"/></linearGradient>
   </defs>
-
-  <!-- card -->
-  <rect x="3" y="4" width="1274" height="314" rx="14" fill="#000" fill-opacity="0.35"/>
-  <rect x="0.5" y="0.5" width="1274" height="314" rx="14" fill="#161B22" stroke="#30363D"/>
 
   <!-- text -->
   <rect x="80" y="92" width="6" height="134" rx="3" fill="#7FA6E0"/>
@@ -14,15 +9,12 @@
   <text x="110" y="196" font-size="23" font-style="italic" fill="#9198A1">Find the anomaly. Explain it through material attributes.</text>
   <g transform="translate(110 218)"><rect width="34" height="5" rx="2.5" fill="#7FA6E0"/><rect x="40" width="34" height="5" rx="2.5" fill="#A493D6"/><rect x="80" width="34" height="5" rx="2.5" fill="#D4A94E"/></g>
 
-  <!-- graphic panel -->
-  <rect x="680" y="22" width="572" height="270" rx="12" fill="url(#panel)" stroke="#262C36" stroke-width="1.2"/>
-
   <!-- pruned branches: many faint nodes suggest the full period graph -->
-  <g stroke="#2D333C" stroke-width="1.6">
+  <g stroke="#8B949E" stroke-opacity="0.3" stroke-width="1.6">
     <path d="M790 58 L728 132 M790 58 L790 132 M728 132 L712 210 M728 132 L744 210 M790 132 L776 210 M790 132 L804 210"/>
     <path d="M1142 58 L1204 132 M1142 58 L1142 132 M1204 132 L1188 210 M1204 132 L1220 210 M1142 132 L1128 210 M1142 132 L1156 210"/>
   </g>
-  <g fill="#161B22" stroke="#3A414B" stroke-width="1.4">
+  <g fill="#8B949E" fill-opacity="0.08" stroke="#8B949E" stroke-opacity="0.4" stroke-width="1.4">
     <rect x="717" y="125" width="22" height="14" rx="4"/><rect x="779" y="125" width="22" height="14" rx="4"/>
     <rect x="1193" y="125" width="22" height="14" rx="4"/><rect x="1131" y="125" width="22" height="14" rx="4"/>
     <rect x="704" y="204" width="16" height="12" rx="3"/><rect x="736" y="204" width="16" height="12" rx="3"/><rect x="768" y="204" width="16" height="12" rx="3"/><rect x="796" y="204" width="16" height="12" rx="3"/>

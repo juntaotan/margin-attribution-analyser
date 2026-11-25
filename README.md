@@ -8,14 +8,14 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
-  <img src="docs/images/banner.svg" alt="Cost Analysis Engine: find the anomaly and explain it through material attributes" width="100%">
+  <img src="docs/images/banner.svg" alt="Cost Analysis Engine: find the anomaly and explain it through material attributes" width="80%">
 </picture>
 
 **English** &nbsp;·&nbsp; [简体中文](README.zh-CN.md)
 
 <br>
 
-**Intelligent Cost Analysis for Multi-Stage Production, Powered by AI**
+### High-Performance Cost Analysis for Multi-Stage Manufacturing
 
 <br>
 
@@ -25,28 +25,23 @@
 
 <br>
 
-# About
+## About
 
-**Evidence-based cost variance analysis for multi-stage manufacturing: from a change in margin to the production records behind it.**
+Cost Analysis Engine attributes inter-period changes in unit cost within multi-stage manufacturing to the materials and production runs that cause them. Over a directed acyclic production graph, an exact integer-arithmetic frontier propagates material-level cost changes upwards and stops at the lowest assembly at which each change becomes material, linking every figure to its archived source records. Production runs are then compared with balanced Fused Gromov–Wasserstein optimal transport, whose soft, component-level correspondence identifies a substituted material as a substitution rather than as an unrelated loss and gain. Optional language-model explanations interpret the computed evidence but never produce figures. The FGW solver runs in FP64 on the CPU, on NVIDIA GPUs through a native CUDA implementation, and through OpenCL on other devices, with all execution paths held to the same specified numerical tolerances.
 
-Cost Analysis Engine is a margin-attribution and variance-analysis application for finance, audit and data analysts in manufacturing. It solves the analysis 
+<img src="docs/images/analysis-overview.svg" alt="Analysis overview: period CSR graph, abnormal-branch frontier pruning to the minimal anomaly subgraph, and FGW comparison" width="100%">
 
-**GPU acceleration with CUDA.** Comparing production runs is a computationally intensive optimal-transport problem, because each pair of runs is matched at component level. The engine includes a native CUDA solver that performs the full calculation in FP64 on the GPU. It uses cuBLAS for matrix operations, an exact transportation simplex executed on the device, and persistent multi-stream sessions that compare many runs against a common baseline concurrently. Abnormal-branch discovery is also GPU-accelerated, and OpenCL supports non-NVIDIA devices. Where no supported GPU is available, all analysis runs on the CPU under the same specified numerical tolerances.
+<sub>From the full period graph, abnormal-branch discovery prunes the normal branches down to the minimal anomaly subgraph. The production runs inside it are then compared component by component with FGW.</sub>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/analysis-overview.svg">
-  <img src="docs/images/analysis-overview.svg" alt="Analysis overview: period CSR graph, abnormal-branch frontier pruning to the minimal anomaly subgraph, and FGW comparison" width="100%">
-</picture>
-
-<sub>Serial Java CPU vs CUDA, synthetic workloads on one workstation (Ryzen 7 9700X, RTX 5070 Ti): branch propagation over 10 million issue records; FGW over 79,800 all-pairs and 200,000 fixed-baseline comparisons. Gains depend on problem size.</sub>
+I released Cost Analysis Engine as open-source software to accelerate evidence-based cost-variance analysis in practice, and to support reproducible research on cost attribution in multi-stage manufacturing.
 
 <br>
 
-## 🔍 The problem Cost Analysis Engine solves
+## 🔍 The problem
 
-When a product's costs rise and its margin falls, identifying the underlying causes requires finance and audit professionals to trace production relationships from finished goods through sub-assemblies and components to raw materials. At each level they must examine production activity for anomalies and reconcile production orders, material issues and cost records along every branch.
+When a product's costs rise and its margin falls, finance and audit professionals have to trace production relationships from finished goods through sub-assemblies and components to raw materials. At each level they look for anomalies and reconcile production orders, material issues and cost records along every branch.
 
-This work is labour-intensive and typically falls within the periods of greatest time pressure: month-end close, management reporting and audit. Three factors account for most of the effort:
+This work is labour-intensive, and it usually lands in the periods of greatest time pressure: month-end close, management reporting and audit. Three factors account for most of the effort:
 
 | Factor | Effect on the analysis |
 | :-- | :-- |
@@ -54,7 +49,7 @@ This work is labour-intensive and typically falls within the periods of greatest
 | **Shared materials** | A single raw material is consumed by many products, so one price change affects many branches, each of which must be examined. |
 | **Cross-batch relationships** | Production runs consume the output of earlier batches, so the relevant evidence spans multiple orders and periods. |
 
-In addition, actual material issues frequently differ from the planned BOM. Without component-level matching, a material substitution can appear as an unexplained reduction in one cost and an unrelated increase in another.
+Actual material issues also frequently differ from the planned BOM. Without component-level matching, a material substitution can appear as an unexplained reduction in one cost and an unrelated increase in another.
 
 A standard report shows *that* unit cost has changed. It does not establish:
 
@@ -66,7 +61,7 @@ A standard report shows *that* unit cost has changed. It does not establish:
 
 ## 🎯 The solution
 
-Cost Analysis Engine automates this analytical workflow. It integrates the business records, identifies the branches in which costs differ, reconstructs the production structures actually recorded, and compares them run by run. Changes in aggregate figures are attributed to specific production orders, materials and source documents, so that each explanation is supported by verifiable evidence.
+Cost Analysis Engine automates this workflow. It integrates the business records, identifies the branches in which costs differ, reconstructs the production structures actually recorded, and compares them run by run. Changes in aggregate figures are attributed to specific production orders, materials and source documents, so every explanation is backed by verifiable evidence.
 
 | Manual approach | Cost Analysis Engine |
 | :-- | :-- |
@@ -76,17 +71,25 @@ Cost Analysis Engine automates this analytical workflow. It integrates the busin
 | Substitutions are missed or treated as unrelated changes | Runs are matched at component level, so a replaced material is identified as a replacement |
 | Figures are transcribed into management reports | Report placeholders are populated through validated, read-only queries |
 
-**Key characteristics:**
+**Key characteristics**
 
 - **Traceability.** Every reported figure can be traced to the source records from which it was derived.
 - **Numerical precision.** Monetary values are calculated with exact decimal arithmetic. Missing or incomplete evidence is reported explicitly and never estimated.
-- **Evidence-based AI.** A local language model may summarise findings in plain language, but all figures are produced by the backend's calculations.
+- **Evidence-based AI.** A local language model may summarise findings in plain language, but all figures come from the backend's calculations.
 - **Data residency.** Embeddings and AI explanations run on locally hosted models; no external cloud service is required.
 - **Flexible execution.** All analysis runs on the CPU, with optional CUDA or OpenCL acceleration on supported GPUs.
 
-> **The web interface is being redesigned.** Actual production trees become too large and interconnected to be read effectively as node-and-link diagrams. The next version will therefore present branches, production trees and run-to-run matches as structured, sortable data tables.
->
-> Cost Analysis Engine is currently a **research prototype**. Its analysis follows documented specifications and validation reports, but it is not yet represented as production-ready.
+<br>
+
+## 🧭 Main workflows
+
+| | Workflow | What you get |
+| :-: | :-- | :-- |
+| 📥 | **Data preparation** | Import spreadsheet exports from your ERP system. The engine recognises their columns, keeps the original files for audit, and loads the records into the warehouse. |
+| 🗂️ | **Data browser** | Inspect the loaded warehouse records and download the archived raw files. |
+| 🌳 | **Dual-BOM analysis** | Choose two periods and thresholds, find abnormal cost branches, and inspect the paths, production trees, comparisons and supporting records. |
+| 📝 | **Report Studio** | Fill management-report placeholders from validated, read-only queries and edit the document in ONLYOFFICE. |
+| ⚙️ | **Settings** | Configure the local llama.cpp connection, the report template, GPU preferences and the embedding model. |
 
 <br>
 
@@ -270,25 +273,13 @@ Unit cost rose from **NZD 24 to NZD 27**. The recorded evidence explains the ful
 
 <sub>Amounts in NZD.</sub>
 
-Each stage contributes part of this picture:
+Each analysis stage contributes part of this picture:
 
 | Stage | Finding |
 | :-- | :-- |
-| ① Branch discovery | The steel-cost path from R1 through S1 to product A |
-| ② Production trees | Both runs rebuilt from issue, output and allocation records, with complete totals of 240 and 270 |
-| ③ FGW comparison | A component-by-component match; the test reports it against the expected pairing, including **R4 ⇄ R5**, so the topcoat change appears as a replacement |
-
-<br>
-
-## 🧭 Main workflows
-
-| | Workflow | What you get |
-| :-: | :-- | :-- |
-| 📥 | **Data preparation** | Import spreadsheet exports from your ERP system. The engine recognises their columns, keeps the original files for audit, and loads the records into the warehouse. |
-| 🗂️ | **Data browser** | Inspect the loaded warehouse records and download the archived raw files. |
-| 🌳 | **Dual-BOM analysis** | Choose two periods and thresholds, find abnormal cost branches, and inspect the paths, production trees, comparisons and supporting records. |
-| 📝 | **Report Studio** | Fill management-report placeholders from validated, read-only queries and edit the document in ONLYOFFICE. |
-| ⚙️ | **Settings** | Configure the local llama.cpp connection, the report template, GPU preferences and the embedding model. |
+| Abnormal branches | The steel-cost path from R1 through S1 to product A |
+| Production trees | Both runs rebuilt from issue, output and allocation records, with complete totals of 240 and 270 |
+| FGW comparison | A component-by-component match; the test reports it against the expected pairing, including **R4 ⇄ R5**, so the topcoat change appears as a replacement |
 
 <br>
 
