@@ -43,26 +43,11 @@ Given two reporting periods indexed by $t \in \{0, 1\}$ and two materiality thre
 
 ### 1 · Abnormal branches: thresholded upward frontier
 
-For each node present in both periods, the difference is encoded exactly in signed micro-units:
-
-```math
-\Delta(v) = c_1(v) - c_0(v), \qquad \Delta(v) \in 10^{-6}\,\mathbb{Z}
-```
-
-Leaves whose $|\Delta(\ell)| \ge \tau_{\text{leaf}}$ seed a frontier that propagates upwards. An ancestor becomes eligible once all of its participating children have arrived. It is **selected** as a branch boundary when $|\Delta(v)| \ge \tau_{\text{stop}}$; otherwise propagation continues. A selected node blocks its own ancestors, and child differences are never re-summed, so each reported path $\ell \to \dots \to v^\ast$ points to the lowest level at which the change becomes material.
+For every node $v \in V_0 \cap V_1$, the inter-period cost difference $\Delta(v) = c_1(v) - c_0(v)$ is computed exactly in signed micro-units, so that $\Delta(v) \in 10^{-6}\,\mathbb{Z}$. Leaves $\ell$ with $|\Delta(\ell)| \ge \tau_{\text{leaf}}$ initialise a frontier that propagates upwards through the period graph; an ancestor $v$ is evaluated only once all of its participating children have reached it, and is selected as a branch boundary $v^\ast$ if $|\Delta(v)| \ge \tau_{\text{stop}}$, otherwise propagation continues to its parents. Because a selected node terminates propagation through its own ancestors, and $\Delta(v)$ is taken from the recorded costs rather than re-summed from its children, each reported path $\ell \to \dots \to v^\ast$ identifies the lowest level of the production graph at which the change becomes material.
 
 ### 2 · Production trees: two-pass reconstruction from issue records
 
-Every production order on an abnormal path, identified by the production order number on its issue records, is rebuilt as its own tree:
-
-1. **Top-down scope.** Walk from the product root to every terminal material and record the permitted nodes $S$, relationships $E$ and root-to-leaf paths.
-2. **Bottom-up evidence.** Query the actual issue records for those terminals and trace receivers upwards. A receiver is accepted only if it lies in $S$ through an edge in $E$. Anything else is kept as visible *excluded* evidence instead of being silently dropped.
-
-Node totals are then computed from what was recorded, never from the planned BOM:
-
-```math
-\operatorname{cost}(v) \;=\; \sum_{\text{issues} \to v} \text{material amount} \;+\; \sum_{(u,v)} \bigl(\text{labour}_{uv} + \text{overhead}_{uv}\bigr)
-```
+Each production order on an abnormal path, identified by the order number carried on its issue records, is reconstructed as a separate tree in two passes. A top-down pass from the product root to every terminal material defines the admissible scope: the node set $S$, the edge set $E_S$ and the root-to-leaf paths. A bottom-up pass then retrieves the actual issue records for these terminals and traces each receiver upwards, accepting it only if it lies in $S$ and is reached through an edge in $E_S$; records that fail this test are retained as explicitly excluded evidence rather than discarded. Node totals are computed from the recorded evidence alone, never from the planned BOM, as $\operatorname{cost}(v) = \sum_{i \to v} m_i + \sum_{(u,v)} (L_{uv} + O_{uv})$, where $m_i$ is the material amount of an issue $i$ received by $v$, and $L_{uv}$ and $O_{uv}$ are the labour and overhead allocated to the relationship $(u, v)$.
 
 > [!WARNING]
 > **Current assumption: no cross-period work in progress.** Today every production order is assumed to be started and completed within the selected periods. Orders that are still in progress at a period boundary are not yet handled. The planned extension treats each minimal branch as its own window $w$ and closes it with the standard work-in-progress roll-forward:
@@ -73,54 +58,35 @@ Node totals are then computed from what was recorded, never from the planned BOM
 
 ### 3 · Component embeddings: context-aware semantics
 
-Each occurrence $v$ is described by a twelve-field canonical template $T(v)$: code, name, specification, supplier, category and unit cost, plus the codes, names and specifications of its direct upstream and downstream neighbours. The text is then encoded by a **local** sentence model:
-
-```math
-x_v = f_\theta\bigl(T(v)\bigr) \in \mathbb{R}^{384}
-```
-
-Identical inputs are deduplicated and cached, with the model revision, template version and a hash of the content as the key. Thousands of pairwise comparisons therefore reuse a small set of inference calls.
+Each node occurrence $v$ in a production tree is rendered as a canonical twelve-field textual template $T(v)$, comprising its code, name, specification, supplier, category and unit cost, together with the codes, names and specifications of its immediate upstream and downstream neighbours, and is embedded by a locally hosted sentence encoder as $x_v = f_\theta(T(v)) \in \mathbb{R}^{384}$. Because the template includes the neighbourhood of $v$, the distance between two embeddings reflects both the attributes of the components and the context in which they are consumed.
 
 ### 4 · FGW comparison: matching by attributes and structural position
 
-Two runs of the same product, with trees of $N$ and $M$ nodes, are compared with balanced **Fused Gromov–Wasserstein** optimal transport. The engine builds three inputs: an attribute cost $M_{ij} = \lVert x_i - y_j \rVert_2^2$, all-pairs shortest-path matrices $D_1$ and $D_2$ on the undirected trees, and uniform marginals $p = \tfrac{1}{N}\mathbf{1}$ and $q = \tfrac{1}{M}\mathbf{1}$. It then solves
+Two runs of the same product, with trees of $N$ and $M$ nodes and embeddings $\{x_i\}$ and $\{y_j\}$, are compared by balanced Fused Gromov–Wasserstein (FGW) optimal transport. The comparison combines an attribute cost $C_{ij} = \lVert x_i - y_j \rVert_2^2$, all-pairs shortest-path matrices $D_1$ and $D_2$ on the undirected trees, and uniform marginals $p = \tfrac{1}{N}\mathbf{1}$ and $q = \tfrac{1}{M}\mathbf{1}$. The engine seeks the transport plan
 
 ```math
-\min_{P \in \Pi(p,q)} \;(1-\alpha)\,\langle M, P\rangle \;+\; \alpha \sum_{i,k,j,l} \bigl(D_1[i,k] - D_2[j,l]\bigr)^2 P_{ij} P_{kl},
+P^\ast = \arg\min_{P \in \Pi(p,q)} \; F(P) = (1-\alpha)\,\langle C, P\rangle \;+\; \alpha \sum_{i,j,k,l} \bigl(D_1[i,k] - D_2[j,l]\bigr)^2 P_{ij} P_{kl},
 \qquad
-\Pi(p,q) = \{P \ge 0 : P\mathbf{1} = p,\; P^{\top}\mathbf{1} = q\}
+\Pi(p,q) = \{P \ge 0 : P\mathbf{1} = p,\; P^{\top}\mathbf{1} = q\},
 ```
 
-with $\alpha = 0.8$ by default. The quartic sum is never formed. For symmetric $D_1$ and $D_2$ it reduces to matrix products:
+where $\alpha = 0.8$ by default balances attribute similarity against structural position. Because $D_1$ and $D_2$ are symmetric, the quartic structure term never needs to be formed explicitly; it equals $\langle H(P), P\rangle$, with
 
 ```math
-H(P) = (D_1^{\odot 2}\, p)\,\mathbf{1}^{\top} + \mathbf{1}\,(D_2^{\odot 2}\, q)^{\top} - 2\, D_1 P D_2^{\top},
-\qquad
-\text{structure cost} = \langle H(P), P\rangle
+H(P) = (D_1^{\odot 2}\, p)\,\mathbf{1}^{\top} + \mathbf{1}\,(D_2^{\odot 2}\, q)^{\top} - 2\, D_1 P D_2^{\top}.
 ```
 
-**Frank–Wolfe** then iterates from $P_0 = pq^\top$:
+The problem is solved by Frank–Wolfe, starting from $P_0 = pq^{\top}$. Each iteration linearises $F$ at the current plan, solves the resulting linear transport problem exactly with a transportation simplex, without entropic regularisation, and moves towards its solution:
 
 ```math
-G = (1-\alpha) M + 2\alpha H(P), \qquad
-S = \arg\min_{S \in \Pi(p,q)} \langle G, S\rangle, \qquad
-P \leftarrow P + \gamma^\ast (S - P)
+G = (1-\alpha)\,C + 2\alpha\, H(P), \qquad
+Q = \arg\min_{Q \in \Pi(p,q)} \langle G, Q\rangle, \qquad
+P \leftarrow P + \gamma^\ast (Q - P).
 ```
 
-The linear step is solved **exactly** with a transportation simplex, with no entropic Sinkhorn smoothing and no forced one-to-one assignment, so that a substitution can be represented as a partial correspondence. Because the objective is quadratic along the search direction, $F(P + \gamma\Delta) = F(P) + b\gamma + a\gamma^2$, the optimal step $\gamma^\ast \in [0, 1]$ has a closed form. Iteration stops on a certified first-order condition:
+Since $F$ is quadratic along the search direction, the step size $\gamma^\ast \in [0, 1]$ has a closed form. Iteration terminates once the Frank–Wolfe gap satisfies $\langle G, P - Q\rangle \le \varepsilon_{\text{abs}} + \varepsilon_{\text{rel}} \max(|F(P)|, \varepsilon_{\text{floor}})$.
 
-```math
-\text{gap} = \langle G, P - S\rangle \;\le\; \varepsilon_{\text{abs}} + \varepsilon_{\text{rel}} \max\bigl(|F(P)|, \varepsilon_{\text{floor}}\bigr)
-```
-
-The result is a soft correspondence between components. A substituted material, such as a standard topcoat replaced by a corrosion-resistant one, shows up as a **match** rather than as one unexplained loss and one unexplained gain. Each result also reports its material cost, structure cost, gap, iteration count and termination status separately.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/fgw-correspondence-dark.svg">
-  <img src="docs/images/fgw-correspondence-light.svg" alt="FGW correspondence between production runs P0 and P1, with the transport plan overlaid on the attribute-cost matrix" width="100%">
-</picture>
-
-<sub>Recorded result for the <a href="#-worked-example">worked example</a>: the transport plan P (dots) over the attribute-cost matrix M (shading). R4 is matched to R5.</sub>
+The resulting plan $P$ is a soft correspondence between components. Because no one-to-one assignment is imposed, a substituted material, such as a standard topcoat replaced by a corrosion-resistant one, is matched to its predecessor rather than reported as an unrelated loss and gain.
 
 ### Execution paths
 
