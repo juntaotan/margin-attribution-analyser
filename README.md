@@ -37,115 +37,11 @@ I released Cost Analysis Engine as open-source software to accelerate evidence-b
 
 <br>
 
-## 🔍 The problem
-
-When a product's costs rise and its margin falls, finance and audit professionals have to trace production relationships from finished goods through sub-assemblies and components to raw materials. At each level they look for anomalies and reconcile production orders, material issues and cost records along every branch.
-
-This work is labour-intensive, and it usually lands in the periods of greatest time pressure: month-end close, management reporting and audit. Three factors account for most of the effort:
-
-| Factor | Effect on the analysis |
-| :-- | :-- |
-| **Fragmented data** | Sales, purchasing, production, issue and cost data are held in separate system exports and must be consolidated before analysis can begin. |
-| **Shared materials** | A single raw material is consumed by many products, so one price change affects many branches, each of which must be examined. |
-| **Cross-batch relationships** | Production runs consume the output of earlier batches, so the relevant evidence spans multiple orders and periods. |
-
-Actual material issues also frequently differ from the planned BOM. Without component-level matching, a material substitution can appear as an unexplained reduction in one cost and an unrelated increase in another.
-
-A standard report shows *that* unit cost has changed. It does not establish:
-
-- **Where** the difference arises: which materials and sub-assemblies carry it.
-- **What** changed: the price, the quantity consumed, or the material itself.
-- **Which** production runs differ, and which issue, output and cost records support that conclusion.
-
-<br>
-
-## 🎯 The solution
-
-Cost Analysis Engine automates this workflow. It integrates the business records, identifies the branches in which costs differ, reconstructs the production structures actually recorded, and compares them run by run. Changes in aggregate figures are attributed to specific production orders, materials and source documents, so every explanation is backed by verifiable evidence.
-
-| Manual approach | Cost Analysis Engine |
-| :-- | :-- |
-| System exports are consolidated by hand | ERP exports are imported once; columns are recognised and original files are archived for audit |
-| Each BOM level is reviewed to locate the change | Abnormal cost branches are identified against user-defined thresholds |
-| Production is assumed to follow the planned BOM | Each production run is reconstructed from the issue, output and allocation records actually recorded |
-| Substitutions are missed or treated as unrelated changes | Runs are matched at component level, so a replaced material is identified as a replacement |
-| Figures are transcribed into management reports | Report placeholders are populated through validated, read-only queries |
-
-**Key characteristics**
-
-- **Traceability.** Every reported figure can be traced to the source records from which it was derived.
-- **Numerical precision.** Monetary values are calculated with exact decimal arithmetic. Missing or incomplete evidence is reported explicitly and never estimated.
-- **Evidence-based AI.** A local language model may summarise findings in plain language, but all figures come from the backend's calculations.
-- **Data residency.** Embeddings and AI explanations run on locally hosted models; no external cloud service is required.
-- **Flexible execution.** All analysis runs on the CPU, with optional CUDA or OpenCL acceleration on supported GPUs.
-
-<br>
-
-## 🧭 Main workflows
-
-| | Workflow | What you get |
-| :-: | :-- | :-- |
-| 📥 | **Data preparation** | Import spreadsheet exports from your ERP system. The engine recognises their columns, keeps the original files for audit, and loads the records into the warehouse. |
-| 🗂️ | **Data browser** | Inspect the loaded warehouse records and download the archived raw files. |
-| 🌳 | **Dual-BOM analysis** | Choose two periods and thresholds, find abnormal cost branches, and inspect the paths, production trees, comparisons and supporting records. |
-| 📝 | **Report Studio** | Fill management-report placeholders from validated, read-only queries and edit the document in ONLYOFFICE. |
-| ⚙️ | **Settings** | Configure the local llama.cpp connection, the report template, GPU preferences and the embedding model. |
-
-<br>
-
 ## 🧩 How it works
 
-The engine works in three phases. The raw files are stored in MinIO, the analysis runs in the Java backend, and the results end up in a report edited in ONLYOFFICE.
+Given two reporting periods indexed by $t \in \{0, 1\}$ and two materiality thresholds, $\tau_{\text{leaf}}$ and $\tau_{\text{stop}}$, the backend first constructs one graph per period and then executes four analysis stages sequentially, reporting progress on completion of each stage. Monetary quantities are represented as exact decimals throughout, whereas the optimal-transport optimisation is carried out in IEEE 754 double precision (FP64). For each period $t$, sales and inventory-usage records are first aggregated into a directed period graph $G_t = (V_t, E_t)$, in which an edge $(u, v) \in E_t$ indicates that material $u$ is consumed in producing $v$, and each node $v \in V_t$ carries its recorded cost $c_t(v)$.
 
-```mermaid
-flowchart TB
-    subgraph P1["① Data preparation"]
-        direction LR
-        A["Spreadsheet<br/>upload"]:::input --> B[("MinIO<br/>raw files")]:::store
-        B --> C["Table detection<br/>and schema mapping"]:::input
-        C --> D[("PostgreSQL<br/>warehouse")]:::store
-    end
-    subgraph P2["② Analysis"]
-        direction LR
-        E["Period<br/>graphs"]:::stage --> F["Abnormal<br/>branches"]:::stage
-        F --> G["Production<br/>trees"]:::stage
-        G --> H["Component<br/>embeddings"]:::stage
-        H --> I["FGW<br/>comparison"]:::stage
-        I -.-> M["Local AI<br/>explanation"]:::optional
-    end
-    subgraph P3["③ Reporting"]
-        direction LR
-        J["Read-only<br/>report queries"]:::output --> K[("MinIO<br/>report document")]:::store
-        K <--> L["ONLYOFFICE<br/>editor"]:::output
-    end
-    P1 --> P2
-    P2 -- "reporting period" --> P3
-
-    classDef input fill:#E8F0FE,stroke:#4A6FA5,color:#1F2328
-    classDef store fill:#F6F8FA,stroke:#8C959F,color:#1F2328
-    classDef stage fill:#CCFBF1,stroke:#0F766E,color:#134E4A,stroke-width:2px
-    classDef output fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
-    classDef optional fill:#FFFFFF,stroke:#8C959F,color:#59636E,stroke-dasharray:4 3
-    style P1 fill:#F6F8FA,stroke:#D1D9E0,color:#1F2328
-    style P2 fill:#F0FDFA,stroke:#99D5CC,color:#134E4A
-    style P3 fill:#FFFBEB,stroke:#F2C98A,color:#78350F
-```
-
-### ① Data preparation
-
-Each uploaded spreadsheet is validated and stored unchanged in **MinIO**, so the original file is kept for audit. A background job then reads it from MinIO, detects the table boundaries, infers column types, maps the columns to the warehouse schema, and writes the records to **PostgreSQL**. Every import is tracked as a job with a clear status, from validation through storage and transformation to writing.
-
-> **Production structure reconstructed from material-issue records alone.** In the current version, production material-issue records that carry a production order number are sufficient to reconstruct the material structure actually used in production. A maintained BOM, routing data and FIFO batch assumptions are not required. Labour and overhead allocations can be added when they are available. Without them, trees are still built and their totals are clearly marked as material-only.
-
-### ② Analysis
-
-You choose two periods, $t \in \{0, 1\}$, and two thresholds. The backend then runs five stages in order and reports progress as each one finishes. All money is held as exact decimals; the optimisation runs in FP64.
-
-#### 1 · Period graphs
-
-For each period, the sales and inventory-usage records are folded into a directed graph $G_t = (V_t, E_t)$ whose edges point from material to product. It is stored in **compressed sparse row (CSR)** form, so each traversal is a single $O(|V| + |E|)$ pass over two flat arrays. Each node $v$ carries its recorded cost $c_t(v)$. Materials that appear in only one period, or that lack comparable costs, are listed as diagnostics rather than dropped.
-
-#### 2 · Abnormal branches: thresholded upward frontier
+### 1 · Abnormal branches: thresholded upward frontier
 
 For each node present in both periods, the difference is encoded exactly in signed micro-units:
 
@@ -155,7 +51,7 @@ For each node present in both periods, the difference is encoded exactly in sign
 
 Leaves whose $|\Delta(\ell)| \ge \tau_{\text{leaf}}$ seed a frontier that propagates upwards. An ancestor becomes eligible once all of its participating children have arrived. It is **selected** as a branch boundary when $|\Delta(v)| \ge \tau_{\text{stop}}$; otherwise propagation continues. A selected node blocks its own ancestors, and child differences are never re-summed, so each reported path $\ell \to \dots \to v^\ast$ points to the lowest level at which the change becomes material.
 
-#### 3 · Production trees: two-pass reconstruction from issue records
+### 2 · Production trees: two-pass reconstruction from issue records
 
 Every production order on an abnormal path, identified by the production order number on its issue records, is rebuilt as its own tree:
 
@@ -175,7 +71,7 @@ Node totals are then computed from what was recorded, never from the planned BOM
 > \text{completed}_w \;=\; \text{opening WIP}_w \;+\; \text{issued in period}_w \;-\; \text{closing WIP}_w
 > ```
 
-#### 4 · Component embeddings: context-aware semantics
+### 3 · Component embeddings: context-aware semantics
 
 Each occurrence $v$ is described by a twelve-field canonical template $T(v)$: code, name, specification, supplier, category and unit cost, plus the codes, names and specifications of its direct upstream and downstream neighbours. The text is then encoded by a **local** sentence model:
 
@@ -185,7 +81,7 @@ x_v = f_\theta\bigl(T(v)\bigr) \in \mathbb{R}^{384}
 
 Identical inputs are deduplicated and cached, with the model revision, template version and a hash of the content as the key. Thousands of pairwise comparisons therefore reuse a small set of inference calls.
 
-#### 5 · FGW comparison: matching by attributes and structural position
+### 4 · FGW comparison: matching by attributes and structural position
 
 Two runs of the same product, with trees of $N$ and $M$ nodes, are compared with balanced **Fused Gromov–Wasserstein** optimal transport. The engine builds three inputs: an attribute cost $M_{ij} = \lVert x_i - y_j \rVert_2^2$, all-pairs shortest-path matrices $D_1$ and $D_2$ on the undirected trees, and uniform marginals $p = \tfrac{1}{N}\mathbf{1}$ and $q = \tfrac{1}{M}\mathbf{1}$. It then solves
 
@@ -226,7 +122,7 @@ The result is a soft correspondence between components. A substituted material, 
 
 <sub>Recorded result for the <a href="#-worked-example">worked example</a>: the transport plan P (dots) over the attribute-cost matrix M (shading). R4 is matched to R5.</sub>
 
-#### Execution paths
+### Execution paths
 
 | | CPU | CUDA (NVIDIA) | OpenCL |
 | :-- | :-- | :-- | :-- |
@@ -235,11 +131,49 @@ The result is a soft correspondence between components. A substituted material, 
 
 The caller chooses the engine family, and the backend reports which backend actually ran each stage. CUDA never silently falls back to OpenCL, or vice versa, and any CPU fallback is reported with its reason. GPU execution has been tested on a single NVIDIA GPU, with both CUDA and the NVIDIA OpenCL runtime; AMD and Intel devices and Windows/WSL2 have not been tested yet.
 
-#### Explanations
+### Explanations
 
 For a selected material, the backend first classifies the change from the evidence, for example as a unit-cost change. A **local** llama.cpp model can then write a short explanation of that classification. The model only explains; it never produces the numbers.
 
-### ③ Reporting
+<br>
+
+## 🎯 The solution
+
+Cost Analysis Engine automates this workflow. It integrates the business records, identifies the branches in which costs differ, reconstructs the production structures actually recorded, and compares them run by run. Changes in aggregate figures are attributed to specific production orders, materials and source documents, so every explanation is backed by verifiable evidence.
+
+| Manual approach | Cost Analysis Engine |
+| :-- | :-- |
+| System exports are consolidated by hand | ERP exports are imported once; columns are recognised and original files are archived for audit |
+| Each BOM level is reviewed to locate the change | Abnormal cost branches are identified against user-defined thresholds |
+| Production is assumed to follow the planned BOM | Each production run is reconstructed from the issue, output and allocation records actually recorded |
+| Substitutions are missed or treated as unrelated changes | Runs are matched at component level, so a replaced material is identified as a replacement |
+| Figures are transcribed into management reports | Report placeholders are populated through validated, read-only queries |
+
+**Key characteristics**
+
+- **Traceability.** Every reported figure can be traced to the source records from which it was derived.
+- **Numerical precision.** Monetary values are calculated with exact decimal arithmetic. Missing or incomplete evidence is reported explicitly and never estimated.
+- **Evidence-based AI.** A local language model may summarise findings in plain language, but all figures come from the backend's calculations.
+- **Data residency.** Embeddings and AI explanations run on locally hosted models; no external cloud service is required.
+- **Flexible execution.** All analysis runs on the CPU, with optional CUDA or OpenCL acceleration on supported GPUs.
+
+<br>
+
+## 🧭 Main workflows
+
+| | Workflow | What you get |
+| :-: | :-- | :-- |
+| 📥 | **Data preparation** | Import spreadsheet exports from your ERP system. The engine recognises their columns, keeps the original files for audit, and loads the records into the warehouse. |
+| 🗂️ | **Data browser** | Inspect the loaded warehouse records and download the archived raw files. |
+| 🌳 | **Dual-BOM analysis** | Choose two periods and thresholds, find abnormal cost branches, and inspect the paths, production trees, comparisons and supporting records. |
+| 📝 | **Report Studio** | Fill management-report placeholders from validated, read-only queries and edit the document in ONLYOFFICE. |
+| ⚙️ | **Settings** | Configure the local llama.cpp connection, the report template, GPU preferences and the embedding model. |
+
+### Data preparation
+
+Each uploaded spreadsheet is validated and stored unchanged in **MinIO**, so the original file is kept for audit. A background job then reads it from MinIO, detects the table boundaries, infers column types, maps the columns to the warehouse schema, and writes the records to **PostgreSQL**. Every import is tracked as a job with a clear status, from validation through storage and transformation to writing.
+
+### Reporting
 
 The analysis passes its reporting period to **Report Studio**. A DOCX report template contains placeholders. For each placeholder, you describe the figure you need, and the local AI turns that description into a structured query plan. The backend validates the plan, runs it as a **read-only** database query, and writes the result into the document. The document is stored in **MinIO** and opened in **ONLYOFFICE** for editing, and each save is written back to MinIO.
 
