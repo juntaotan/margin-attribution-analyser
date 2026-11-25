@@ -1,21 +1,23 @@
 <div align="center">
 
-<img src="docs/images/banner.svg" alt="Cost Analysis Engine: find the anomaly and explain it through material attributes" width="100%">
-
-**English** &nbsp;·&nbsp; [简体中文](README.zh-CN.md)
-
-<br>
-
-**Intelligent Cost Analysis for Multi-Stage Production, Powered by Local AI**
-
-<br>
-
-![Status: prototype](https://img.shields.io/badge/status-prototype-d97706?style=flat-square)
 ![Java 21](https://img.shields.io/badge/Java-21-0f766e?style=flat-square)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-backend-0f766e?style=flat-square)
 ![React](https://img.shields.io/badge/React%20%2B%20TypeScript-frontend-0f766e?style=flat-square)
 ![GPU optional](https://img.shields.io/badge/CUDA%20%7C%20OpenCL-optional-59636e?style=flat-square)
 [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-59636e?style=flat-square)](LICENSE)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
+  <img src="docs/images/banner.svg" alt="Cost Analysis Engine: find the anomaly and explain it through material attributes" width="100%">
+</picture>
+
+**English** &nbsp;·&nbsp; [简体中文](README.zh-CN.md)
+
+<br>
+
+**Intelligent Cost Analysis for Multi-Stage Production, Powered by AI**
+
+<br>
 
 [**Quick start**](#-quick-start) &nbsp;·&nbsp; [**How it works**](#-how-it-works) &nbsp;·&nbsp; [**Worked example**](#-worked-example)
 
@@ -23,9 +25,11 @@
 
 <br>
 
+# About
+
 **Evidence-based cost variance analysis for multi-stage manufacturing: from a change in margin to the production records behind it.**
 
-Cost Analysis Engine is a margin-attribution and variance-analysis application for finance, audit and data analysts in manufacturing. It consolidates sales, purchasing, production, inventory-usage, cost and bill-of-materials (BOM) records, compares two periods, and links each reported difference to its supporting records.
+Cost Analysis Engine is a margin-attribution and variance-analysis application for finance, audit and data analysts in manufacturing. It solves the analysis 
 
 **GPU acceleration with CUDA.** Comparing production runs is a computationally intensive optimal-transport problem, because each pair of runs is matched at component level. The engine includes a native CUDA solver that performs the full calculation in FP64 on the GPU. It uses cuBLAS for matrix operations, an exact transportation simplex executed on the device, and persistent multi-stream sessions that compare many runs against a common baseline concurrently. Abnormal-branch discovery is also GPU-accelerated, and OpenCL supports non-NVIDIA devices. Where no supported GPU is available, all analysis runs on the CPU under the same specified numerical tolerances.
 

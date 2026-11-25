@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="docs/images/banner.svg" alt="Cost Analysis Engine：定位异常，并通过材料属性解释异常" width="100%">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
+  <img src="docs/images/banner.svg" alt="Cost Analysis Engine：定位异常，并通过材料属性解释异常" width="100%">
+</picture>
 
 [English](README.md) &nbsp;·&nbsp; **简体中文**
 
